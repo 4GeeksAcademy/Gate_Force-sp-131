@@ -1,5 +1,2 @@
-<<<<<<< ft-101-jesus
-jesus
-=======
 joel
->>>>>>> develop
+jesus
