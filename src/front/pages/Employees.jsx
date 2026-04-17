@@ -26,7 +26,7 @@ export default function EmployeesPage() {
     }, []);
 
     const deleteEmployee = async (id) => {
-        await fetch(`${API_URL}/${id}`, {
+        await fetch(`${API_URL}${id}`, {
             method: "DELETE"
         });
 
@@ -62,7 +62,7 @@ export default function EmployeesPage() {
 
         const method = editingId ? "PUT" : "POST";
         const url = editingId
-            ? `${API_URL}/${editingId}`
+            ? `${API_URL}employees/${editingId}`
             : `${API_URL}employees`;
 
         await fetch(url, {

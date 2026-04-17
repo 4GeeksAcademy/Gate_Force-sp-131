@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 export default function CompaniesPage() {
-    const API_URL = "https://laughing-space-eureka-qpxvgqvpr5rhj54-3001.app.github.dev/api/companies";
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
 
     const [companies, setCompanies] = useState([]);
     const [editingId, setEditingId] = useState(null);
@@ -14,7 +14,7 @@ export default function CompaniesPage() {
     });
 
     const getCompanies = async () => {
-        const res = await fetch(API_URL);
+        const res = await fetch(`${API_URL}companies`);
         const data = await res.json();
         setCompanies(data);
     };
@@ -24,7 +24,7 @@ export default function CompaniesPage() {
     }, []);
 
     const deleteCompany = async (id) => {
-        await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+        await fetch(`${API_URL}companies/${id}`, { method: "DELETE" });
         getCompanies();
     };
 
@@ -46,7 +46,7 @@ export default function CompaniesPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const method = editingId ? "PUT" : "POST";
-        const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+        const url = editingId ? `${API_URL}companies/${editingId}` : API_URL;
 
         await fetch(url, {
             method,
