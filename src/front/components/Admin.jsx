@@ -5,7 +5,7 @@ const Admin = () => {
     const [pass, setPass] = useState("");
     const [list, setList] = useState([]);
 
-    const apiUrl = "https://automatic-space-umbrella-pp67qr7p6r5c964g-3001.app.github.dev/api/admin";
+    const apiUrl = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
         getAdmins();

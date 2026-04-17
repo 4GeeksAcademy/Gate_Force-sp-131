@@ -85,8 +85,7 @@ class Employee(db.Model):
         }
 
 
-            "is_active": self.is_active,
-        }
+        
             
 class UserAdmin(db.Model):
     __tablename__ = "user_admin"

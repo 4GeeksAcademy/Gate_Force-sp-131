@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 export default function EmployeesPage() {
-    const API_URL = "https://bookish-zebra-q9vv776vv653x47q-3001.app.github.dev/api/employees";
+    const API_URL = import.meta.env.VITE_BACKEND_URL;
 
     const [employees, setEmployees] = useState([]);
     const [editingId, setEditingId] = useState(null);
@@ -16,7 +16,7 @@ export default function EmployeesPage() {
     });
 
     const getEmployees = async () => {
-        const res = await fetch(API_URL);
+        const res = await fetch(`${API_URL}employees`);
         const data = await res.json();
         setEmployees(data);
     };
@@ -63,7 +63,7 @@ export default function EmployeesPage() {
         const method = editingId ? "PUT" : "POST";
         const url = editingId
             ? `${API_URL}/${editingId}`
-            : API_URL;
+            : `${API_URL}employees`;
 
         await fetch(url, {
             method,

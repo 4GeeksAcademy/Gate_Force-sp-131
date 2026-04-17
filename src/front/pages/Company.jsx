@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 export default function CompaniesPage() {
-    const API_URL = "https://psychic-carnival-v657jqjx7467fxj6r-5000.app.github.dev/api/companies";
+    const API_URL = "https://laughing-space-eureka-qpxvgqvpr5rhj54-3001.app.github.dev/api/companies";
 
     const [companies, setCompanies] = useState([]);
     const [editingId, setEditingId] = useState(null);
