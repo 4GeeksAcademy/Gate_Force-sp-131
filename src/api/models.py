@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, Boolean, ForeignKey, DateTime
-from sqlalchemy import String, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 
@@ -46,7 +45,18 @@ class Employee(db.Model):
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(),default=datetime.utcnow,onupdate=datetime.utcnow)
             
+    def serialize(self):
+        return {
+            "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "phone": self.phone,
+            "role": self.role,
+            "position": self.position,
+            "is_active": self.is_active,
         }
+            
 class UserAdmin(db.Model):
     __tablename__="user_admin"
     id: Mapped[int] = mapped_column(primary_key = True)
@@ -58,13 +68,6 @@ class UserAdmin(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "email": self.email,
-            "phone": self.phone,
-            "role": self.role,
-            "position": self.position,
-            "is_active": self.is_active,
             "username": self.username,
             "created_at": self.created_at.strftime("%d/%m/%Y")
         }
