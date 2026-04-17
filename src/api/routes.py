@@ -1,9 +1,8 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
-from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Employee
-from api.models import db, UserAdmin
+from flask import flask, request, jsonify, url_for, Blueprint
+from api.models import db, User, Employee, UserAdmin, Company
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -12,21 +11,30 @@ api = Blueprint('api', __name__)
 # Allow CORS requests to this API
 CORS(api)
 
+
 @api.route("/admin", methods=["GET"])
 def get_admins():
     admins = UserAdmin.query.all()
     return jsonify([a.serialize() for a in admins]), 200
+
 
 @api.route('/admin/<int:admin_id>', methods=['GET'])
 def get_admin(admin_id):
     admin = UserAdmin.query.get(admin_id)
     if not admin:
         return jsonify({"msg": "Admin no encontrado"}), 404
-    
+
     return jsonify(admin.serialize()), 200
 
-
     return jsonify(response_body), 200
+
+
+# ─── COMPANY CRUD ───────────────────────────────────────────────
+
+@api.route('/companies', methods=['POST'])
+def create_company():
+    data = request.json
+    required_fields = ["nombre_empresa", "password", "region"]
 
 
 @api.route('/employees', methods=['POST'])
@@ -37,6 +45,63 @@ def create_employee():
     for field in required_fields:
         if not data.get(field):
             return jsonify({"msg": f"{field} is required"}), 400
+
+    existing = Company.query.filter_by(
+        nombre_empresa=data["nombre_empresa"]).first()
+    if existing:
+        return jsonify({"msg": "Company already exists"}), 400
+
+    new_company = Company(
+        nombre_empresa=data["nombre_empresa"],
+        password=data["password"],
+        region=data["region"],
+        is_active=data.get("is_active", True)
+    )
+    db.session.add(new_company)
+    db.session.commit()
+    return jsonify(new_company.serialize()), 201
+
+
+@api.route('/companies', methods=['GET'])
+def get_companies():
+    companies = Company.query.all()
+    return jsonify([c.serialize() for c in companies]), 200
+
+
+@api.route('/companies/<int:id>', methods=['GET'])
+def get_company(id):
+    company = Company.query.get(id)
+    if not company:
+        return jsonify({"msg": "Company not found"}), 404
+    return jsonify(company.serialize()), 200
+
+
+@api.route('/companies/<int:id>', methods=['PUT'])
+def update_company(id):
+    company = Company.query.get(id)
+    if not company:
+        return jsonify({"msg": "Company not found"}), 404
+
+    data = request.json
+    company.nombre_empresa = data.get("nombre_empresa", company.nombre_empresa)
+    company.region = data.get("region", company.region)
+    company.is_active = data.get("is_active", company.is_active)
+    if data.get("password"):
+        company.password = data["password"]
+
+    db.session.commit()
+    return jsonify(company.serialize()), 200
+
+
+@api.route('/companies/<int:id>', methods=['DELETE'])
+def delete_company(id):
+    company = Company.query.get(id)
+    if not company:
+        return jsonify({"msg": "Company not found"}), 404
+
+    db.session.delete(company)
+    db.session.commit()
+    return jsonify({"msg": f"Company {id} deleted"}), 200
 
     existing = Employee.query.filter_by(email=data["email"]).first()
     if existing:
@@ -109,10 +174,12 @@ def delete_employee(id):
     db.session.commit()
 
     return jsonify({"msg": "Employee deleted"}), 200
+
+
 @api.route('/admin', methods=['POST'])
 def add_admin():
     body = request.get_json()
-    
+
     if not body or "username" not in body or "password" not in body:
         return jsonify({"msg": "Faltan datos requeridos"}), 400
 
@@ -120,17 +187,18 @@ def add_admin():
         username=body["username"],
         password=body["password"]
     )
-    
+
     db.session.add(new_admin)
     db.session.commit()
     return jsonify(new_admin.serialize()), 201
+
 
 @api.route('/admin/<int:admin_id>', methods=['DELETE'])
 def delete_admin(admin_id):
     admin = UserAdmin.query.get(admin_id)
     if not admin:
         return jsonify({"msg": "Admin no encontrado"}), 404
-    
+
     db.session.delete(admin)
     db.session.commit()
     return jsonify({"msg": f"Admin {admin_id} eliminado"}), 200
