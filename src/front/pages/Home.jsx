@@ -2,6 +2,7 @@ import React, { useEffect } from "react"
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { Link } from "react-router-dom";
+import Employees from "./Employees.jsx";
 
 export const Home = () => {
 
@@ -52,6 +53,13 @@ export const Home = () => {
 					</span>
 				)}
 			</div>
+
+			<Link to="/employees">
+				<button type="button">
+					Employees
+				</button>
+			</Link>
+
 		</div>
 	);
 }; 
