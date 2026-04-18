@@ -1,6 +1,7 @@
+from sqlalchemy import String, Boolean, DateTime
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, Boolean, ForeignKey, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -20,7 +21,7 @@ class User(db.Model):
             # do not serialize the password, its a security breach
         }
 
-    
+
 class Company(db.Model):
     __tablename__ = "companies"
 
@@ -29,7 +30,8 @@ class Company(db.Model):
     password: Mapped[str] = mapped_column(String(50), nullable=False)
     region: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow)
 
     def serialize(self):
         return {
@@ -40,38 +42,37 @@ class Company(db.Model):
             "created_at": self.created_at.strftime("%d/%m/%Y")
         }
 
+
 class Employee(db.Model):
     __tablename__ = "employees"
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    # Datos personales
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(
         String(120), unique=True, nullable=False)
     phone: Mapped[str] = mapped_column(String(20), nullable=True)
-
-    # Seguridad
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    # Rol y posición
-    role: Mapped[str] = mapped_column(
-        String(50), default="employee")  # admin / employee
+    role: Mapped[str] = mapped_column(String(50), default="employee")
     position: Mapped[str] = mapped_column(String(100), nullable=True)
 
-    # Estado
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
-
-    # Auditoría
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(),default=datetime.utcnow,onupdate=datetime.utcnow)
-            
+    # RELACIONES #
+    work_records = relationship(
+        "WorkRecord", back_populates="employee", cascade="all, delete")
+    nominas = relationship(
+        "Nomina", back_populates="employee", cascade="all, delete")
+
+    def __repr__(self):
+        return f"{self.first_name} {self.last_name}"
+
     def serialize(self):
         return {
             "id": self.id,
@@ -79,14 +80,14 @@ class Employee(db.Model):
             "last_name": self.last_name,
             "email": self.email,
             "phone": self.phone,
-            "role": self.role,
             "position": self.position,
-            "is_active": self.is_active
+
+
+            "work_records": [wr.serialize() for wr in self.work_records],
+            "nominas": [n.serialize() for n in self.nominas]
         }
 
 
-        
-            
 class UserAdmin(db.Model):
     __tablename__ = "user_admin"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -96,9 +97,64 @@ class UserAdmin(db.Model):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow)
 
+    def __repr__(self):
+        return f"{self.username}"
+
     def serialize(self):
         return {
             "id": self.id,
             "username": self.username,
             "created_at": self.created_at.strftime("%d/%m/%Y")
+        }
+
+
+class WorkRecord(db.Model):
+    __tablename__ = "work_records"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), nullable=False)
+
+    check_in: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    check_out: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+    total_hours: Mapped[int] = mapped_column(nullable=True)
+
+    status: Mapped[str] = mapped_column(String(50), default="pending")
+    location: Mapped[str] = mapped_column(String(120), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    # relación #
+    employee = relationship("Employee", back_populates="work_records")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "check_in": self.check_in,
+            "check_out": self.check_out,
+            "total_hours": self.total_hours,
+            "status": self.status
+        }
+
+
+class Nomina(db.Model):
+    __tablename__ = "nominas"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), nullable=False)
+    month: Mapped[str] = mapped_column(String(20), nullable=False)
+    document_url: Mapped[str] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    # relación #
+    employee = relationship("Employee", back_populates="nominas")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "month": self.month,
+            "document_url": self.document_url
         }

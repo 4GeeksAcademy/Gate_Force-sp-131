@@ -2,8 +2,9 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import request, jsonify, Blueprint
-from api.models import db, Employee, UserAdmin, Company
+from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina
 from flask_cors import CORS
+from datetime import datetime
 
 api = Blueprint('api', __name__)
 CORS(api)
@@ -233,3 +234,87 @@ def delete_employee(id):
     db.session.commit()
 
     return jsonify({"msg": "Employee deleted"}), 200
+
+# ─── WORKRECORD CRUD ───────────────────────────────────────────────
+
+
+@api.route('/employees/<int:employee_id>/work-records', methods=['GET'])
+def get_work_records(employee_id):
+    records = WorkRecord.query.filter_by(employee_id=employee_id).all()
+    return jsonify([r.serialize() for r in records]), 200
+
+
+@api.route('/employees/<int:employee_id>/check-in', methods=['POST'])
+def check_in(employee_id):
+    employee = Employee.query.get(employee_id)
+
+    if not employee:
+        return jsonify({"msg": "Employee not found"}), 404
+
+    open_record = WorkRecord.query.filter_by(
+        employee_id=employee_id,
+        check_out=None
+    ).first()
+
+    if open_record:
+        return jsonify({"msg": "Already checked in"}), 400
+
+    new_record = WorkRecord(
+        employee_id=employee_id,
+        check_in=datetime.utcnow(),
+        status="in_progress"
+    )
+
+    db.session.add(new_record)
+    db.session.commit()
+
+    return jsonify({"msg": "Check-in successful"}), 201
+
+
+@api.route('/employees/<int:employee_id>/check-out', methods=['PUT'])
+def check_out(employee_id):
+    record = WorkRecord.query.filter_by(
+        employee_id=employee_id,
+        check_out=None
+    ).first()
+
+    if not record:
+        return jsonify({"msg": "No active check-in"}), 404
+
+    record.check_out = datetime.utcnow()
+
+    delta = record.check_out - record.check_in
+    record.total_hours = int(delta.total_seconds() / 3600)
+
+    record.status = "completed"
+
+    db.session.commit()
+
+    return jsonify({"msg": "Check-out successful"}), 200
+
+
+# ─── NOMINAS CRUD ───────────────────────────────────────────────
+
+@api.route('/employees/<int:employee_id>/nominas', methods=['GET'])
+def get_nominas(employee_id):
+    nominas = Nomina.query.filter_by(employee_id=employee_id).all()
+    return jsonify([n.serialize() for n in nominas]), 200
+
+
+@api.route('/employees/<int:employee_id>/nominas', methods=['POST'])
+def create_nomina(employee_id):
+    data = request.json
+
+    if not data or not data.get("month"):
+        return jsonify({"msg": "Month is required"}), 400
+
+    new_nomina = Nomina(
+        employee_id=employee_id,
+        month=data["month"],
+        document_url=data.get("document_url")
+    )
+
+    db.session.add(new_nomina)
+    db.session.commit()
+
+    return jsonify(new_nomina.serialize()), 201

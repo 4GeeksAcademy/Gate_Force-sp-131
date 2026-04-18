@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom'; // Si usas React Router
 
 export default function EmployeesPage() {
     const API_URL = import.meta.env.VITE_BACKEND_URL;
+    const navigate = useNavigate();
 
     const [employees, setEmployees] = useState([]);
     const [editingId, setEditingId] = useState(null);
@@ -150,19 +152,47 @@ export default function EmployeesPage() {
 
             <ul>
                 {employees.map((emp) => (
-                    <li key={emp.id} style={{ marginBottom: "10px" }}>
-                        {emp.first_name} {emp.last_name} - {emp.email}
+                    <li key={emp.id} style={{
+                        marginBottom: "10px",
+                        display: "flex",
+                        alignItems: "center",
+                        listStyle: "none",
+                        borderBottom: "1px solid #eee",
+                        paddingBottom: "5px"
+                    }}>
+                        <div style={{ flexGrow: 1 }}>
+                            <strong>{emp.first_name} {emp.last_name}</strong>
+                            <div style={{ fontSize: "0.9em", color: "#666" }}>
+                                <span>{emp.email}</span> |
+                                <span style={{ margin: "0 5px", fontWeight: "bold" }}>{emp.position}</span> |
+                                <span>{emp.phone}</span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => navigate(`/nominas/${emp.id}`)}
+                            style={{ marginLeft: "10px", backgroundColor: "#4CAF50", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
+                        >
+                            Nóminas
+                        </button>
+
+                        <button
+                            onClick={() => navigate(`/records/${emp.id}`)}
+                            style={{ marginLeft: "5px", backgroundColor: "#2196F3", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
+                        >
+                            Entradas
+                        </button>
 
                         <button
                             onClick={() => startEdit(emp)}
-                            style={{ marginLeft: "10px" }}
+                            style={{ marginLeft: "15px" }}
                         >
                             Edit
                         </button>
 
                         <button
                             onClick={() => deleteEmployee(emp.id)}
-                            style={{ marginLeft: "5px" }}
+                            style={{ marginLeft: "5px", color: "red" }}
                         >
                             Delete
                         </button>
