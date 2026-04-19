@@ -46,7 +46,7 @@ export default function CompaniesPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const method = editingId ? "PUT" : "POST";
-        const url = editingId ? `${API_URL}companies/${editingId}` : API_URL;
+        const url = editingId ? `${API_URL}companies/${editingId}` : `${API_URL}companies`;
 
         await fetch(url, {
             method,

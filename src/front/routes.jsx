@@ -12,6 +12,9 @@ import { Demo } from "./pages/Demo";
 import Company from "./pages/Company";
 import Employees from "./pages/Employees";
 import Admin from "./components/Admin.jsx";
+import Nominas from "./pages/Nominas.jsx";
+import Workrecord from "./pages/Workrecord.jsx"
+
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -31,6 +34,10 @@ export const router = createBrowserRouter(
       <Route path="/employees" element={<Employees />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/company" element={<Company />} />
+      <Route path="/nominas/:id" element={<Nominas />} />
+      <Route path="/records/:id" element={<Workrecord />} />
+
+
 
 
     </Route>
