@@ -40,6 +40,11 @@ export const Home = () => {
 			<Link to="/admin">
 				<button className="btn btn-primary btn-lg">Ir a Admin</button>
 			</Link>
+			<Link to="/vacaciones">
+				<button type="button">
+					Vacaciones
+				</button>
+			</Link>
 			<p className="lead">
 
 				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />

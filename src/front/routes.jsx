@@ -44,7 +44,7 @@ export const router = createBrowserRouter(
 
 
       <Route path="/incidents/:id" element={<Incidents />} />
-      <Route path="/vacaciones/:id" element={<Vacaciones />} />
+      <Route path="/vacaciones" element={<Vacaciones />} />
 
 
     </Route>
