@@ -15,6 +15,8 @@ import Admin from "./components/Admin.jsx";
 import Nominas from "./pages/Nominas.jsx";
 import Workrecord from "./pages/Workrecord.jsx"
 import Horarios from "./pages/Horarios.jsx"
+import Incidents from "./pages/Incidents.jsx";
+import Vacaciones from "./pages/Vacaciones.jsx";
 
 
 export const router = createBrowserRouter(
@@ -41,6 +43,8 @@ export const router = createBrowserRouter(
 
 
 
+      <Route path="/incidents/:id" element={<Incidents />} />
+      <Route path="/vacaciones/:id" element={<Vacaciones />} />
 
 
     </Route>

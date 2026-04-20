@@ -74,6 +74,11 @@ class Employee(db.Model):
     schedules = relationship(
         "Schedule", back_populates="employee", cascade="all, delete")
 
+    incidents = relationship(
+        "Incident", back_populates="employee", cascade="all, delete")
+    vacaciones = relationship(
+        "Vacaciones", back_populates="employee", cascade="all, delete")
+
     def __repr__(self):
         return f"{self.first_name} {self.last_name}"
 
@@ -90,6 +95,8 @@ class Employee(db.Model):
             "work_records": [wr.serialize() for wr in self.work_records],
             "nominas": [n.serialize() for n in self.nominas],
             "schedules": [s.serialize() for s in self.schedules]
+            "incidents": [i.serialize() for i in self.incidents],
+            "vacaciones": [v.serialize() for v in self.vacaciones]
         }
 
 
@@ -201,6 +208,42 @@ class Schedule(db.Model):
 
     def __repr__(self):
         return f"Schedule(employee_id={self.employee_id}, day={self.day})"
+class Incident(db.Model):
+    __tablename__ = "incidents"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+    type: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="PENDING")
+    category: Mapped[str] = mapped_column(String(50), nullable=True)
+    admin_comment: Mapped[str] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow)
+    # relación #
+    employee = relationship("Employee", back_populates="incidents")
+    def serialize(self):
+        return {
+            "id": self.id,
+            "employee_id": self.employee_id,
+            "type": self.type,
+            "status": self.status,
+            "category": self.category,
+            "admin_comment": self.admin_comment,
+            "created_at": self.created_at.strftime("%d-%m-%Y")
+        }
+    
+class Vacaciones(db.Model):
+    __tablename__ = "vacaciones"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+    vacations: Mapped[int] = mapped_column(nullable=True)
+    taken_vacations: Mapped[int] = mapped_column(nullable=True)
+    available_vacations: Mapped[int] = mapped_column(nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow)
+
+    # relación #
+    employee = relationship("Employee", back_populates="vacaciones")
 
     def serialize(self):
         return {
@@ -209,4 +252,9 @@ class Schedule(db.Model):
             "day": self.day,
             "start_time": self.start_time.strftime("%H:%M"),
             "end_time": self.end_time.strftime("%H:%M")
+        }
+            "vacations": self.vacations,
+            "taken_vacations": self.taken_vacations,
+            "available_vacations": self.available_vacations,
+            "created_at": self.created_at.strftime("%d-%m-%Y")
         }
