@@ -543,3 +543,10 @@ def get_all_vacaciones():
 def get_employees_simple():
     employees = Employee.query.all()
     return jsonify([{"id": e.id, "first_name": e.first_name, "last_name": e.last_name} for e in employees]), 200
+
+# ─── INCIDENTS GLOBAL ───────────────────────────────────────────────
+
+@api.route('/incidents', methods=['GET'])
+def get_all_incidents():
+    incidents = Incident.query.all()
+    return jsonify([i.serialize() for i in incidents]), 200
