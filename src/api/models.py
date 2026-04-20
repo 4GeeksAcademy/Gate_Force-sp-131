@@ -192,6 +192,7 @@ class Manager(db.Model):
             "employee_id": self.employee_id
         }
 
+
 class Schedule(db.Model):
     __tablename__ = "schedules"
 
@@ -199,19 +200,32 @@ class Schedule(db.Model):
     employee_id: Mapped[int] = mapped_column(
         ForeignKey("employees.id"), nullable=False
     )
-    day: Mapped[str] = mapped_column(String(20), nullable=False)  # "Monday", "Lunes", etc.
+    # "Monday", "Lunes", etc.
+    day: Mapped[str] = mapped_column(String(20), nullable=False)
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "employee_id": self.employee_id,
+            "day": self.day,
+            "start_time": self.start_time.strftime("%H:%M"),
+            "end_time": self.end_time.strftime("%H:%M")
+        }
 
     # Relación
     employee = relationship("Employee", back_populates="schedules")
 
     def __repr__(self):
         return f"Schedule(employee_id={self.employee_id}, day={self.day})"
+
+
 class Incident(db.Model):
     __tablename__ = "incidents"
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="PENDING")
     category: Mapped[str] = mapped_column(String(50), nullable=True)
@@ -220,6 +234,7 @@ class Incident(db.Model):
         DateTime(), default=datetime.utcnow)
     # relación #
     employee = relationship("Employee", back_populates="incidents")
+
     def serialize(self):
         return {
             "id": self.id,
@@ -230,12 +245,14 @@ class Incident(db.Model):
             "admin_comment": self.admin_comment,
             "created_at": self.created_at.strftime("%d-%m-%Y")
         }
-    
+
+
 class Vacaciones(db.Model):
     __tablename__ = "vacaciones"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), nullable=False)
     vacations: Mapped[int] = mapped_column(nullable=True)
     taken_vacations: Mapped[int] = mapped_column(nullable=True)
     available_vacations: Mapped[int] = mapped_column(nullable=True)
@@ -249,10 +266,6 @@ class Vacaciones(db.Model):
         return {
             "id": self.id,
             "employee_id": self.employee_id,
-            "day": self.day,
-            "start_time": self.start_time.strftime("%H:%M"),
-            "end_time": self.end_time.strftime("%H:%M"),
-        
             "vacations": self.vacations,
             "taken_vacations": self.taken_vacations,
             "available_vacations": self.available_vacations,
