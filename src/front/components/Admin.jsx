@@ -5,7 +5,7 @@ const Admin = () => {
     const [pass, setPass] = useState("");
     const [list, setList] = useState([]);
 
-    const apiUrl = import.meta.env.VITE_BACKEND_URL;
+    const apiUrl = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
 
 
 

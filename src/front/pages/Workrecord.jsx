@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 export default function PayrollPage() {
     const { id } = useParams();
     const [record, setRecords] = useState([]);
-    const API_URL = import.meta.env.VITE_BACKEND_URL;
+    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
 
     useEffect(() => {
         const fetchPayrolls = async () => {

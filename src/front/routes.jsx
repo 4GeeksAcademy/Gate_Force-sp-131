@@ -14,6 +14,7 @@ import Employees from "./pages/Employees";
 import Admin from "./components/Admin.jsx";
 import Nominas from "./pages/Nominas.jsx";
 import Workrecord from "./pages/Workrecord.jsx"
+import Horarios from "./pages/Horarios.jsx"
 import Incidents from "./pages/Incidents.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
 
@@ -38,6 +39,10 @@ export const router = createBrowserRouter(
       <Route path="/company" element={<Company />} />
       <Route path="/nominas/:id" element={<Nominas />} />
       <Route path="/records/:id" element={<Workrecord />} />
+      <Route path="/horarios/:employeeId" element={<Horarios />} />
+
+
+
       <Route path="/incidents/:id" element={<Incidents />} />
       <Route path="/vacaciones/:id" element={<Vacaciones />} />
 
