@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import request, jsonify, Blueprint
-from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina
+from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina, Incident, Vacaciones
 from flask_cors import CORS
 from datetime import datetime
 
@@ -318,3 +318,115 @@ def create_nomina(employee_id):
     db.session.commit()
 
     return jsonify(new_nomina.serialize()), 201
+
+@api.route('/employees/<int:employee_id>/incidents', methods=['GET'])
+def get_incidents(employee_id):
+    incidents = Incident.query.filter_by(employee_id=employee_id).all()
+    return jsonify([i.serialize() for i in incidents]), 200
+ 
+@api.route('/employees/<int:employee_id>/incidents/<int:id>', methods=['GET'])
+def get_incident(employee_id, id):
+    incident = Incident.query.filter_by(id=id, employee_id=employee_id).first()
+    if not incident:
+        return jsonify({"msg": "Incident not found"}), 404
+    return jsonify(incident.serialize()), 200
+ 
+@api.route('/employees/<int:employee_id>/incidents', methods=['POST'])
+def create_incident(employee_id):
+    employee = Employee.query.get(employee_id)
+    if not employee:
+        return jsonify({"msg": "Employee not found"}), 404
+    data = request.json
+    if not data:
+        return jsonify({"msg": "Body vacío"}), 400
+    required_fields = ["type", "category"]
+    for field in required_fields:
+        if not data.get(field):
+            return jsonify({"msg": f"{field} is required"}), 400
+    new_incident = Incident(
+        employee_id=employee_id,
+        type=data["type"],
+        status=data.get("status", "PENDING"),
+        category=data["category"],
+        admin_comment=data.get("admin_comment")
+    )
+    db.session.add(new_incident)
+    db.session.commit()
+    return jsonify(new_incident.serialize()), 201
+ 
+@api.route('/employees/<int:employee_id>/incidents/<int:id>', methods=['PUT'])
+def update_incident(employee_id, id):
+    incident = Incident.query.filter_by(id=id, employee_id=employee_id).first()
+    if not incident:
+        return jsonify({"msg": "Incident not found"}), 404
+    data = request.json
+    if not data:
+        return jsonify({"msg": "Body vacío"}), 400
+    incident.type = data.get("type", incident.type)
+    incident.status = data.get("status", incident.status)
+    incident.category = data.get("category", incident.category)
+    incident.admin_comment = data.get("admin_comment", incident.admin_comment)
+    db.session.commit()
+    return jsonify(incident.serialize()), 200
+ 
+@api.route('/employees/<int:employee_id>/incidents/<int:id>', methods=['DELETE'])
+def delete_incident(employee_id, id):
+    incident = Incident.query.filter_by(id=id, employee_id=employee_id).first()
+    if not incident:
+        return jsonify({"msg": "Incident not found"}), 404
+    db.session.delete(incident)
+    db.session.commit()
+    return jsonify({"msg": f"Incident {id} deleted"}), 200
+
+@api.route('/employees/<int:employee_id>/vacaciones', methods=['GET'])
+def get_vacaciones(employee_id):
+    vacaciones = Vacaciones.query.filter_by(employee_id=employee_id).all()
+    return jsonify([v.serialize() for v in vacaciones]), 200
+
+@api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['GET'])
+def get_vacacion(employee_id, id):
+    vacacion = Vacaciones.query.filter_by(id=id, employee_id=employee_id).first()
+    if not vacacion:
+        return jsonify({"msg": "Vacacion not found"}), 404
+    return jsonify(vacacion.serialize()), 200
+
+@api.route('/employees/<int:employee_id>/vacaciones', methods=['POST'])
+def create_vacacion(employee_id):
+    employee = Employee.query.get(employee_id)
+    if not employee:
+        return jsonify({"msg": "Employee not found"}), 404
+    data = request.json
+    if not data:
+        return jsonify({"msg": "Body vacío"}), 400
+    new_vacacion = Vacaciones(
+        employee_id=employee_id,
+        vacations=data.get("vacations"),
+        taken_vacations=data.get("taken_vacations"),
+        available_vacations=data.get("available_vacations")
+    )
+    db.session.add(new_vacacion)
+    db.session.commit()
+    return jsonify(new_vacacion.serialize()), 201
+
+@api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['PUT'])
+def update_vacacion(employee_id, id):
+    vacacion = Vacaciones.query.filter_by(id=id, employee_id=employee_id).first()
+    if not vacacion:
+        return jsonify({"msg": "Vacacion not found"}), 404
+    data = request.json
+    if not data:
+        return jsonify({"msg": "Body vacío"}), 400
+    vacacion.vacations = data.get("vacations", vacacion.vacations)
+    vacacion.taken_vacations = data.get("taken_vacations", vacacion.taken_vacations)
+    vacacion.available_vacations = data.get("available_vacations", vacacion.available_vacations)
+    db.session.commit()
+    return jsonify(vacacion.serialize()), 200
+
+@api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['DELETE'])
+def delete_vacacion(employee_id, id):
+    vacacion = Vacaciones.query.filter_by(id=id, employee_id=employee_id).first()
+    if not vacacion:
+        return jsonify({"msg": "Vacacion not found"}), 404
+    db.session.delete(vacacion)
+    db.session.commit()
+    return jsonify({"msg": f"Vacacion {id} deleted"}), 200
