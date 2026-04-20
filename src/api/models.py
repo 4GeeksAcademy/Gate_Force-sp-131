@@ -94,7 +94,7 @@ class Employee(db.Model):
 
             "work_records": [wr.serialize() for wr in self.work_records],
             "nominas": [n.serialize() for n in self.nominas],
-            "schedules": [s.serialize() for s in self.schedules]
+            "schedules": [s.serialize() for s in self.schedules],
             "incidents": [i.serialize() for i in self.incidents],
             "vacaciones": [v.serialize() for v in self.vacaciones]
         }
@@ -251,8 +251,8 @@ class Vacaciones(db.Model):
             "employee_id": self.employee_id,
             "day": self.day,
             "start_time": self.start_time.strftime("%H:%M"),
-            "end_time": self.end_time.strftime("%H:%M")
-        }
+            "end_time": self.end_time.strftime("%H:%M"),
+        
             "vacations": self.vacations,
             "taken_vacations": self.taken_vacations,
             "available_vacations": self.available_vacations,
