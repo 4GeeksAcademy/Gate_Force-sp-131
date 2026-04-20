@@ -199,12 +199,6 @@ const handleSubmit = async (e) => {
                         </button>
 
                         <button
-                            onClick={() => navigate(`/incidents/${emp.id}`)}
-                            style={{ marginLeft: "5px", backgroundColor: "#FF9800", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
-                        >
-                            Incidents
-                        </button>
-                        <button
                             onClick={() => deleteEmployee(emp.id)}
                             style={{ marginLeft: "5px", color: "red" }}
                         >
