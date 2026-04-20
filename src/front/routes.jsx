@@ -43,7 +43,7 @@ export const router = createBrowserRouter(
 
 
 
-      <Route path="/incidents/:id" element={<Incidents />} />
+      <Route path="/incidents" element={<Incidents />} />
       <Route path="/vacaciones" element={<Vacaciones />} />
 
 
