@@ -204,14 +204,6 @@ const handleSubmit = async (e) => {
                         >
                             Incidents
                         </button>
-
-                        <button
-                            onClick={() => navigate(`/vacaciones/${emp.id}`)}
-                            style={{ marginLeft: "5px", backgroundColor: "#9C27B0", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
-                        >
-                            Vacaciones
-                        </button>
-
                         <button
                             onClick={() => deleteEmployee(emp.id)}
                             style={{ marginLeft: "5px", color: "red" }}

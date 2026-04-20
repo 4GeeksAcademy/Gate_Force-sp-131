@@ -531,3 +531,15 @@ def delete_vacacion(employee_id, id):
     db.session.delete(vacacion)
     db.session.commit()
     return jsonify({"msg": f"Vacacion {id} deleted"}), 200
+
+# ─── VACACIONES GLOBAL ───────────────────────────────────────────────
+
+@api.route('/vacaciones', methods=['GET'])
+def get_all_vacaciones():
+    vacaciones = Vacaciones.query.all()
+    return jsonify([v.serialize() for v in vacaciones]), 200
+
+@api.route('/employees/simple', methods=['GET'])
+def get_employees_simple():
+    employees = Employee.query.all()
+    return jsonify([{"id": e.id, "first_name": e.first_name, "last_name": e.last_name} for e in employees]), 200
