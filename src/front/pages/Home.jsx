@@ -41,7 +41,7 @@ export const Home = () => {
 				<button className="btn btn-primary btn-lg">Ir a Admin</button>
 			</Link>
 			<Link to="/vacaciones">
-				<button type="button">
+				<button className="btn btn-primary btn-lg">
 					Vacaciones
 				</button>
 			</Link>
