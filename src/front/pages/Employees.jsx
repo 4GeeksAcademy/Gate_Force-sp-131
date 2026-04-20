@@ -191,6 +191,20 @@ export default function EmployeesPage() {
                         </button>
 
                         <button
+                            onClick={() => navigate(`/incidents/${emp.id}`)}
+                            style={{ marginLeft: "5px", backgroundColor: "#FF9800", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
+                        >
+                            Incidents
+                        </button>
+
+                        <button
+                            onClick={() => navigate(`/vacaciones/${emp.id}`)}
+                            style={{ marginLeft: "5px", backgroundColor: "#9C27B0", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
+                        >
+                            Vacaciones
+                        </button>
+
+                        <button
                             onClick={() => deleteEmployee(emp.id)}
                             style={{ marginLeft: "5px", color: "red" }}
                         >
