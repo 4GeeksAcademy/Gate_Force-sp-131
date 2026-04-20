@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom'; // Si usas React Router
 
 export default function EmployeesPage() {
-    const API_URL = import.meta.env.VITE_BACKEND_URL;
+    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
     const navigate = useNavigate();
 
     const [employees, setEmployees] = useState([]);
@@ -28,10 +28,9 @@ export default function EmployeesPage() {
     }, []);
 
     const deleteEmployee = async (id) => {
-        await fetch(`${API_URL}${id}`, {
+        await fetch(`${API_URL}employees/${id}`, {
             method: "DELETE"
         });
-
         getEmployees();
     };
 
@@ -59,25 +58,27 @@ export default function EmployeesPage() {
         });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        const method = editingId ? "PUT" : "POST";
-        const url = editingId
-            ? `${API_URL}employees/${editingId}`
-            : `${API_URL}employees`;
+    const method = editingId ? "PUT" : "POST";
+    const url = editingId
+        ? `${API_URL}employees/${editingId}`
+        : `${API_URL}employees`;
 
-        await fetch(url, {
-            method,
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(formData)
-        });
+    const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+    });
 
-        cancelEdit();
-        getEmployees();
-    };
+    const data = await res.json();
+    console.log("STATUS:", res.status);
+    console.log("RESPONSE:", data);
+
+    cancelEdit();
+    getEmployees();
+};
 
     return (
         <div style={{ padding: "20px" }}>
@@ -168,6 +169,13 @@ export default function EmployeesPage() {
                                 <span>{emp.phone}</span>
                             </div>
                         </div>
+
+                        <button
+                            onClick={() => navigate(`/horarios/${emp.id}`)}
+                            style={{ marginLeft: "5px", backgroundColor: "#FF9800", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
+                        >
+                            Horarios
+                        </button>
 
                         <button
                             onClick={() => navigate(`/nominas/${emp.id}`)}

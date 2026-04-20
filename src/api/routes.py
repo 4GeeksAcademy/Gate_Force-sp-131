@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import request, jsonify, Blueprint
-from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina
+from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina, Schedule
 from flask_cors import CORS
 from datetime import datetime
 
@@ -318,3 +318,88 @@ def create_nomina(employee_id):
     db.session.commit()
 
     return jsonify(new_nomina.serialize()), 201
+
+# ─── HORARIOS CRUD ───────────────────────────────────────────────
+
+def parse_time(t):
+    for fmt in ("%H:%M:%S", "%H:%M"):
+        try:
+            return datetime.strptime(t, fmt)
+        except ValueError:
+            continue
+    raise ValueError(f"Formato de hora inválido: {t}")
+
+
+# GET - Todos los horarios de un empleado
+@api.route('/employees/<int:employee_id>/horarios', methods=['GET'])
+def get_horarios(employee_id):
+    employee = Employee.query.get(employee_id)
+    if not employee:
+        return jsonify({"error": "Empleado no encontrado"}), 404
+
+    schedules = Schedule.query.filter_by(employee_id=employee_id).all()
+    return jsonify([s.serialize() for s in schedules]), 200
+
+
+# POST - Crear horario para un empleado
+@api.route('/employees/<int:employee_id>/horarios', methods=['POST'])
+def create_horario(employee_id):
+    employee = Employee.query.get(employee_id)
+    if not employee:
+        return jsonify({"error": "Empleado no encontrado"}), 404
+
+    body = request.get_json()
+    if not body:
+        return jsonify({"error": "Body vacío"}), 400
+
+    day = body.get("day")
+    start_time = body.get("start_time")
+    end_time = body.get("end_time")
+
+    if not all([day, start_time, end_time]):
+        return jsonify({"error": "day, start_time y end_time son obligatorios"}), 422
+
+    new_schedule = Schedule(
+        employee_id=employee_id,
+        day=day,
+        start_time=parse_time(start_time),
+        end_time=parse_time(end_time)
+    )
+
+    db.session.add(new_schedule)
+    db.session.commit()
+    return jsonify(new_schedule.serialize()), 201
+
+
+# PUT - Editar un horario
+@api.route('/horarios/<int:schedule_id>', methods=['PUT'])
+def update_horario(schedule_id):
+    schedule = Schedule.query.get(schedule_id)
+    if not schedule:
+        return jsonify({"error": "Horario no encontrado"}), 404
+
+    body = request.get_json()
+    if not body:
+        return jsonify({"error": "Body vacío"}), 400
+
+    if "day" in body:
+        schedule.day = body["day"]
+    if "start_time" in body:
+        schedule.start_time = parse_time(body["start_time"])
+    if "end_time" in body:
+        schedule.end_time = parse_time(body["end_time"])
+
+    db.session.commit()
+    return jsonify(schedule.serialize()), 200
+
+
+# DELETE - Borrar un horario
+@api.route('/horarios/<int:schedule_id>', methods=['DELETE'])
+def delete_horario(schedule_id):
+    schedule = Schedule.query.get(schedule_id)
+    if not schedule:
+        return jsonify({"error": "Horario no encontrado"}), 404
+
+    db.session.delete(schedule)
+    db.session.commit()
+    return jsonify({"message": f"Horario {schedule_id} eliminado"}), 200

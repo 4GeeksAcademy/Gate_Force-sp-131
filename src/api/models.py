@@ -69,6 +69,10 @@ class Employee(db.Model):
         "WorkRecord", back_populates="employee", cascade="all, delete")
     nominas = relationship(
         "Nomina", back_populates="employee", cascade="all, delete")
+    manager = relationship(
+        "Manager", back_populates="employee", uselist=False, cascade="all, delete")
+    schedules = relationship(
+        "Schedule", back_populates="employee", cascade="all, delete")
 
     def __repr__(self):
         return f"{self.first_name} {self.last_name}"
@@ -84,7 +88,8 @@ class Employee(db.Model):
 
 
             "work_records": [wr.serialize() for wr in self.work_records],
-            "nominas": [n.serialize() for n in self.nominas]
+            "nominas": [n.serialize() for n in self.nominas],
+            "schedules": [s.serialize() for s in self.schedules]
         }
 
 
@@ -157,4 +162,51 @@ class Nomina(db.Model):
             "id": self.id,
             "month": self.month,
             "document_url": self.document_url
+        }
+
+
+class Manager(db.Model):
+    __tablename__ = "managers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), unique=True, nullable=False
+    )
+
+    # Relación
+    employee = relationship("Employee", back_populates="manager")
+
+    def __repr__(self):
+        return f"Manager(employee_id={self.employee_id})"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "employee_id": self.employee_id
+        }
+
+class Schedule(db.Model):
+    __tablename__ = "schedules"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), nullable=False
+    )
+    day: Mapped[str] = mapped_column(String(20), nullable=False)  # "Monday", "Lunes", etc.
+    start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    # Relación
+    employee = relationship("Employee", back_populates="schedules")
+
+    def __repr__(self):
+        return f"Schedule(employee_id={self.employee_id}, day={self.day})"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "employee_id": self.employee_id,
+            "day": self.day,
+            "start_time": self.start_time.strftime("%H:%M"),
+            "end_time": self.end_time.strftime("%H:%M")
         }

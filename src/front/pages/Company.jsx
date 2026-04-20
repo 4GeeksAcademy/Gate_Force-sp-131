@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 export default function CompaniesPage() {
-    const API_URL = import.meta.env.VITE_BACKEND_URL;
+    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
 
     const [companies, setCompanies] = useState([]);
     const [editingId, setEditingId] = useState(null);
