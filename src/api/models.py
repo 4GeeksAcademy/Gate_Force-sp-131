@@ -131,7 +131,7 @@ class WorkRecord(db.Model):
     check_in: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     check_out: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
-    total_hours: Mapped[int] = mapped_column(nullable=True)
+    total_hours: Mapped[str] = mapped_column(String(50), nullable=True)
 
     status: Mapped[str] = mapped_column(String(50), default="pending")
     location: Mapped[str] = mapped_column(String(120), nullable=True)
@@ -144,6 +144,8 @@ class WorkRecord(db.Model):
     def serialize(self):
         return {
             "id": self.id,
+            "employee_id": self.employee_id,
+            "employee_name": f"{self.employee.first_name} {self.employee.last_name}",
             "check_in": self.check_in,
             "check_out": self.check_out,
             "total_hours": self.total_hours,

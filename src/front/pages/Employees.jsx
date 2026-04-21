@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom'; // Si usas React Router
+import { useNavigate } from 'react-router-dom';
 
 export default function EmployeesPage() {
     const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
@@ -58,27 +58,27 @@ export default function EmployeesPage() {
         });
     };
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-    const method = editingId ? "PUT" : "POST";
-    const url = editingId
-        ? `${API_URL}employees/${editingId}`
-        : `${API_URL}employees`;
+        const method = editingId ? "PUT" : "POST";
+        const url = editingId
+            ? `${API_URL}employees/${editingId}`
+            : `${API_URL}employees`;
 
-    const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-    });
+        const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData)
+        });
 
-    const data = await res.json();
-    console.log("STATUS:", res.status);
-    console.log("RESPONSE:", data);
+        const data = await res.json();
+        console.log("STATUS:", res.status);
+        console.log("RESPONSE:", data);
 
-    cancelEdit();
-    getEmployees();
-};
+        cancelEdit();
+        getEmployees();
+    };
 
     return (
         <div style={{ padding: "20px" }}>
@@ -175,20 +175,6 @@ const handleSubmit = async (e) => {
                             style={{ marginLeft: "5px", backgroundColor: "#FF9800", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
                         >
                             Horarios
-                        </button>
-
-                        <button
-                            onClick={() => navigate(`/nominas/${emp.id}`)}
-                            style={{ marginLeft: "10px", backgroundColor: "#4CAF50", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
-                        >
-                            Nóminas
-                        </button>
-
-                        <button
-                            onClick={() => navigate(`/records/${emp.id}`)}
-                            style={{ marginLeft: "5px", backgroundColor: "#2196F3", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
-                        >
-                            Entradas
                         </button>
 
                         <button
