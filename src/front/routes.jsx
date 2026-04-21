@@ -18,6 +18,9 @@ import Workrecord from "./pages/Workrecord.jsx"
 import WorkRecordForm from "./pages/WorkRecordForm.jsx"
 import Horarios from "./pages/Horarios.jsx"
 import Incidents from "./pages/Incidents.jsx";
+import IncidentNew from "./pages/IncidentNew.jsx";
+import IncidentEdit from "./pages/IncidentEdit.jsx";
+import IncidentDelete from "./pages/IncidentDelete.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
 
 
@@ -46,8 +49,11 @@ export const router = createBrowserRouter(
       <Route path="/work-records/new" element={<WorkRecordForm />} />
       <Route path="/work-records/edit/:id" element={<WorkRecordForm />} />
       <Route path="/horarios/:employeeId" element={<Horarios />} />
-      <Route path="/incidents/:id" element={<Incidents />} />
-      <Route path="/vacaciones/:id" element={<Vacaciones />} />
+
+
+      <Route path="/incidents/new" element={<IncidentNew />} />
+      <Route path="/incidents/edit/:id" element={<IncidentEdit />} />
+      <Route path="/incidents/delete" element={<IncidentDelete />} />
       <Route path="/incidents" element={<Incidents />} />
       <Route path="/vacaciones" element={<Vacaciones />} />
 
