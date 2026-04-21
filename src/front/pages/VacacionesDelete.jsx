@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Vacaciones() {
+export default function VacacionesDelete() {
     const API_URL = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
     const [vacaciones, setVacaciones] = useState([]);
@@ -24,6 +24,13 @@ export default function Vacaciones() {
         getEmployees();
     }, []);
 
+    const deleteVacacion = async (employeeId, vacacionId) => {
+        await fetch(`${API_URL}employees/${employeeId}/vacaciones/${vacacionId}`, {
+            method: "DELETE"
+        });
+        getVacaciones();
+    };
+
     const getEmployeeName = (employeeId) => {
         const emp = employees.find(e => e.id === employeeId);
         return emp ? `${emp.first_name} ${emp.last_name}` : employeeId;
@@ -32,21 +39,13 @@ export default function Vacaciones() {
     return (
         <div style={{ padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h1>Vacaciones</h1>
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <button
-                        onClick={() => navigate("/vacaciones/new")}
-                        style={{ backgroundColor: "#9C27B0", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                    >
-                        Crear
-                    </button>
-                    <button
-                        onClick={() => navigate("/vacaciones/delete")}
-                        style={{ backgroundColor: "#f44336", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                    >
-                        Eliminar
-                    </button>
-                </div>
+                <h1>Delete Vacaciones</h1>
+                <button
+                    onClick={() => navigate("/vacaciones")}
+                    style={{ padding: "8px 16px", cursor: "pointer" }}
+                >
+                    Back
+                </button>
             </div>
             <ul>
                 {vacaciones.map((vacacion) => (
@@ -68,10 +67,10 @@ export default function Vacaciones() {
                             </div>
                         </div>
                         <button
-                            onClick={() => navigate(`/vacaciones/edit/${vacacion.id}`)}
-                            style={{ marginLeft: "15px" }}
+                            onClick={() => deleteVacacion(vacacion.employee_id, vacacion.id)}
+                            style={{ marginLeft: "5px", backgroundColor: "#f44336", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
                         >
-                            Edit
+                            Delete
                         </button>
                     </li>
                 ))}
