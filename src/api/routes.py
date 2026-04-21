@@ -5,6 +5,8 @@ from flask import request, jsonify, Blueprint
 from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina, Incident, Vacaciones, Schedule
 from flask_cors import CORS
 from datetime import datetime
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
+from functools import wraps
 
 api = Blueprint('api', __name__)
 CORS(api)
@@ -68,10 +70,101 @@ def delete_admin(admin_id):
 
 # ─── COMPANY CRUD ───────────────────────────────────────────────
 
+@api.route('/company/login', methods=['POST'])
+def login_company():
+    data = request.json
+
+    if not data or not data.get("nombre_empresa") or not data.get("password"):
+        return jsonify({"msg": "Missing credentials"}), 400
+
+    company = Company.query.filter_by(
+        nombre_empresa=data["nombre_empresa"]
+    ).first()
+
+    if not company or company.password != data["password"]:
+        return jsonify({"msg": "Invalid credentials"}), 401
+
+    token = create_access_token(
+        identity=str(company.id),
+        additional_claims={"role": "company"}
+    )
+
+    return jsonify({
+        "token": token,
+        "role": "company"
+    }), 200
+
+
+def company_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            identity = get_jwt_identity()
+            claims = get_jwt()
+            if not identity or claims.get("role") != "company":
+                return jsonify({"msg": "Acceso denegado: solo empresas"}), 403
+
+        except Exception as e:
+            return jsonify({"msg": str(e)}), 500
+
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+@api.route('/company/signup', methods=['POST'])
+def handle_company_signup():
+    data = request.json
+    try:
+        nombre = data.get("nombre_empresa")
+        pw = data.get("password")
+        reg = data.get("region")
+
+        if not all([nombre, pw, reg]):
+            return jsonify({"msg": "Faltan datos requeridos (nombre, password, region)"}), 400
+
+        nueva_empresa = Company(
+            nombre_empresa=nombre,
+            password=pw,
+            region=reg,
+            is_active=True
+        )
+
+        db.session.add(nueva_empresa)
+        db.session.commit()
+        return jsonify({"msg": "Empresa creada exitosamente"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error: {str(e)}")
+        return jsonify({"msg": "Error interno"}), 500
+
+
 @api.route('/companies', methods=['GET'])
+@jwt_required()
+@company_required
 def get_companies():
     companies = Company.query.all()
     return jsonify([c.serialize() for c in companies]), 200
+
+
+@api.route('/company/dashboard', methods=['GET'])
+@jwt_required()
+def get_company_dashboard():
+    try:
+        company_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims.get("role") != "company":
+            return jsonify({"msg": "Acceso restringido a empresas"}), 403
+        company = Company.query.get(company_id)
+
+        if not company:
+            return jsonify({"msg": "Empresa no encontrada"}), 404
+
+        return jsonify(company.serialize()), 200
+
+    except Exception as e:
+        print(f"Error en dashboard: {str(e)}")
+        return jsonify({"msg": str(e)}), 500
 
 
 @api.route('/companies/<int:id>', methods=['GET'])
@@ -605,10 +698,12 @@ def delete_vacacion(employee_id, id):
 
 # ─── VACACIONES GLOBAL ───────────────────────────────────────────────
 
+
 @api.route('/vacaciones', methods=['GET'])
 def get_all_vacaciones():
     vacaciones = Vacaciones.query.all()
     return jsonify([v.serialize() for v in vacaciones]), 200
+
 
 @api.route('/employees/simple', methods=['GET'])
 def get_employees_simple():
@@ -616,6 +711,7 @@ def get_employees_simple():
     return jsonify([{"id": e.id, "first_name": e.first_name, "last_name": e.last_name} for e in employees]), 200
 
 # ─── INCIDENTS GLOBAL ───────────────────────────────────────────────
+
 
 @api.route('/incidents', methods=['GET'])
 def get_all_incidents():

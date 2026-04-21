@@ -19,6 +19,11 @@ import WorkRecordForm from "./pages/WorkRecordForm.jsx"
 import Horarios from "./pages/Horarios.jsx"
 import Incidents from "./pages/Incidents.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
+import LoginCompany from "./pages/LoginCompany.jsx";
+import DashBoardCompany from "./pages/DashBoardCompany.jsx"
+import RutaProtegida from "./components/RutaProtegida.jsx"
+import SignupCompany from "./pages/SignupCompany.jsx";
+
 
 
 export const router = createBrowserRouter(
@@ -50,6 +55,17 @@ export const router = createBrowserRouter(
       <Route path="/vacaciones/:id" element={<Vacaciones />} />
       <Route path="/incidents" element={<Incidents />} />
       <Route path="/vacaciones" element={<Vacaciones />} />
+      <Route path="/login-company" element={<LoginCompany />} />
+      <Route
+        path="/company-dashboard"
+        element={
+          <RutaProtegida allowedRole="company">
+            <DashBoardCompany />
+          </RutaProtegida>
+        }
+      />
+      <Route path="/signup-company" element={<SignupCompany />} />
+
 
 
     </Route>
