@@ -44,6 +44,7 @@ export default function WorkRecordPage() {
                     <p><strong>Check-in:</strong> {new Date(r.check_in).toLocaleString()}</p>
                     <p><strong>Check-out:</strong> {new Date(r.check_out).toLocaleString()}</p>
                     <p><strong>Horas:</strong> {r.total_hours}</p>
+                    <p><strong>Status:</strong> {r.status}</p>
 
                     <button onClick={() => navigate(`/work-records/edit/${r.id}`)}>
                         Editar

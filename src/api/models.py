@@ -170,7 +170,9 @@ class Nomina(db.Model):
         return {
             "id": self.id,
             "month": self.month,
-            "document_url": self.document_url
+            "document_url": self.document_url,
+            "employee_id": self.employee_id,
+            "employee_name": f"{self.employee.first_name} {self.employee.last_name}"
         }
 
 
