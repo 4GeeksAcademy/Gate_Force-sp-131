@@ -238,78 +238,119 @@ def delete_employee(id):
 # ─── WORKRECORD CRUD ───────────────────────────────────────────────
 
 
-@api.route('/employees/<int:employee_id>/work-records', methods=['GET'])
-def get_work_records(employee_id):
-    records = WorkRecord.query.filter_by(employee_id=employee_id).all()
+@api.route('/work-records', methods=['GET'])
+def get_work_records():
+    employee_id = request.args.get("employee_id")
+
+    query = WorkRecord.query
+
+    if employee_id:
+        query = query.filter_by(employee_id=employee_id)
+
+    records = query.all()
+
     return jsonify([r.serialize() for r in records]), 200
 
 
-@api.route('/employees/<int:employee_id>/check-in', methods=['POST'])
-def check_in(employee_id):
-    employee = Employee.query.get(employee_id)
+@api.route('/work-records/<int:id>', methods=['GET'])
+def get_work_record(id):
+    record = WorkRecord.query.get(id)
 
-    if not employee:
-        return jsonify({"msg": "Employee not found"}), 404
+    if not record:
+        return jsonify({"msg": "Not found"}), 404
 
-    open_record = WorkRecord.query.filter_by(
-        employee_id=employee_id,
-        check_out=None
-    ).first()
+    return jsonify(record.serialize()), 200
 
-    if open_record:
-        return jsonify({"msg": "Already checked in"}), 400
+
+@api.route('/work-records', methods=['POST'])
+def create_work_record():
+    data = request.json
+
+    check_in = datetime.fromisoformat(data["check_in"])
+    check_out = None
+    total_hours = None
+
+    if data.get("check_out"):
+        check_out = datetime.fromisoformat(data["check_out"])
+
+    total_seconds = (check_out - check_in).total_seconds()
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+
+    total_hours = f"{hours}h {minutes:02d}min"
 
     new_record = WorkRecord(
-        employee_id=employee_id,
-        check_in=datetime.utcnow(),
-        status="in_progress"
+        employee_id=data["employee_id"],
+        check_in=check_in,
+        check_out=check_out,
+        total_hours=total_hours,
+        status=data.get("status", "pending")
     )
 
     db.session.add(new_record)
     db.session.commit()
 
-    return jsonify({"msg": "Check-in successful"}), 201
+    return jsonify(new_record.serialize()), 201
 
 
-@api.route('/employees/<int:employee_id>/check-out', methods=['PUT'])
-def check_out(employee_id):
-    record = WorkRecord.query.filter_by(
-        employee_id=employee_id,
-        check_out=None
-    ).first()
+@api.route('/work-records/<int:id>', methods=['PUT'])
+def update_work_record(id):
+    record = WorkRecord.query.get(id)
 
     if not record:
-        return jsonify({"msg": "No active check-in"}), 404
+        return jsonify({"msg": "Not found"}), 404
 
-    record.check_out = datetime.utcnow()
+    data = request.json
 
-    delta = record.check_out - record.check_in
-    record.total_hours = int(delta.total_seconds() / 3600)
+    if data.get("check_in"):
+        record.check_in = datetime.fromisoformat(data["check_in"])
 
-    record.status = "completed"
+    if data.get("check_out"):
+        record.check_out = datetime.fromisoformat(data["check_out"])
+
+    if record.check_in and record.check_out:
+        total_seconds = (record.check_out - record.check_in).total_seconds()
+
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+
+    record.total_hours = f"{hours}h {minutes:02d}min"
 
     db.session.commit()
 
-    return jsonify({"msg": "Check-out successful"}), 200
+    return jsonify(record.serialize()), 200
+
+
+@api.route('/work-records/<int:id>', methods=['DELETE'])
+def delete_work_record(id):
+    record = WorkRecord.query.get(id)
+
+    if not record:
+        return jsonify({"msg": "Not found"}), 404
+
+    db.session.delete(record)
+    db.session.commit()
+
+    return jsonify({"msg": "Deleted"}), 200
 
 
 # ─── NOMINAS CRUD ───────────────────────────────────────────────
 
-@api.route('/employees/<int:employee_id>/nominas', methods=['GET'])
-def get_nominas(employee_id):
-    nominas = Nomina.query.filter_by(employee_id=employee_id).all()
+@api.route('/nominas', methods=['GET'])
+def get_nominas():
+    nominas = Nomina.query.all()
     return jsonify([n.serialize() for n in nominas]), 200
 
 
-@api.route('/employees/<int:employee_id>/nominas', methods=['POST'])
-def create_nomina(employee_id):
+@api.route('/nominas', methods=['POST'])
+def create_nomina():
     data = request.json
 
-    if not data or not data.get("month"):
-        return jsonify({"msg": "Month is required"}), 400
+    if not data.get("employee_id") or not data.get("month"):
+        return jsonify({"msg": "Missing data"}), 400
 
     new_nomina = Nomina(
-        employee_id=employee_id,
+        employee_id=data["employee_id"],
         month=data["month"],
         document_url=data.get("document_url")
     )
@@ -318,6 +359,36 @@ def create_nomina(employee_id):
     db.session.commit()
 
     return jsonify(new_nomina.serialize()), 201
+
+
+@api.route('/nominas/<int:id>', methods=['PUT'])
+def update_nomina(id):
+    nomina = Nomina.query.get(id)
+
+    if not nomina:
+        return jsonify({"msg": "Not found"}), 404
+
+    data = request.json
+
+    nomina.month = data.get("month", nomina.month)
+    nomina.document_url = data.get("document_url", nomina.document_url)
+
+    db.session.commit()
+
+    return jsonify(nomina.serialize()), 200
+
+
+@api.route('/nominas/<int:id>', methods=['DELETE'])
+def delete_nomina(id):
+    nomina = Nomina.query.get(id)
+
+    if not nomina:
+        return jsonify({"msg": "Not found"}), 404
+
+    db.session.delete(nomina)
+    db.session.commit()
+
+    return jsonify({"msg": "Deleted"}), 200
 
 # ─── HORARIOS CRUD ───────────────────────────────────────────────
 

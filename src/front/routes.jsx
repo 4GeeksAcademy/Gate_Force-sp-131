@@ -13,7 +13,9 @@ import Company from "./pages/Company";
 import Employees from "./pages/Employees";
 import Admin from "./components/Admin.jsx";
 import Nominas from "./pages/Nominas.jsx";
+import NominasForm from "./pages/NominasForm.jsx";
 import Workrecord from "./pages/Workrecord.jsx"
+import WorkRecordForm from "./pages/WorkRecordForm.jsx"
 import Horarios from "./pages/Horarios.jsx"
 import Incidents from "./pages/Incidents.jsx";
 import IncidentNew from "./pages/IncidentNew.jsx";
@@ -40,8 +42,12 @@ export const router = createBrowserRouter(
       <Route path="/employees" element={<Employees />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/company" element={<Company />} />
-      <Route path="/nominas/:id" element={<Nominas />} />
-      <Route path="/records/:id" element={<Workrecord />} />
+      <Route path="/nominas" element={<Nominas />} />
+      <Route path="/nominas/new" element={<NominasForm />} />
+      <Route path="/nominas/edit/:id" element={<NominasForm />} />
+      <Route path="/work-records" element={<Workrecord />} />
+      <Route path="/work-records/new" element={<WorkRecordForm />} />
+      <Route path="/work-records/edit/:id" element={<WorkRecordForm />} />
       <Route path="/horarios/:employeeId" element={<Horarios />} />
 
 
