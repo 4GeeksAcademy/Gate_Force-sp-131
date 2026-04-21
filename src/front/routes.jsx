@@ -45,6 +45,8 @@ export const router = createBrowserRouter(
       <Route path="/horarios/:employeeId" element={<Horarios />} />
       <Route path="/incidents/:id" element={<Incidents />} />
       <Route path="/vacaciones/:id" element={<Vacaciones />} />
+      <Route path="/incidents" element={<Incidents />} />
+      <Route path="/vacaciones" element={<Vacaciones />} />
 
 
     </Route>
