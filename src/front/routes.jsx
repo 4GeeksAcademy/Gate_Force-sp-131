@@ -1,10 +1,6 @@
 // Import necessary components and functions from react-router-dom.
 
-import {
-  createBrowserRouter,
-  createRoutesFromElements,
-  Route,
-} from "react-router-dom";
+import {createBrowserRouter, createRoutesFromElements, Route,} from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
@@ -22,6 +18,9 @@ import IncidentNew from "./pages/IncidentNew.jsx";
 import IncidentEdit from "./pages/IncidentEdit.jsx";
 import IncidentDelete from "./pages/IncidentDelete.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
+import VacacionesNew from "./pages/VacacionesNew.jsx";
+import VacacionesEdit from "./pages/VacacionesEdit.jsx";
+import VacacionesDelete from "./pages/VacacionesDelete.jsx";
 
 
 export const router = createBrowserRouter(
@@ -56,6 +55,9 @@ export const router = createBrowserRouter(
       <Route path="/incidents/delete" element={<IncidentDelete />} />
       <Route path="/incidents" element={<Incidents />} />
       <Route path="/vacaciones" element={<Vacaciones />} />
+      <Route path="/vacaciones/new" element={<VacacionesNew />} />
+      <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
+      <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
 
 
     </Route>
