@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function WorkRecordForm() {
-    const { id } = useParams(); // si existe → editar
+    const { id } = useParams();
     const navigate = useNavigate();
 
     const [employees, setEmployees] = useState([]);
@@ -17,14 +17,27 @@ export default function WorkRecordForm() {
         .replace(/\/$/, "")
         .replace(/\/api$/, "") + "/api/";
 
+    const authFetch = (url, options = {}) => {
+        const token = localStorage.getItem("token");
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            }
+        });
+    };
+
     useEffect(() => {
-        fetch(`${API_URL}employees`)
+        authFetch(`${API_URL}employees`)
             .then(res => res.json())
-            .then(data => setEmployees(data));
+            .then(data => setEmployees(Array.isArray(data) ? data : []));
     }, []);
+
     useEffect(() => {
         if (id) {
-            fetch(`${API_URL}work-records/${id}`)
+            authFetch(`${API_URL}work-records/${id}`)
                 .then(res => res.json())
                 .then(data => {
                     setForm({
@@ -38,10 +51,7 @@ export default function WorkRecordForm() {
     }, [id]);
 
     const handleChange = (e) => {
-        setForm({
-            ...form,
-            [e.target.name]: e.target.value
-        });
+        setForm({ ...form, [e.target.name]: e.target.value });
     };
 
     const toUTC = (dateStr) => {
@@ -51,15 +61,11 @@ export default function WorkRecordForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         const method = id ? "PUT" : "POST";
-        const url = id
-            ? `${API_URL}work-records/${id}`
-            : `${API_URL}work-records`;
+        const url = id ? `${API_URL}work-records/${id}` : `${API_URL}work-records`;
 
-        await fetch(url, {
+        await authFetch(url, {
             method,
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 employee_id: parseInt(form.employee_id),
                 check_in: toUTC(form.check_in),
@@ -76,12 +82,7 @@ export default function WorkRecordForm() {
             <h1>{id ? "Editar registro" : "Crear registro"}</h1>
 
             <form onSubmit={handleSubmit}>
-                <select
-                    name="employee_id"
-                    value={form.employee_id}
-                    onChange={handleChange}
-                    required
-                >
+                <select name="employee_id" value={form.employee_id} onChange={handleChange} required>
                     <option value="">Seleccionar empleado</option>
                     {employees.map(emp => (
                         <option key={emp.id} value={emp.id}>
@@ -105,18 +106,12 @@ export default function WorkRecordForm() {
                     onChange={handleChange}
                 />
 
-                <select
-                    name="status"
-                    value={form.status}
-                    onChange={handleChange}
-                >
+                <select name="status" value={form.status} onChange={handleChange}>
                     <option value="pending">Pending</option>
                     <option value="completed">Completed</option>
                 </select>
 
-                <button type="submit">
-                    {id ? "Actualizar" : "Crear"}
-                </button>
+                <button type="submit">{id ? "Actualizar" : "Crear"}</button>
             </form>
         </div>
     );

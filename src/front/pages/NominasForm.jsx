@@ -16,17 +16,27 @@ export default function NominaForm() {
         .replace(/\/$/, "")
         .replace(/\/api$/, "") + "/api/";
 
-    // cargar empleados
+    const authFetch = (url, options = {}) => {
+        const token = localStorage.getItem("token");
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            }
+        });
+    };
+
     useEffect(() => {
-        fetch(`${API_URL}employees`)
+        authFetch(`${API_URL}employees`)
             .then(res => res.json())
-            .then(data => setEmployees(data));
+            .then(data => setEmployees(Array.isArray(data) ? data : []));
     }, []);
 
-    // cargar si es edición
     useEffect(() => {
         if (id) {
-            fetch(`${API_URL}nominas/${id}`)
+            authFetch(`${API_URL}nominas/${id}`)
                 .then(res => res.json())
                 .then(data => {
                     setForm({
@@ -39,23 +49,16 @@ export default function NominaForm() {
     }, [id]);
 
     const handleChange = (e) => {
-        setForm({
-            ...form,
-            [e.target.name]: e.target.value
-        });
+        setForm({ ...form, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         const method = id ? "PUT" : "POST";
-        const url = id
-            ? `${API_URL}nominas/${id}`
-            : `${API_URL}nominas`;
+        const url = id ? `${API_URL}nominas/${id}` : `${API_URL}nominas`;
 
-        await fetch(url, {
+        await authFetch(url, {
             method,
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 employee_id: parseInt(form.employee_id),
                 month: form.month,
@@ -71,12 +74,7 @@ export default function NominaForm() {
             <h1>{id ? "Editar Nómina" : "Crear Nómina"}</h1>
 
             <form onSubmit={handleSubmit}>
-                <select
-                    name="employee_id"
-                    value={form.employee_id}
-                    onChange={handleChange}
-                    required
-                >
+                <select name="employee_id" value={form.employee_id} onChange={handleChange} required>
                     <option value="">Seleccionar empleado</option>
                     {employees.map(emp => (
                         <option key={emp.id} value={emp.id}>
@@ -102,9 +100,7 @@ export default function NominaForm() {
                     onChange={handleChange}
                 />
 
-                <button type="submit">
-                    {id ? "Actualizar" : "Crear"}
-                </button>
+                <button type="submit">{id ? "Actualizar" : "Crear"}</button>
             </form>
         </div>
     );

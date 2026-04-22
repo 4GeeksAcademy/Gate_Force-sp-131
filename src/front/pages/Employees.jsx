@@ -5,9 +5,20 @@ export default function EmployeesPage() {
     const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
     const navigate = useNavigate();
 
+    const authFetch = (url, options = {}) => {
+        const token = localStorage.getItem("token");
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            }
+        });
+    };
+
     const [employees, setEmployees] = useState([]);
     const [editingId, setEditingId] = useState(null);
-
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
@@ -18,9 +29,14 @@ export default function EmployeesPage() {
     });
 
     const getEmployees = async () => {
-        const res = await fetch(`${API_URL}employees`);
+        const res = await authFetch(`${API_URL}employees`);
         const data = await res.json();
-        setEmployees(data);
+        if (Array.isArray(data)) {
+            setEmployees(data);
+        } else {
+            console.error("Error al obtener empleados:", data);
+            setEmployees([]);
+        }
     };
 
     useEffect(() => {
@@ -28,15 +44,19 @@ export default function EmployeesPage() {
     }, []);
 
     const deleteEmployee = async (id) => {
-        await fetch(`${API_URL}employees/${id}`, {
-            method: "DELETE"
-        });
+        await authFetch(`${API_URL}employees/${id}`, { method: "DELETE" });
         getEmployees();
     };
 
     const startEdit = (emp) => {
         setEditingId(emp.id);
-        setFormData(emp);
+        setFormData({
+            first_name: emp.first_name,
+            last_name: emp.last_name,
+            email: emp.email,
+            phone: emp.phone || "",
+            position: emp.position || ""
+        });
     };
 
     const cancelEdit = () => {
@@ -52,10 +72,7 @@ export default function EmployeesPage() {
     };
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
@@ -66,9 +83,8 @@ export default function EmployeesPage() {
             ? `${API_URL}employees/${editingId}`
             : `${API_URL}employees`;
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(formData)
         });
 
@@ -84,9 +100,7 @@ export default function EmployeesPage() {
         <div style={{ padding: "20px" }}>
             <h1>Employees</h1>
 
-            <form
-                onSubmit={handleSubmit}
-            >
+            <form onSubmit={handleSubmit}>
                 <h3>{editingId ? "Edit Employee" : "Create Employee"}</h3>
 
                 <input
@@ -96,7 +110,6 @@ export default function EmployeesPage() {
                     onChange={handleChange}
                     required
                 />
-
                 <input
                     name="last_name"
                     placeholder="Last name"
@@ -104,7 +117,6 @@ export default function EmployeesPage() {
                     onChange={handleChange}
                     required
                 />
-
                 <input
                     name="email"
                     placeholder="Email"
@@ -112,7 +124,6 @@ export default function EmployeesPage() {
                     onChange={handleChange}
                     required
                 />
-
                 {!editingId && (
                     <input
                         name="password"
@@ -123,14 +134,12 @@ export default function EmployeesPage() {
                         required
                     />
                 )}
-
                 <input
                     name="phone"
                     placeholder="Phone"
                     value={formData.phone || ""}
                     onChange={handleChange}
                 />
-
                 <input
                     name="position"
                     placeholder="Position"
@@ -142,7 +151,6 @@ export default function EmployeesPage() {
                     <button type="submit">
                         {editingId ? "Update" : "Create"}
                     </button>
-
                     {editingId && (
                         <button type="button" onClick={cancelEdit}>
                             Cancel
