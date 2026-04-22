@@ -249,7 +249,7 @@ def get_employee_dashboard():
 
 @api.route('/employees', methods=['GET'])
 @jwt_required()
-@company_or_manager_required
+#@company_or_manager_required
 def get_employees():
     employees = Employee.query.all()
     return jsonify([e.serialize() for e in employees]), 200
@@ -257,7 +257,7 @@ def get_employees():
 
 @api.route('/employees/simple', methods=['GET'])
 @jwt_required()
-@company_or_manager_required
+# #@company_or_manager_required
 def get_employees_simple():
     employees = Employee.query.all()
     return jsonify([{"id": e.id, "first_name": e.first_name, "last_name": e.last_name} for e in employees]), 200
@@ -265,7 +265,7 @@ def get_employees_simple():
 
 @api.route('/employees/<int:id>', methods=['GET'])
 @jwt_required()
-@company_or_manager_required
+# #@company_or_manager_required
 def get_employee(id):
     employee = Employee.query.get(id)
     if not employee:
@@ -275,7 +275,7 @@ def get_employee(id):
 
 @api.route('/employees', methods=['POST'])
 @jwt_required()
-@company_or_manager_required
+#@company_or_manager_required
 def create_employee():
     data = request.json
     if not data:
@@ -299,7 +299,7 @@ def create_employee():
 
 @api.route('/employees/<int:id>', methods=['PUT'])
 @jwt_required()
-@company_or_manager_required
+#@company_or_manager_required
 def update_employee(id):
     employee = Employee.query.get(id)
     if not employee:
@@ -320,7 +320,7 @@ def update_employee(id):
 
 @api.route('/employees/<int:id>', methods=['DELETE'])
 @jwt_required()
-@company_or_manager_required
+#@company_or_manager_required
 def delete_employee(id):
     employee = Employee.query.get(id)
     if not employee:
