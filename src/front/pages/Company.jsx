@@ -3,9 +3,20 @@ import { useEffect, useState } from "react";
 export default function CompaniesPage() {
     const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
 
+    const authFetch = (url, options = {}) => {
+        const token = localStorage.getItem("token");
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            }
+        });
+    };
+
     const [companies, setCompanies] = useState([]);
     const [editingId, setEditingId] = useState(null);
-
     const [formData, setFormData] = useState({
         nombre_empresa: "",
         password: "",
@@ -14,9 +25,14 @@ export default function CompaniesPage() {
     });
 
     const getCompanies = async () => {
-        const res = await fetch(`${API_URL}companies`);
+        const res = await authFetch(`${API_URL}companies`);
         const data = await res.json();
-        setCompanies(data);
+        if (Array.isArray(data)) {
+            setCompanies(data);
+        } else {
+            console.error("Error al obtener companies:", data);
+            setCompanies([]);
+        }
     };
 
     useEffect(() => {
@@ -24,13 +40,17 @@ export default function CompaniesPage() {
     }, []);
 
     const deleteCompany = async (id) => {
-        await fetch(`${API_URL}companies/${id}`, { method: "DELETE" });
+        await authFetch(`${API_URL}companies/${id}`, { method: "DELETE" });
         getCompanies();
     };
 
     const startEdit = (company) => {
         setEditingId(company.id);
-        setFormData(company);
+        setFormData({
+            nombre_empresa: company.nombre_empresa,
+            region: company.region,
+            is_active: company.is_active
+        });
     };
 
     const cancelEdit = () => {
@@ -48,9 +68,8 @@ export default function CompaniesPage() {
         const method = editingId ? "PUT" : "POST";
         const url = editingId ? `${API_URL}companies/${editingId}` : `${API_URL}companies`;
 
-        await fetch(url, {
+        await authFetch(url, {
             method,
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(formData)
         });
 
@@ -72,7 +91,6 @@ export default function CompaniesPage() {
                     onChange={handleChange}
                     required
                 />
-
                 <input
                     name="region"
                     placeholder="Region"
@@ -80,7 +98,6 @@ export default function CompaniesPage() {
                     onChange={handleChange}
                     required
                 />
-
                 {!editingId && (
                     <input
                         name="password"
@@ -91,7 +108,6 @@ export default function CompaniesPage() {
                         required
                     />
                 )}
-
                 <select name="is_active" value={formData.is_active} onChange={handleChange}>
                     <option value="true">Active</option>
                     <option value="false">Inactive</option>
@@ -109,7 +125,6 @@ export default function CompaniesPage() {
                 {companies.map((company) => (
                     <li key={company.id} style={{ marginBottom: "10px" }}>
                         {company.nombre_empresa} - {company.region} - {company.is_active ? "✅ Active" : "❌ Inactive"}
-
                         <button onClick={() => startEdit(company)} style={{ marginLeft: "10px" }}>Edit</button>
                         <button onClick={() => deleteCompany(company.id)} style={{ marginLeft: "5px" }}>Delete</button>
                     </li>
