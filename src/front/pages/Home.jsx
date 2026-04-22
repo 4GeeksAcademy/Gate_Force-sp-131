@@ -39,6 +39,9 @@ export const Home = () => {
 			<Link to="/login-company">
 				<button className="btn btn-primary">LOGIN COMPANYS</button>
 			</Link>
+			<Link to="/login-employee">
+				<button className="btn btn-primary">LOGIN EMPLOYEES</button>
+			</Link>
 			<h1 className="display-4">Hello Rigo!!</h1>
 			<Link to="/admin">
 				<button className="btn btn-primary btn-lg">Ir a Admin</button>

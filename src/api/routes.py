@@ -717,3 +717,76 @@ def get_employees_simple():
 def get_all_incidents():
     incidents = Incident.query.all()
     return jsonify([i.serialize() for i in incidents]), 200
+
+# ─── EMPLOYEE LOGIN ───────────────────────────────────────────────
+
+
+@api.route('/employee/login', methods=['POST'])
+def login_employee():
+    data = request.json
+
+    if not data or not data.get("email") or not data.get("password"):
+        return jsonify({"msg": "Missing credentials"}), 400
+
+    employee = Employee.query.filter_by(email=data["email"]).first()
+
+    if not employee or employee.password != data["password"]:
+        return jsonify({"msg": "Invalid credentials"}), 401
+
+    token = create_access_token(
+        identity=str(employee.id),
+        additional_claims={"role": "employee"}
+    )
+
+    return jsonify({
+        "token": token,
+        "role": "employee"
+    }), 200
+
+
+@api.route('/employee/signup', methods=['POST'])
+# ─── EMPLOYEE SINGUP ───────────────────────────────────────────────
+def signup_employee():
+    data = request.json
+
+    if not data:
+        return jsonify({"msg": "Body vacío"}), 400
+
+    required_fields = ["first_name", "last_name", "email", "password"]
+    for field in required_fields:
+        if not data.get(field):
+            return jsonify({"msg": f"{field} is required"}), 400
+
+    existing = Employee.query.filter_by(email=data["email"]).first()
+    if existing:
+        return jsonify({"msg": "Email already exists"}), 400
+
+    new_employee = Employee(
+        first_name=data["first_name"],
+        last_name=data["last_name"],
+        email=data["email"],
+        phone=data.get("phone"),
+        password=data["password"],
+        position=data.get("position"),
+        is_active=True
+    )
+    db.session.add(new_employee)
+    db.session.commit()
+    return jsonify({"msg": "Employee created successfully"}), 201
+
+
+@api.route('/employee/dashboard', methods=['GET'])
+@jwt_required()
+def get_employee_dashboard():
+    try:
+        employee_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims.get("role") != "employee":
+            return jsonify({"msg": "Acceso restringido a empleados"}), 403
+        employee = Employee.query.get(employee_id)
+        if not employee:
+            return jsonify({"msg": "Empleado no encontrado"}), 404
+        return jsonify(employee.serialize()), 200
+    except Exception as e:
+        print(f"Error en dashboard: {str(e)}")
+        return jsonify({"msg": str(e)}), 500
