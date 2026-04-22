@@ -1,10 +1,6 @@
 // Import necessary components and functions from react-router-dom.
 
-import {
-  createBrowserRouter,
-  createRoutesFromElements,
-  Route,
-} from "react-router-dom";
+import {createBrowserRouter, createRoutesFromElements, Route,} from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
@@ -18,12 +14,18 @@ import Workrecord from "./pages/Workrecord.jsx"
 import WorkRecordForm from "./pages/WorkRecordForm.jsx"
 import Horarios from "./pages/Horarios.jsx"
 import Incidents from "./pages/Incidents.jsx";
+import IncidentNew from "./pages/IncidentNew.jsx";
+import IncidentEdit from "./pages/IncidentEdit.jsx";
+import IncidentDelete from "./pages/IncidentDelete.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
 import LoginCompany from "./pages/LoginCompany.jsx";
 import DashBoardCompany from "./pages/DashBoardCompany.jsx"
 import RutaProtegida from "./components/RutaProtegida.jsx"
 import SignupCompany from "./pages/SignupCompany.jsx";
 
+import VacacionesNew from "./pages/VacacionesNew.jsx";
+import VacacionesEdit from "./pages/VacacionesEdit.jsx";
+import VacacionesDelete from "./pages/VacacionesDelete.jsx";
 
 
 export const router = createBrowserRouter(
@@ -51,8 +53,11 @@ export const router = createBrowserRouter(
       <Route path="/work-records/new" element={<WorkRecordForm />} />
       <Route path="/work-records/edit/:id" element={<WorkRecordForm />} />
       <Route path="/horarios/:employeeId" element={<Horarios />} />
-      <Route path="/incidents/:id" element={<Incidents />} />
-      <Route path="/vacaciones/:id" element={<Vacaciones />} />
+
+
+      <Route path="/incidents/new" element={<IncidentNew />} />
+      <Route path="/incidents/edit/:id" element={<IncidentEdit />} />
+      <Route path="/incidents/delete" element={<IncidentDelete />} />
       <Route path="/incidents" element={<Incidents />} />
       <Route path="/vacaciones" element={<Vacaciones />} />
       <Route path="/login-company" element={<LoginCompany />} />
@@ -66,6 +71,9 @@ export const router = createBrowserRouter(
       />
       <Route path="/signup-company" element={<SignupCompany />} />
 
+      <Route path="/vacaciones/new" element={<VacacionesNew />} />
+      <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
+      <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
 
 
     </Route>

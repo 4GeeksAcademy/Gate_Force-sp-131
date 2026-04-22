@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Incidents() {
+export default function IncidentDelete() {
     const API_URL = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
     const [incidents, setIncidents] = useState([]);
@@ -24,6 +24,13 @@ export default function Incidents() {
         getEmployees();
     }, []);
 
+    const deleteIncident = async (employeeId, incidentId) => {
+        await fetch(`${API_URL}employees/${employeeId}/incidents/${incidentId}`, {
+            method: "DELETE"
+        });
+        getIncidents();
+    };
+
     const getEmployeeName = (employeeId) => {
         const emp = employees.find(e => e.id === employeeId);
         return emp ? `${emp.first_name} ${emp.last_name}` : employeeId;
@@ -32,21 +39,13 @@ export default function Incidents() {
     return (
         <div style={{ padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h1>Incidents</h1>
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <button
-                        onClick={() => navigate("/incidents/new")}
-                        style={{ backgroundColor: "#FF9800", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                    >
-                        Crear
-                    </button>
-                    <button
-                        onClick={() => navigate("/incidents/delete")}
-                        style={{ backgroundColor: "#f44336", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                    >
-                        Eliminar
-                    </button>
-                </div>
+                <h1>Delete Incidents</h1>
+                <button
+                    onClick={() => navigate("/incidents")}
+                    style={{ padding: "8px 16px", cursor: "pointer" }}
+                >
+                    Back
+                </button>
             </div>
             <ul>
                 {incidents.map((incident) => (
@@ -69,10 +68,10 @@ export default function Incidents() {
                             </div>
                         </div>
                         <button
-                            onClick={() => navigate(`/incidents/edit/${incident.id}`)}
-                            style={{ marginLeft: "15px" }}
+                            onClick={() => deleteIncident(incident.employee_id, incident.id)}
+                            style={{ marginLeft: "5px", backgroundColor: "#f44336", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
                         >
-                            Edit
+                            Delete
                         </button>
                     </li>
                 ))}
