@@ -1,99 +1,94 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const DashboardEmployee = () => {
     const { store, actions } = useGlobalReducer();
     const navigate = useNavigate();
-    const [employee, setEmployee] = useState(null);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const init = async () => {
-            const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
-            const token = store.token || localStorage.getItem("token");
-            const res = await fetch(`${API_URL}employee/dashboard`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setEmployee(data);
-            } else {
-                navigate("/login-employee");
-            }
-            setLoading(false);
+        const load = async () => {
+            const ok = await actions.getEmployeeData();
+            if (!ok) navigate("/login-employee");
         };
-        init();
+        load();
     }, []);
+
+    const emp = store.employeeInfo;
 
     const handleLogout = () => {
         actions.logout();
         navigate("/login-employee");
     };
 
-    if (loading) return (
-        <div className="d-flex justify-content-center align-items-center vh-100">
-            <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Cargando...</span>
-            </div>
-        </div>
-    );
-
     return (
-        <div className="container py-5">
-            <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <div>
-                    <h2 className="fw-bold text-primary">Panel de Empleado</h2>
-                    <p className="text-muted mb-0">Bienvenido, {employee?.first_name}</p>
-                </div>
-                <button onClick={handleLogout} className="btn btn-outline-danger d-flex align-items-center gap-2">
-                    <i className="fas fa-sign-out-alt"></i> Cerrar Sesión
+        <div className="container mt-5">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h2 className="fw-bold">Portal Empleado</h2>
+                <button className="btn btn-outline-danger" onClick={handleLogout}>
+                    Cerrar sesión
                 </button>
             </div>
 
-            <div className="row g-4">
-                <div className="col-md-4">
-                    <div className="card shadow-sm border-0 h-100">
-                        <div className="card-body text-center">
-                            <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: "80px", height: "80px" }}>
-                                <i className="fas fa-user fa-2x text-secondary"></i>
+            {emp ? (
+                <>
+                    <div className="card shadow p-4 mb-4" style={{ maxWidth: "600px", margin: "0 auto" }}>
+                        <div className="d-flex align-items-center mb-4 gap-3">
+                            <div className="bg-dark rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "72px", height: "72px", fontSize: "32px" }}>
+                                👤
                             </div>
-                            <h4 className="card-title mb-1">{employee?.first_name} {employee?.last_name}</h4>
-                            <span className="badge bg-primary px-3 py-2 rounded-pill">
-                                {employee?.position || "Sin cargo"}
-                            </span>
+                            <div>
+                                <h4 className="fw-bold mb-0">{emp.first_name} {emp.last_name}</h4>
+                                <p className="text-muted mb-0">{emp.position || "Sin cargo asignado"}</p>
+                            </div>
                         </div>
+                        <ul className="list-group list-group-flush">
+                            <li className="list-group-item d-flex justify-content-between">
+                                <span className="text-muted fw-semibold">Email</span>
+                                <span>{emp.email}</span>
+                            </li>
+                            <li className="list-group-item d-flex justify-content-between">
+                                <span className="text-muted fw-semibold">Teléfono</span>
+                                <span>{emp.phone || "—"}</span>
+                            </li>
+                            <li className="list-group-item d-flex justify-content-between">
+                                <span className="text-muted fw-semibold">Cargo</span>
+                                <span>{emp.position || "—"}</span>
+                            </li>
+                            <li className="list-group-item d-flex justify-content-between">
+                                <span className="text-muted fw-semibold">Rol</span>
+                                <span>{emp.role || "—"}</span>
+                            </li>
+                            <li className="list-group-item d-flex justify-content-between">
+                                <span className="text-muted fw-semibold">Incidencias</span>
+                                <span>{emp.incidents?.length || 0} registradas</span>
+                            </li>
+                            <li className="list-group-item d-flex justify-content-between">
+                                <span className="text-muted fw-semibold">Vacaciones disponibles</span>
+                                <span>
+                                    {emp.vacaciones?.length > 0
+                                        ? emp.vacaciones[emp.vacaciones.length - 1].available_vacations ?? 0
+                                        : 0} días
+                                </span>
+                            </li>
+                            <li className="list-group-item d-flex justify-content-between">
+                                <span className="text-muted fw-semibold">Nóminas</span>
+                                <span>{emp.nominas?.length || 0} registradas</span>
+                            </li>
+                            <li className="list-group-item d-flex justify-content-between">
+                                <span className="text-muted fw-semibold">Registros de trabajo</span>
+                                <span>{emp.work_records?.length || 0} registros</span>
+                            </li>
+                        </ul>
                     </div>
-                </div>
 
-                <div className="col-md-8">
-                    <div className="card shadow-sm border-0 h-100">
-                        <div className="card-header bg-white py-3">
-                            <h5 className="mb-0 fw-bold">Información General</h5>
-                        </div>
-                        <div className="card-body">
-                            <div className="row">
-                                <div className="col-sm-6 mb-3">
-                                    <label className="text-muted small text-uppercase fw-bold">ID</label>
-                                    <p className="fs-5">{employee?.id}</p>
-                                </div>
-                                <div className="col-sm-6 mb-3">
-                                    <label className="text-muted small text-uppercase fw-bold">Teléfono</label>
-                                    <p className="fs-5">{employee?.phone || "No especificado"}</p>
-                                </div>
-                                <div className="col-sm-6 mb-3">
-                                    <label className="text-muted small text-uppercase fw-bold">Email</label>
-                                    <p className="fs-5 text-primary">{employee?.email}</p>
-                                </div>
-                                <div className="col-sm-6 mb-3">
-                                    <label className="text-muted small text-uppercase fw-bold">Rol</label>
-                                    <p className="fs-5">{employee?.role}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                </>
+            ) : (
+                <div className="text-center text-muted mt-5">
+                    <div className="spinner-border" role="status"></div>
+                    <p className="mt-3">Cargando información...</p>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

@@ -1,40 +1,77 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { useNavigate } from "react-router-dom";
 
 const SignupEmployee = () => {
     const { actions } = useGlobalReducer();
-    const navigate = useNavigate();
-    const [error, setError] = useState("");
     const [formData, setFormData] = useState({
-        first_name: "", last_name: "", email: "", password: "", phone: "", position: ""
+        first_name: "",
+        last_name: "",
+        email: "",
+        password: "",
+        phone: "",
+        position: ""
     });
+    const [status, setStatus] = useState({ type: "", msg: "" });
+    const navigate = useNavigate();
 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const result = await actions.signupEmployee(formData);
         if (result.success) {
-            navigate("/login-employee");
+            setStatus({ type: "success", msg: "¡Cuenta creada! Redirigiendo al login..." });
+            setTimeout(() => navigate("/login-employee"), 2000);
         } else {
-            setError(result.msg || "Error al registrarse");
+            setStatus({ type: "danger", msg: result.msg });
         }
     };
 
     return (
         <div className="container mt-5">
-            <div className="card p-4 mx-auto" style={{ maxWidth: "400px" }}>
-                <h2 className="text-center">Registro Empleado</h2>
-                {error && <div className="alert alert-danger">{error}</div>}
+            <div className="card p-4 mx-auto shadow" style={{ maxWidth: "400px" }}>
+                <div className="text-center mb-4">
+                    <div className="bg-dark rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: "64px", height: "64px" }}>
+                        <span style={{ fontSize: "28px" }}>👤</span>
+                    </div>
+                    <h2 className="fw-bold">Registro Empleado</h2>
+                    <p className="text-muted">Crea tu cuenta para continuar</p>
+                </div>
+                {status.msg && <div className={`alert alert-${status.type}`}>{status.msg}</div>}
                 <form onSubmit={handleSubmit}>
-                    <input name="first_name" className="form-control mb-2" placeholder="Nombre" onChange={handleChange} required />
-                    <input name="last_name" className="form-control mb-2" placeholder="Apellido" onChange={handleChange} required />
-                    <input name="email" type="email" className="form-control mb-2" placeholder="Email" onChange={handleChange} required />
-                    <input name="password" type="password" className="form-control mb-2" placeholder="Password" onChange={handleChange} required />
-                    <input name="phone" className="form-control mb-2" placeholder="Teléfono" onChange={handleChange} />
-                    <input name="position" className="form-control mb-2" placeholder="Cargo" onChange={handleChange} />
-                    <button type="submit" className="btn btn-primary w-100 mt-2">Registrarse</button>
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold">Nombre</label>
+                        <input name="first_name" type="text" className="form-control" placeholder="Juan" value={formData.first_name} onChange={handleChange} required />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold">Apellido</label>
+                        <input name="last_name" type="text" className="form-control" placeholder="García" value={formData.last_name} onChange={handleChange} required />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold">Email</label>
+                        <input name="email" type="email" className="form-control" placeholder="tu@email.com" value={formData.email} onChange={handleChange} required />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold">Contraseña</label>
+                        <input name="password" type="password" className="form-control" placeholder="••••••••" value={formData.password} onChange={handleChange} required />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold">Teléfono</label>
+                        <input name="phone" type="text" className="form-control" placeholder="+34 600 000 000" value={formData.phone} onChange={handleChange} />
+                    </div>
+                    <div className="mb-4">
+                        <label className="form-label fw-semibold">Cargo</label>
+                        <input name="position" type="text" className="form-control" placeholder="Desarrollador" value={formData.position} onChange={handleChange} />
+                    </div>
+                    <button type="submit" className="btn btn-dark w-100 mb-2">
+                        Crear Cuenta
+                    </button>
+                    <button type="button" className="btn btn-link w-100" onClick={() => navigate("/login-employee")}>
+                        ¿Ya tienes cuenta? Inicia sesión
+                    </button>
                 </form>
             </div>
         </div>

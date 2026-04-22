@@ -54,14 +54,17 @@ export const router = createBrowserRouter(
       <Route path="/work-records/new" element={<WorkRecordForm />} />
       <Route path="/work-records/edit/:id" element={<WorkRecordForm />} />
       <Route path="/horarios/:employeeId" element={<Horarios />} />
-
-
+      <Route path="/login-employee" element={<LoginEmployee />} />
+      <Route path="/signup-employee" element={<SignupEmployee />} />
       <Route path="/incidents/new" element={<IncidentNew />} />
       <Route path="/incidents/edit/:id" element={<IncidentEdit />} />
       <Route path="/incidents/delete" element={<IncidentDelete />} />
       <Route path="/incidents" element={<Incidents />} />
       <Route path="/vacaciones" element={<Vacaciones />} />
       <Route path="/login-company" element={<LoginCompany />} />
+      <Route path="/employee-dashboard" element={<DashboardEmployee />} />
+
+
       <Route
         path="/company-dashboard"
         element={
