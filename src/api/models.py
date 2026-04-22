@@ -27,16 +27,17 @@ class Company(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre_empresa: Mapped[str] = mapped_column(String(150), nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=True)
     password: Mapped[str] = mapped_column(String(50), nullable=False)
     region: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 
     def serialize(self):
         return {
             "id": self.id,
             "nombre_empresa": self.nombre_empresa,
+            "email": self.email,
             "region": self.region,
             "is_active": self.is_active,
             "created_at": self.created_at.strftime("%d/%m/%Y")

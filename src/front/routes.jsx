@@ -1,6 +1,6 @@
 // Import necessary components and functions from react-router-dom.
 
-import {createBrowserRouter, createRoutesFromElements, Route,} from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Route, } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
@@ -22,13 +22,12 @@ import LoginCompany from "./pages/LoginCompany.jsx";
 import DashBoardCompany from "./pages/DashBoardCompany.jsx"
 import RutaProtegida from "./components/RutaProtegida.jsx"
 import SignupCompany from "./pages/SignupCompany.jsx";
-import LoginEmployee from "./pages/LoginEmployee.jsx";
 import VacacionesNew from "./pages/VacacionesNew.jsx";
 import VacacionesEdit from "./pages/VacacionesEdit.jsx";
 import VacacionesDelete from "./pages/VacacionesDelete.jsx";
 import SignupEmployee from "./pages/SignupEmployee.jsx";
-import DashboardEmployee from "./pages/DashboardEmployee.jsx";
-
+import LoginEmployee from "./pages/LoginEmployee.jsx";
+import DashboardEmployee from "./pages/DashboardEmployee";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -75,10 +74,19 @@ export const router = createBrowserRouter(
         }
       />
       <Route path="/signup-company" element={<SignupCompany />} />
-
       <Route path="/vacaciones/new" element={<VacacionesNew />} />
       <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
       <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
+      <Route path="/login-employee" element={<LoginEmployee />} />
+      <Route path="/signup-employee" element={<SignupEmployee />} />
+      <Route
+        path="/employee-dashboard"
+        element={
+          <RutaProtegida allowedRole="employee">
+            <DashboardEmployee />
+          </RutaProtegida>
+        }
+      />
 
 
     </Route>

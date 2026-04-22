@@ -17,19 +17,14 @@ const getState = ({ getStore, getActions, setStore }) => {
 
     actions: {
       loginCompany: async (credentials) => {
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") +
-          "/company/login";
-
+        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/company/login";
         try {
           const res = await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(credentials),
           });
-
           const data = await res.json();
-
           if (res.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", "company");
@@ -45,11 +40,7 @@ const getState = ({ getStore, getActions, setStore }) => {
       getCompanyData: async () => {
         const store = getStore();
         const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        const API_URL = `${base}/api/company/dashboard`.replace(
-          "/api/api/",
-          "/api/",
-        );
-
+        const API_URL = `${base}/api/company/dashboard`.replace("/api/api/", "/api/");
         try {
           const res = await fetch(API_URL, {
             method: "GET",
@@ -60,15 +51,10 @@ const getState = ({ getStore, getActions, setStore }) => {
           });
           if (res.ok) {
             const data = await res.json();
-            setStore({
-              ...store,
-              companyInfo: data,
-            });
+            setStore({ ...store, companyInfo: data });
             return true;
           }
-          const errorData = await res
-            .json()
-            .catch(() => ({ msg: "Error no JSON" }));
+          const errorData = await res.json().catch(() => ({ msg: "Error no JSON" }));
           console.error("Error en Dashboard:", errorData.msg || res.statusText);
           return false;
         } catch (error) {
@@ -78,19 +64,11 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       signupCompany: async (nombre, password, region) => {
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
-            /\/api$/,
-            "",
-          ) + "/api/";
+        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
         try {
           const res = await fetch(`${API_URL}company/signup`, {
             method: "POST",
-            body: JSON.stringify({
-              nombre_empresa: nombre,
-              password: password,
-              region: region,
-            }),
+            body: JSON.stringify({ nombre_empresa: nombre, password, region }),
             headers: { "Content-Type": "application/json" },
           });
           const data = await res.json();
@@ -165,12 +143,7 @@ const getState = ({ getStore, getActions, setStore }) => {
       logout: () => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
-        setStore({
-          token: null,
-          role: null,
-          companyInfo: null,
-        });
-
+        setStore({ token: null, role: null, companyInfo: null });
         console.log("Sesión cerrada correctamente");
       },
     },
