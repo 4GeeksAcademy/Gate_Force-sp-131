@@ -36,9 +36,6 @@ export const Home = () => {
 
 	return (
 		<div className="text-center mt-5">
-			<Link to="/login-employee">
-				<button className="btn btn-primary">LOGIN EMPLOYEE</button>
-			</Link>
 			<Link to="/login-company">
 				<button className="btn btn-primary">LOGIN COMPANYS</button>
 			</Link>

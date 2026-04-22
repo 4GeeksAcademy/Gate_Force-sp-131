@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 0e36b90c6ab9
+Revision ID: dbd3ca981db6
 Revises: 
-Create Date: 2026-04-20 18:43:53.952995
+Create Date: 2026-04-22 11:52:47.342647
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0e36b90c6ab9'
+revision = 'dbd3ca981db6'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,11 +21,13 @@ def upgrade():
     op.create_table('companies',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nombre_empresa', sa.String(length=150), nullable=False),
+    sa.Column('email', sa.String(length=120), nullable=True),
     sa.Column('password', sa.String(length=50), nullable=False),
     sa.Column('region', sa.String(length=100), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email')
     )
     op.create_table('employees',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -71,10 +73,19 @@ def upgrade():
     )
     op.create_table('managers',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('employee_id', sa.Integer(), nullable=False),
+    sa.Column('first_name', sa.String(length=100), nullable=False),
+    sa.Column('last_name', sa.String(length=100), nullable=False),
+    sa.Column('email', sa.String(length=120), nullable=False),
+    sa.Column('phone', sa.String(length=20), nullable=True),
+    sa.Column('password', sa.String(length=255), nullable=False),
+    sa.Column('position', sa.String(length=100), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.Column('employee_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['employee_id'], ['employees.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('employee_id')
+    sa.UniqueConstraint('email')
     )
     op.create_table('nominas',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -109,7 +120,7 @@ def upgrade():
     sa.Column('employee_id', sa.Integer(), nullable=False),
     sa.Column('check_in', sa.DateTime(), nullable=False),
     sa.Column('check_out', sa.DateTime(), nullable=True),
-    sa.Column('total_hours', sa.Integer(), nullable=True),
+    sa.Column('total_hours', sa.String(length=50), nullable=True),
     sa.Column('status', sa.String(length=50), nullable=False),
     sa.Column('location', sa.String(length=120), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
