@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom'; // Si usas React Router
+import { useNavigate } from 'react-router-dom';
 
 export default function EmployeesPage() {
     const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";

@@ -17,7 +17,7 @@ import Workrecord from "./pages/Workrecord.jsx"
 import Horarios from "./pages/Horarios.jsx"
 import Incidents from "./pages/Incidents.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
-
+import Managers from "./pages/Managers.jsx";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -37,6 +37,7 @@ export const router = createBrowserRouter(
       <Route path="/employees" element={<Employees />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/company" element={<Company />} />
+      <Route path="/managers" element={<Managers />} />
       <Route path="/nominas/:id" element={<Nominas />} />
       <Route path="/records/:id" element={<Workrecord />} />
       <Route path="/horarios/:employeeId" element={<Horarios />} />
@@ -45,6 +46,7 @@ export const router = createBrowserRouter(
 
       <Route path="/incidents/:id" element={<Incidents />} />
       <Route path="/vacaciones/:id" element={<Vacaciones />} />
+      <Route path="/managers/:id" element={<Managers />} />
 
 
     </Route>
