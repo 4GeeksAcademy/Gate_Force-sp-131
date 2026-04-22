@@ -7,12 +7,13 @@ export const SignupCompany = () => {
     const [nombre, setNombre] = useState("");
     const [password, setPassword] = useState("");
     const [region, setRegion] = useState("");
+    const [email, setEmail] = useState("");
     const [status, setStatus] = useState({ type: "", msg: "" });
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const result = await actions.signupCompany(nombre, password, region);
+        const result = await actions.signupCompany(nombre, password, region, email);
 
 
         if (result.success) {
@@ -34,6 +35,13 @@ export const SignupCompany = () => {
                         placeholder="Nombre de la Empresa"
                         className="form-control mb-3"
                         onChange={e => setNombre(e.target.value)}
+                        required
+                    />
+                    <input
+                        type="email"
+                        placeholder="Correo Electrónico"
+                        className="form-control mb-3"
+                        onChange={e => setEmail(e.target.value)}
                         required
                     />
                     <input

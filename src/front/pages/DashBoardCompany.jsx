@@ -19,7 +19,7 @@ const DashBoardCompany = () => {
     }, []);
 
     const handleLogout = () => {
-        actions.logout(); // Asegúrate de tener esta acción en store.js
+        actions.logout();
         navigate("/login-company");
     };
 
@@ -34,52 +34,44 @@ const DashBoardCompany = () => {
     const company = store.companyInfo;
 
     return (
-        <div className="container py-5">
-            <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <div>
-                    <h2 className="fw-bold text-primary">Panel de Empresa</h2>
-                    <p className="text-muted mb-0">Gestiona la información de tu organización</p>
-                </div>
-                <button
-                    onClick={handleLogout}
-                    className="btn btn-outline-danger d-flex align-items-center gap-2"
-                >
-                    <i className="fas fa-sign-out-alt"></i> Cerrar Sesión
+        // ... dentro del return de DashBoardCompany.jsx ...
+
+        <div className="container mt-5">
+            {/* Botón de Logout arriba a la derecha */}
+            <div className="d-flex justify-content-end mb-3">
+                <button onClick={handleLogout} className="btn btn-outline-danger shadow-sm">
+                    <i className="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
                 </button>
             </div>
-            <div className="row g-4">
-                <div className="col-md-4">
-                    <div className="card shadow-sm border-0 h-100">
-                        <div className="card-body text-center">
-                            <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: "80px", height: "80px" }}>
-                                <i className="fas fa-building fa-2x text-secondary"></i>
-                            </div>
-                            <h4 className="card-title mb-1">{company?.nombre_empresa || "Nombre no disponible"}</h4>
-                            <span className="badge bg-success-soft text-success border border-success px-3 py-2 rounded-pill">
-                                Perfil Verificado
-                            </span>
-                        </div>
-                    </div>
+
+            <div className="card shadow border-0">
+                <div className="card-header bg-primary text-white py-3">
+                    <h3 className="mb-0">Perfil de la Empresa</h3>
                 </div>
-                <div className="col-md-8">
-                    <div className="card shadow-sm border-0 h-100">
-                        <div className="card-header bg-white py-3">
-                            <h5 className="mb-0 fw-bold">Información General</h5>
+                <div className="card-body p-4">
+                    <div className="row">
+                        <div className="col-md-6 mb-4">
+                            <label className="text-muted small fw-bold text-uppercase">Nombre Comercial</label>
+                            <p className="fs-4 fw-semibold border-bottom pb-2">{company?.nombre_empresa}</p>
                         </div>
-                        <div className="card-body">
-                            <div className="row">
-                                <div className="col-sm-6 mb-3">
-                                    <label className="text-muted small text-uppercase fw-bold">ID de Empresa</label>
-                                    <p className="fs-5">{company?.id || "N/A"}</p>
-                                </div>
-                                <div className="col-sm-6 mb-3">
-                                    <label className="text-muted small text-uppercase fw-bold">Región</label>
-                                    <p className="fs-5">{company?.region || "No especificada"}</p>
-                                </div>
-                                <div className="col-sm-12">
-                                    <label className="text-muted small text-uppercase fw-bold">Correo Electrónico</label>
-                                    <p className="fs-5 mb-0 text-primary">{company?.email || "Sin correo registrado"}</p>
-                                </div>
+                        <div className="col-md-6 mb-4">
+                            <label className="text-muted small fw-bold text-uppercase">Correo Corporativo</label>
+                            <p className="fs-4 fw-semibold border-bottom pb-2">{company?.email || "Sin email registrado"}</p>
+                        </div>
+                        <div className="col-md-6 mb-4">
+                            <label className="text-muted small fw-bold text-uppercase">Región / Ubicación</label>
+                            <p className="fs-4 fw-semibold border-bottom pb-2">{company?.region}</p>
+                        </div>
+                        <div className="col-md-3 mb-4">
+                            <label className="text-muted small fw-bold text-uppercase">Fecha de Registro</label>
+                            <p className="fs-5 border-bottom pb-2">{company?.created_at}</p>
+                        </div>
+                        <div className="col-md-3 mb-4">
+                            <label className="text-muted small fw-bold text-uppercase">Estado</label>
+                            <div>
+                                <span className={`badge ${company?.is_active ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
+                                    {company?.is_active ? 'Activa' : 'Inactiva'}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -88,5 +80,6 @@ const DashBoardCompany = () => {
         </div>
     );
 };
+
 
 export default DashBoardCompany;

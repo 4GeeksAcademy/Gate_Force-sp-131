@@ -13,6 +13,7 @@ CORS(api)
 
 # ─── DECORADORES ───────────────────────────────────────────────
 
+
 def company_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -88,12 +89,14 @@ def delete_admin(admin_id):
 @api.route('/company/login', methods=['POST'])
 def login_company():
     data = request.json
-    if not data or not data.get("nombre_empresa") or not data.get("password"):
+    if not data or not data.get("email") or not data.get("password"):
         return jsonify({"msg": "Missing credentials"}), 400
-    company = Company.query.filter_by(nombre_empresa=data["nombre_empresa"]).first()
+    company = Company.query.filter_by(
+        email=data["email"]).first()
     if not company or company.password != data["password"]:
         return jsonify({"msg": "Invalid credentials"}), 401
-    token = create_access_token(identity=str(company.id), additional_claims={"role": "company"})
+    token = create_access_token(identity=str(
+        company.id), additional_claims={"role": "company"})
     return jsonify({"token": token, "role": "company"}), 200
 
 
@@ -104,9 +107,11 @@ def handle_company_signup():
         nombre = data.get("nombre_empresa")
         pw = data.get("password")
         reg = data.get("region")
-        if not all([nombre, pw, reg]):
-            return jsonify({"msg": "Faltan datos requeridos (nombre, password, region)"}), 400
-        nueva_empresa = Company(nombre_empresa=nombre, password=pw, region=reg, is_active=True)
+        email = data.get("email")
+        if not all([nombre, pw, reg, email]):
+            return jsonify({"msg": "Faltan datos requeridos (nombre, password, region, email)"}), 400
+        nueva_empresa = Company(
+            nombre_empresa=nombre, password=pw, region=reg, email=email, is_active=True)
         db.session.add(nueva_empresa)
         db.session.commit()
         return jsonify({"msg": "Empresa creada exitosamente"}), 201
@@ -152,11 +157,12 @@ def create_company():
     data = request.json
     if not data:
         return jsonify({"msg": "Body vacío"}), 400
-    required_fields = ["nombre_empresa", "password", "region"]
+    required_fields = ["nombre_empresa", "password", "region", "email"]
     for field in required_fields:
         if not data.get(field):
             return jsonify({"msg": f"{field} es requerido"}), 400
-    new_company = Company(nombre_empresa=data["nombre_empresa"], password=data["password"], region=data["region"], is_active=True)
+    new_company = Company(nombre_empresa=data["nombre_empresa"],
+                          password=data["password"], region=data["region"], email=data["email"], is_active=True)
     db.session.add(new_company)
     db.session.commit()
     return jsonify(new_company.serialize()), 201
@@ -199,7 +205,8 @@ def employee_login():
     employee = Employee.query.filter_by(email=data.get("email")).first()
     if not employee or employee.password != data.get("password"):
         return jsonify({"msg": "Credenciales incorrectas"}), 401
-    token = create_access_token(identity=str(employee.id), additional_claims={"role": "employee"})
+    token = create_access_token(identity=str(
+        employee.id), additional_claims={"role": "employee"})
     return jsonify({"token": token, "role": "employee"}), 200
 
 
@@ -407,7 +414,8 @@ def create_nomina():
     data = request.json
     if not data.get("employee_id") or not data.get("month"):
         return jsonify({"msg": "Missing data"}), 400
-    new_nomina = Nomina(employee_id=data["employee_id"], month=data["month"], document_url=data.get("document_url"))
+    new_nomina = Nomina(
+        employee_id=data["employee_id"], month=data["month"], document_url=data.get("document_url"))
     db.session.add(new_nomina)
     db.session.commit()
     return jsonify(new_nomina.serialize()), 201
@@ -468,7 +476,8 @@ def create_horario(employee_id):
     end_time = body.get("end_time")
     if not all([day, start_time, end_time]):
         return jsonify({"error": "day, start_time y end_time son obligatorios"}), 422
-    new_schedule = Schedule(employee_id=employee_id, day=day, start_time=parse_time(start_time), end_time=parse_time(end_time))
+    new_schedule = Schedule(employee_id=employee_id, day=day, start_time=parse_time(
+        start_time), end_time=parse_time(end_time))
     db.session.add(new_schedule)
     db.session.commit()
     return jsonify(new_schedule.serialize()), 201
@@ -588,7 +597,8 @@ def get_vacaciones(employee_id):
 
 @api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['GET'])
 def get_vacacion(employee_id, id):
-    vacacion = Vacaciones.query.filter_by(id=id, employee_id=employee_id).first()
+    vacacion = Vacaciones.query.filter_by(
+        id=id, employee_id=employee_id).first()
     if not vacacion:
         return jsonify({"msg": "Vacacion not found"}), 404
     return jsonify(vacacion.serialize()), 200
@@ -614,22 +624,26 @@ def create_vacacion(employee_id):
 
 @api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['PUT'])
 def update_vacacion(employee_id, id):
-    vacacion = Vacaciones.query.filter_by(id=id, employee_id=employee_id).first()
+    vacacion = Vacaciones.query.filter_by(
+        id=id, employee_id=employee_id).first()
     if not vacacion:
         return jsonify({"msg": "Vacacion not found"}), 404
     data = request.json
     if not data:
         return jsonify({"msg": "Body vacío"}), 400
     vacacion.vacations = data.get("vacations", vacacion.vacations)
-    vacacion.taken_vacations = data.get("taken_vacations", vacacion.taken_vacations)
-    vacacion.available_vacations = data.get("available_vacations", vacacion.available_vacations)
+    vacacion.taken_vacations = data.get(
+        "taken_vacations", vacacion.taken_vacations)
+    vacacion.available_vacations = data.get(
+        "available_vacations", vacacion.available_vacations)
     db.session.commit()
     return jsonify(vacacion.serialize()), 200
 
 
 @api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['DELETE'])
 def delete_vacacion(employee_id, id):
-    vacacion = Vacaciones.query.filter_by(id=id, employee_id=employee_id).first()
+    vacacion = Vacaciones.query.filter_by(
+        id=id, employee_id=employee_id).first()
     if not vacacion:
         return jsonify({"msg": "Vacacion not found"}), 404
     db.session.delete(vacacion)
@@ -637,6 +651,7 @@ def delete_vacacion(employee_id, id):
     return jsonify({"msg": f"Vacacion {id} deleted"}), 200
 
 # ─── MANAGERS CRUD ───────────────────────────────────────────────
+
 
 @api.route('/managers', methods=['GET'])
 def get_managers():

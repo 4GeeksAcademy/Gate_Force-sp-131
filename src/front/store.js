@@ -17,7 +17,9 @@ const getState = ({ getStore, getActions, setStore }) => {
 
     actions: {
       loginCompany: async (credentials) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/company/login";
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") +
+          "/company/login";
         try {
           const res = await fetch(API_URL, {
             method: "POST",
@@ -40,7 +42,10 @@ const getState = ({ getStore, getActions, setStore }) => {
       getCompanyData: async () => {
         const store = getStore();
         const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        const API_URL = `${base}/api/company/dashboard`.replace("/api/api/", "/api/");
+        const API_URL = `${base}/api/company/dashboard`.replace(
+          "/api/api/",
+          "/api/",
+        );
         try {
           const res = await fetch(API_URL, {
             method: "GET",
@@ -54,7 +59,9 @@ const getState = ({ getStore, getActions, setStore }) => {
             setStore({ ...store, companyInfo: data });
             return true;
           }
-          const errorData = await res.json().catch(() => ({ msg: "Error no JSON" }));
+          const errorData = await res
+            .json()
+            .catch(() => ({ msg: "Error no JSON" }));
           console.error("Error en Dashboard:", errorData.msg || res.statusText);
           return false;
         } catch (error) {
@@ -63,12 +70,21 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
       },
 
-      signupCompany: async (nombre, password, region) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
+      signupCompany: async (nombre, password, region, email) => {
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
         try {
           const res = await fetch(`${API_URL}company/signup`, {
             method: "POST",
-            body: JSON.stringify({ nombre_empresa: nombre, password, region }),
+            body: JSON.stringify({
+              nombre_empresa: nombre,
+              password,
+              region,
+              email,
+            }),
             headers: { "Content-Type": "application/json" },
           });
           const data = await res.json();

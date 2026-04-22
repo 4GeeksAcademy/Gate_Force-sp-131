@@ -13,7 +13,7 @@ const LoginCompany = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         const result = await actions.loginCompany({
-            nombre_empresa: email,
+            email: email,
             password: password
         });
 
