@@ -18,6 +18,11 @@ import IncidentNew from "./pages/IncidentNew.jsx";
 import IncidentEdit from "./pages/IncidentEdit.jsx";
 import IncidentDelete from "./pages/IncidentDelete.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
+import LoginCompany from "./pages/LoginCompany.jsx";
+import DashBoardCompany from "./pages/DashBoardCompany.jsx"
+import RutaProtegida from "./components/RutaProtegida.jsx"
+import SignupCompany from "./pages/SignupCompany.jsx";
+
 import VacacionesNew from "./pages/VacacionesNew.jsx";
 import VacacionesEdit from "./pages/VacacionesEdit.jsx";
 import VacacionesDelete from "./pages/VacacionesDelete.jsx";
@@ -55,6 +60,17 @@ export const router = createBrowserRouter(
       <Route path="/incidents/delete" element={<IncidentDelete />} />
       <Route path="/incidents" element={<Incidents />} />
       <Route path="/vacaciones" element={<Vacaciones />} />
+      <Route path="/login-company" element={<LoginCompany />} />
+      <Route
+        path="/company-dashboard"
+        element={
+          <RutaProtegida allowedRole="company">
+            <DashBoardCompany />
+          </RutaProtegida>
+        }
+      />
+      <Route path="/signup-company" element={<SignupCompany />} />
+
       <Route path="/vacaciones/new" element={<VacacionesNew />} />
       <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
       <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
