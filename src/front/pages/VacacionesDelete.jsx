@@ -14,9 +14,20 @@ export default function VacacionesDelete() {
     };
 
     const getEmployees = async () => {
-        const res = await fetch(`${API_URL}employees/simple`);
-        const data = await res.json();
-        setEmployees(data);
+        try {
+            const res = await fetch(`${API_URL}employees`);
+            const data = await res.json();
+
+            if (Array.isArray(data)) {
+                setEmployees(data);
+            } else {
+                console.error("La respuesta no es un array:", data);
+                setEmployees([]);
+            }
+        } catch (error) {
+            console.error("Error cargando empleados:", error);
+            setEmployees([]);
+        }
     };
 
     useEffect(() => {

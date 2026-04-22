@@ -47,7 +47,7 @@ const DashboardEmployee = () => {
                                 <span className="text-muted fw-semibold">Email</span>
                                 <span>{emp.email}</span>
                             </li>
-                            <li className="list-group-item d-flex justify-content-between">
+                            {/* <li className="list-group-item d-flex justify-content-between">
                                 <span className="text-muted fw-semibold">Teléfono</span>
                                 <span>{emp.phone || "—"}</span>
                             </li>
@@ -78,7 +78,7 @@ const DashboardEmployee = () => {
                             <li className="list-group-item d-flex justify-content-between">
                                 <span className="text-muted fw-semibold">Registros de trabajo</span>
                                 <span>{emp.work_records?.length || 0} registros</span>
-                            </li>
+                            </li> */}
                         </ul>
                     </div>
 
