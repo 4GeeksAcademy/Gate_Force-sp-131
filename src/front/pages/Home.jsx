@@ -83,6 +83,11 @@ export const Home = () => {
 					Employees
 				</button>
 			</Link>
+			<Link to="/managers">
+				<button type="button">
+					Managers
+				</button>
+      </Link>
 			<Link to="/work-records">
 				<button type="button">
 					WorkRecords

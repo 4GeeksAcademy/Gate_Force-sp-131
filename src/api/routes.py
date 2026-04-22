@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import request, jsonify, Blueprint
-from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina, Incident, Vacaciones, Schedule
+from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina, Incident, Vacaciones, Schedule, Manager
 from flask_cors import CORS
 from datetime import datetime
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
@@ -635,3 +635,83 @@ def delete_vacacion(employee_id, id):
     db.session.delete(vacacion)
     db.session.commit()
     return jsonify({"msg": f"Vacacion {id} deleted"}), 200
+
+# ─── MANAGERS CRUD ───────────────────────────────────────────────
+
+@api.route('/managers', methods=['GET'])
+def get_managers():
+    managers = Manager.query.all()
+    return jsonify([m.serialize() for m in managers]), 200
+
+
+@api.route('/managers/<int:id>', methods=['GET'])
+def get_manager(id):
+    manager = Manager.query.get(id)
+    if not manager:
+        return jsonify({"msg": "Manager not found"}), 404
+    return jsonify(manager.serialize()), 200
+
+
+@api.route('/managers', methods=['POST'])
+def create_manager():
+    data = request.json
+    if not data:
+        return jsonify({"msg": "Body vacío"}), 400
+
+    required_fields = ["first_name", "last_name", "email", "password"]
+    for field in required_fields:
+        if not data.get(field):
+            return jsonify({"msg": f"{field} is required"}), 400
+
+    existing = Manager.query.filter_by(email=data["email"]).first()
+    if existing:
+        return jsonify({"msg": "Email already exists"}), 400
+
+    new_manager = Manager(
+        first_name=data["first_name"],
+        last_name=data["last_name"],
+        email=data["email"],
+        password=data["password"],
+        phone=data.get("phone"),
+        position=data.get("position"),
+        employee_id=data.get("employee_id"),
+        is_active=True
+    )
+
+    db.session.add(new_manager)
+    db.session.commit()
+    return jsonify(new_manager.serialize()), 201
+
+
+@api.route('/managers/<int:id>', methods=['PUT'])
+def update_manager(id):
+    manager = Manager.query.get(id)
+    if not manager:
+        return jsonify({"msg": "Manager not found"}), 404
+
+    data = request.json
+    if not data:
+        return jsonify({"msg": "Body vacío"}), 400
+
+    manager.first_name = data.get("first_name", manager.first_name)
+    manager.last_name = data.get("last_name", manager.last_name)
+    manager.phone = data.get("phone", manager.phone)
+    manager.position = data.get("position", manager.position)
+    manager.employee_id = data.get("employee_id", manager.employee_id)
+
+    if data.get("password"):
+        manager.password = data["password"]
+
+    db.session.commit()
+    return jsonify(manager.serialize()), 200
+
+
+@api.route('/managers/<int:id>', methods=['DELETE'])
+def delete_manager(id):
+    manager = Manager.query.get(id)
+    if not manager:
+        return jsonify({"msg": "Manager not found"}), 404
+
+    db.session.delete(manager)
+    db.session.commit()
+    return jsonify({"msg": f"Manager {id} deleted"}), 200

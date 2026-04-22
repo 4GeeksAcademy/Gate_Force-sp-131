@@ -181,19 +181,35 @@ class Manager(db.Model):
     __tablename__ = "managers"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), unique=True, nullable=False
-    )
 
-    # Relación
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), nullable=True)
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    position: Mapped[str] = mapped_column(String(100), nullable=True)
+
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relación con Employee
+    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=True)
     employee = relationship("Employee", back_populates="manager")
 
     def __repr__(self):
-        return f"Manager(employee_id={self.employee_id})"
+        return f"{self.first_name} {self.last_name}"
 
     def serialize(self):
         return {
             "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "phone": self.phone,
+            "position": self.position,
+            "is_active": self.is_active,
             "employee_id": self.employee_id
         }
 
