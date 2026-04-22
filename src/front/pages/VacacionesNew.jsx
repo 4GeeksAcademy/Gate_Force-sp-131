@@ -13,9 +13,18 @@ export default function VacacionesNew() {
     });
 
     const getEmployees = async () => {
-        const res = await fetch(`${API_URL}employees/simple`);
-        const data = await res.json();
-        setEmployees(data);
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_URL}employees/simple`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            setEmployees(data);
+        } else {
+            setEmployees([]);
+        }
     };
 
     useEffect(() => {
@@ -48,27 +57,12 @@ export default function VacacionesNew() {
                         </option>
                     ))}
                 </select>
-                <input
-                    name="vacations"
-                    placeholder="Total vacations"
-                    type="number"
-                    value={formData.vacations || ""}
-                    onChange={handleChange}
-                />
-                <input
-                    name="taken_vacations"
-                    placeholder="Taken vacations"
-                    type="number"
-                    value={formData.taken_vacations || ""}
-                    onChange={handleChange}
-                />
-                <input
-                    name="available_vacations"
-                    placeholder="Available vacations"
-                    type="number"
-                    value={formData.available_vacations || ""}
-                    onChange={handleChange}
-                />
+                <input name="vacations" placeholder="Total vacations" type="number" value={formData.vacations || ""}
+                    onChange={handleChange} />
+                <input name="taken_vacations" placeholder="Taken vacations" type="number" value={formData.taken_vacations || ""}
+                    onChange={handleChange} />
+                <input name="available_vacations" placeholder="Available vacations" type="number" value={formData.available_vacations || ""}
+                    onChange={handleChange} />
                 <div style={{ display: "flex", gap: "10px" }}>
                     <button type="submit">Create</button>
                     <button type="button" onClick={() => navigate("/vacaciones")}>Cancel</button>
