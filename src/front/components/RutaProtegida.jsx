@@ -1,22 +1,19 @@
-import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
-
-const RutaProtegida = ({ children }) => {
+const RutaProtegida = ({ children, allowedRole }) => {
     const { store } = useGlobalReducer();
 
-    // Verificación ultra-segura:
     const token = store.token || localStorage.getItem("token");
     const role = store.role || localStorage.getItem("role");
 
     console.log("DEBUG GUARDIA -> Token:", !!token, "Role:", role);
 
-    if (token && role === "company") {
+    if (token && role === allowedRole) {
         return children;
     }
 
-    // Si llegamos aquí, algo falló
-    return <Navigate to="/login-company" replace />;
+    return <Navigate to={allowedRole === "employee" ? "/login-employee" : "/login-company"} replace />;
 };
+
 export default RutaProtegida;
