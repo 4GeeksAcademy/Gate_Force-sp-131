@@ -36,9 +36,28 @@ export const Home = () => {
 
 	return (
 		<div className="text-center mt-5">
+			<Link to="/login-employee">
+				<button className="btn btn-primary">LOGIN EMPLOYEE</button>
+			</Link>
+			<Link to="/login-company">
+				<button className="btn btn-primary">LOGIN COMPANYS</button>
+			</Link>
+			<Link to="/login-employee">
+				<button className="btn btn-primary">LOGIN EMPLOYEES</button>
+			</Link>
 			<h1 className="display-4">Hello Rigo!!</h1>
 			<Link to="/admin">
 				<button className="btn btn-primary btn-lg">Ir a Admin</button>
+			</Link>
+			<Link to="/vacaciones">
+				<button className="btn btn-primary btn-lg">
+					Vacaciones
+				</button>
+			</Link>
+			<Link to="/incidents">
+				<button className="btn btn-primary btn-lg">
+					Incidents
+				</button>
 			</Link>
 			<p className="lead">
 
@@ -67,6 +86,16 @@ export const Home = () => {
 			<Link to="/managers">
 				<button type="button">
 					Managers
+				</button>
+      </Link>
+			<Link to="/work-records">
+				<button type="button">
+					WorkRecords
+				</button>
+			</Link>
+			<Link to="/nominas">
+				<button type="button">
+					Nominas
 				</button>
 			</Link>
 

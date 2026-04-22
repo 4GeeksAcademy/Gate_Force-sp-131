@@ -58,27 +58,27 @@ export default function EmployeesPage() {
         });
     };
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-    const method = editingId ? "PUT" : "POST";
-    const url = editingId
-        ? `${API_URL}employees/${editingId}`
-        : `${API_URL}employees`;
+        const method = editingId ? "PUT" : "POST";
+        const url = editingId
+            ? `${API_URL}employees/${editingId}`
+            : `${API_URL}employees`;
 
-    const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-    });
+        const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData)
+        });
 
-    const data = await res.json();
-    console.log("STATUS:", res.status);
-    console.log("RESPONSE:", data);
+        const data = await res.json();
+        console.log("STATUS:", res.status);
+        console.log("RESPONSE:", data);
 
-    cancelEdit();
-    getEmployees();
-};
+        cancelEdit();
+        getEmployees();
+    };
 
     return (
         <div style={{ padding: "20px" }}>
@@ -178,38 +178,10 @@ const handleSubmit = async (e) => {
                         </button>
 
                         <button
-                            onClick={() => navigate(`/nominas/${emp.id}`)}
-                            style={{ marginLeft: "10px", backgroundColor: "#4CAF50", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
-                        >
-                            Nóminas
-                        </button>
-
-                        <button
-                            onClick={() => navigate(`/records/${emp.id}`)}
-                            style={{ marginLeft: "5px", backgroundColor: "#2196F3", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
-                        >
-                            Entradas
-                        </button>
-
-                        <button
                             onClick={() => startEdit(emp)}
                             style={{ marginLeft: "15px" }}
                         >
                             Edit
-                        </button>
-
-                        <button
-                            onClick={() => navigate(`/incidents/${emp.id}`)}
-                            style={{ marginLeft: "5px", backgroundColor: "#FF9800", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
-                        >
-                            Incidents
-                        </button>
-
-                        <button
-                            onClick={() => navigate(`/vacaciones/${emp.id}`)}
-                            style={{ marginLeft: "5px", backgroundColor: "#9C27B0", color: "white", border: "none", padding: "5px 10px", cursor: "pointer" }}
-                        >
-                            Vacaciones
                         </button>
 
                         <button

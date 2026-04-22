@@ -1,10 +1,6 @@
 // Import necessary components and functions from react-router-dom.
 
-import {
-  createBrowserRouter,
-  createRoutesFromElements,
-  Route,
-} from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Route, } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
@@ -13,11 +9,26 @@ import Company from "./pages/Company";
 import Employees from "./pages/Employees";
 import Admin from "./components/Admin.jsx";
 import Nominas from "./pages/Nominas.jsx";
+import NominasForm from "./pages/NominasForm.jsx";
 import Workrecord from "./pages/Workrecord.jsx"
+import WorkRecordForm from "./pages/WorkRecordForm.jsx"
 import Horarios from "./pages/Horarios.jsx"
 import Incidents from "./pages/Incidents.jsx";
+import IncidentNew from "./pages/IncidentNew.jsx";
+import IncidentEdit from "./pages/IncidentEdit.jsx";
+import IncidentDelete from "./pages/IncidentDelete.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
 import Managers from "./pages/Managers.jsx";
+import LoginCompany from "./pages/LoginCompany.jsx";
+import DashBoardCompany from "./pages/DashBoardCompany.jsx"
+import RutaProtegida from "./components/RutaProtegida.jsx"
+import SignupCompany from "./pages/SignupCompany.jsx";
+import VacacionesNew from "./pages/VacacionesNew.jsx";
+import VacacionesEdit from "./pages/VacacionesEdit.jsx";
+import VacacionesDelete from "./pages/VacacionesDelete.jsx";
+import SignupEmployee from "./pages/SignupEmployee.jsx";
+import LoginEmployee from "./pages/LoginEmployee.jsx";
+import DashboardEmployee from "./pages/DashboardEmployee";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -32,22 +43,33 @@ export const router = createBrowserRouter(
 
       {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
       <Route path="/" element={<Home />} />
-      <Route path="/single/:theId" element={<Single />} />  {/* Dynamic route for single items */}
+      <Route path="/single/:theId" element={<Single />} />
       <Route path="/demo" element={<Demo />} />
       <Route path="/employees" element={<Employees />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/company" element={<Company />} />
       <Route path="/managers" element={<Managers />} />
-      <Route path="/nominas/:id" element={<Nominas />} />
-      <Route path="/records/:id" element={<Workrecord />} />
+      <Route path="/nominas" element={<Nominas />} />
+      <Route path="/nominas/new" element={<NominasForm />} />
+      <Route path="/nominas/edit/:id" element={<NominasForm />} />
+      <Route path="/work-records" element={<Workrecord />} />
+      <Route path="/work-records/new" element={<WorkRecordForm />} />
+      <Route path="/work-records/edit/:id" element={<WorkRecordForm />} />
       <Route path="/horarios/:employeeId" element={<Horarios />} />
-
-
-
-      <Route path="/incidents/:id" element={<Incidents />} />
-      <Route path="/vacaciones/:id" element={<Vacaciones />} />
-      <Route path="/managers/:id" element={<Managers />} />
-
+      <Route path="/incidents" element={<Incidents />} />
+      <Route path="/incidents/new" element={<IncidentNew />} />
+      <Route path="/incidents/edit/:id" element={<IncidentEdit />} />
+      <Route path="/incidents/delete" element={<IncidentDelete />} />
+      <Route path="/vacaciones" element={<Vacaciones />} />
+      <Route path="/vacaciones/new" element={<VacacionesNew />} />
+      <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
+      <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
+      <Route path="/login-company" element={<LoginCompany />} />
+      <Route path="/signup-company" element={<SignupCompany />} />
+      <Route path="/company-dashboard" element={<RutaProtegida allowedRole="company"><DashBoardCompany /></RutaProtegida>} />
+      <Route path="/login-employee" element={<LoginEmployee />} />
+      <Route path="/signup-employee" element={<SignupEmployee />} />
+      <Route path="/employee-dashboard" element={<DashboardEmployee />} />
 
     </Route>
   )
