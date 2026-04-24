@@ -256,8 +256,8 @@ def get_employees():
 
 
 @api.route('/employees/simple', methods=['GET'])
-@jwt_required()
-# #@company_or_manager_required
+# @jwt_required()
+#@company_or_manager_required
 def get_employees_simple():
     employees = Employee.query.all()
     return jsonify([{"id": e.id, "first_name": e.first_name, "last_name": e.last_name} for e in employees]), 200
