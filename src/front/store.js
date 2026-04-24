@@ -135,6 +135,8 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
       getEmployeeData: async () => {
         const store = getStore();
+        const token = store.token || localStorage.getItem("token");
+        console.log("Token usado:", token); 
         const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
         const API_URL = `${base}/employee/dashboard`;
         try {
@@ -142,7 +144,7 @@ const getState = ({ getStore, getActions, setStore }) => {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${store.token || localStorage.getItem("token")}`,
+              Authorization: `Bearer ${token}`,
             },
           });
           if (res.ok) {

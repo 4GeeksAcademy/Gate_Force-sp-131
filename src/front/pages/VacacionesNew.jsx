@@ -27,15 +27,21 @@ export default function VacacionesNew() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const res = await authFetch(`${API_URL}employees/${formData.employee_id}/vacaciones`, {
+        const token = localStorage.getItem("token");
+        const role = localStorage.getItem("role");
+        const endpoint = role === "employee"
+            ? `${API_URL}employee/vacaciones`
+            : `${API_URL}employees/${formData.employee_id}/vacaciones`;
+
+        await fetch(endpoint, {
             method: "POST",
-            body: JSON.stringify({
-                vacations: parseInt(formData.vacations),
-                taken_vacations: parseInt(formData.taken_vacations),
-                available_vacations: parseInt(formData.available_vacations)
-            })
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(formData)
         });
-        if (res.ok) navigate("/vacaciones");
+        navigate("/vacaciones");
     };
 
     return (

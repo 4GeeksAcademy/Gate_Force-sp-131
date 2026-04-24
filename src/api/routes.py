@@ -730,3 +730,73 @@ def delete_manager(id):
     db.session.delete(manager)
     db.session.commit()
     return jsonify({"msg": f"Manager {id} deleted"}), 200
+
+
+@api.route('/employee/work-records', methods=['GET'])
+@jwt_required()
+def get_my_work_records():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    records = WorkRecord.query.filter_by(employee_id=employee_id).all()
+    return jsonify([r.serialize() for r in records]), 200
+
+@api.route('/employee/work-records', methods=['POST'])
+@jwt_required()
+def create_my_work_record():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    data = request.json
+    check_in = datetime.fromisoformat(data["check_in"])
+    check_out = None
+    total_hours = None
+    if data.get("check_out"):
+        check_out = datetime.fromisoformat(data["check_out"])
+        total_seconds = (check_out - check_in).total_seconds()
+        hours = int(total_seconds // 3600)
+        minutes = int((total_seconds % 3600) // 60)
+        total_hours = f"{hours}h {minutes:02d}min"
+    new_record = WorkRecord(
+        employee_id=int(employee_id),
+        check_in=check_in,
+        check_out=check_out,
+        total_hours=total_hours,
+        status=data.get("status", "pending")
+    )
+    db.session.add(new_record)
+    db.session.commit()
+    return jsonify(new_record.serialize()), 201
+
+@api.route('/employee/vacaciones', methods=['GET'])
+@jwt_required()
+def get_my_vacaciones():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    vacaciones = Vacaciones.query.filter_by(employee_id=employee_id).all()
+    return jsonify([v.serialize() for v in vacaciones]), 200
+
+
+@api.route('/employee/vacaciones', methods=['POST'])
+@jwt_required()
+def request_my_vacacion():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    data = request.json
+    if not data:
+        return jsonify({"msg": "Body vacío"}), 400
+    new_vacacion = Vacaciones(
+        employee_id=int(employee_id),
+        vacations=data.get("vacations"),
+        taken_vacations=data.get("taken_vacations"),
+        available_vacations=data.get("available_vacations")
+    )
+    db.session.add(new_vacacion)
+    db.session.commit()
+    return jsonify(new_vacacion.serialize()), 201
