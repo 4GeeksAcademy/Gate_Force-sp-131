@@ -9,15 +9,28 @@ export default function WorkRecordPage() {
         .replace(/\/$/, "")
         .replace(/\/api$/, "") + "/api/";
 
-    const fetchRecords = async () => {
-        const res = await fetch(`${API_URL}work-records`);
-        const data = await res.json();
-        setRecords(data);
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    const authFetch = (url, options = {}) => {
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            }
+        });
     };
 
-    const toUTC = (dateStr) => {
-        const local = new Date(dateStr);
-        return local.toISOString();
+    const fetchRecords = async () => {
+        const res = await authFetch(`${API_URL}employee/work-records`);
+        if (res.ok) {
+            const data = await res.json();
+            setRecords(data);
+        } else {
+            setRecords([]);
+        }
     };
 
     useEffect(() => {
@@ -25,7 +38,7 @@ export default function WorkRecordPage() {
     }, []);
 
     const handleDelete = async (id) => {
-        await fetch(`${API_URL}work-records/${id}`, {
+        await authFetch(`${API_URL}work-records/${id}`, {
             method: "DELETE"
         });
         fetchRecords();
@@ -34,18 +47,18 @@ export default function WorkRecordPage() {
     return (
         <div style={{ padding: "20px" }}>
             <h1>Control de Fichajes</h1>
-
+            {!token || role !== "employee" ? (
+                <p>Debes estar logueado para llenar el control de fichaje</p>
+            ) : null}
             <button onClick={() => navigate("/work-records/new")}>
                 Crear registro
             </button>
             {records.map(r => (
                 <div key={r.id} style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
-                    <p><strong>Empleado:</strong> {r.employee_name}</p>
                     <p><strong>Check-in:</strong> {new Date(r.check_in).toLocaleString()}</p>
-                    <p><strong>Check-out:</strong> {new Date(r.check_out).toLocaleString()}</p>
+                    <p><strong>Check-out:</strong> {r.check_out ? new Date(r.check_out).toLocaleString() : "—"}</p>
                     <p><strong>Horas:</strong> {r.total_hours}</p>
                     <p><strong>Status:</strong> {r.status}</p>
-
                     <button onClick={() => navigate(`/work-records/edit/${r.id}`)}>
                         Editar
                     </button>
