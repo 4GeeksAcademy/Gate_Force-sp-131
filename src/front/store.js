@@ -93,6 +93,27 @@ const getState = ({ getStore, getActions, setStore }) => {
           return { success: false, msg: "Error de red" };
         }
       },
+      getEmployeeSchedules: async (employeeId) => {
+        const store = getStore();
+        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+        try {
+          const res = await fetch(
+            `${base}/api/employees/${employeeId}/horarios`,
+            {
+              headers: {
+                Authorization: `Bearer ${store.token || localStorage.getItem("token")}`,
+              },
+            },
+          );
+          if (res.ok) {
+            const data = await res.json();
+            setStore({ schedules: data });
+            return data;
+          }
+        } catch (error) {
+          console.error("Error al obtener horarios", error);
+        }
+      },
       loginEmployee: async (credentials) => {
         const API_URL =
           import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") +
@@ -133,12 +154,16 @@ const getState = ({ getStore, getActions, setStore }) => {
           return { success: false, msg: "Error de red" };
         }
       },
+
       getEmployeeData: async () => {
         const store = getStore();
         const token = store.token || localStorage.getItem("token");
-        console.log("Token usado:", token); 
         const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        const API_URL = `${base}/employee/dashboard`;
+        const API_URL = `${base}/api/employee/dashboard`.replace(
+          "/api/api/",
+          "/api/",
+        );
+
         try {
           const res = await fetch(API_URL, {
             method: "GET",
@@ -149,7 +174,7 @@ const getState = ({ getStore, getActions, setStore }) => {
           });
           if (res.ok) {
             const data = await res.json();
-            setStore({ ...store, employeeInfo: data });
+            setStore({ employeeInfo: data });
             return true;
           }
           return false;
@@ -158,11 +183,47 @@ const getState = ({ getStore, getActions, setStore }) => {
           return false;
         }
       },
+
       logout: () => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
-        setStore({ token: null, role: null, companyInfo: null });
+        setStore({
+          token: null,
+          role: null,
+          companyInfo: null,
+          employeeInfo: null,
+        });
         console.log("Sesión cerrada correctamente");
+      },
+
+      toggleEmployee: async (id) => {
+        const store = getStore();
+
+        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+        const API_URL = `${base}/api/employees/${id}/toggle`.replace(
+          "/api/api/",
+          "/api/",
+        );
+
+        try {
+          const res = await fetch(API_URL, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${store.token || localStorage.getItem("token")}`,
+            },
+          });
+
+          if (res.ok) {
+            return true;
+          }
+        } catch (error) {
+          console.error("Error al cambiar estado del empleado:", error);
+        }
+        return false;
+      },
+      loadEverything: async () => {
+        await actions.getEmployeeInfo();
+        await actions.getSchedules(localStorage.getItem("employee_id"));
       },
     },
   };

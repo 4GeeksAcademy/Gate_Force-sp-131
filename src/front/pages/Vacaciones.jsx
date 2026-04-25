@@ -96,6 +96,10 @@ export default function Vacaciones() {
                     ))
                 )}
             </ul>
+            <button className="btn btn-outline-primary mt-3" onClick={() => navigate("/company-dashboard")}>
+                <i className="fas fa-arrow-left me-2"></i>
+                Volver al Panel
+            </button>
         </div>
     );
 }

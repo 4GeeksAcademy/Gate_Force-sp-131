@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 71e2fec881b5
+Revision ID: febd885ed7b9
 Revises: 
-Create Date: 2026-04-24 11:51:19.807718
+Create Date: 2026-04-25 11:16:31.307847
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '71e2fec881b5'
+revision = 'febd885ed7b9'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -29,21 +29,6 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
-    op.create_table('employees',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('first_name', sa.String(length=100), nullable=False),
-    sa.Column('last_name', sa.String(length=100), nullable=False),
-    sa.Column('email', sa.String(length=120), nullable=False),
-    sa.Column('phone', sa.String(length=20), nullable=True),
-    sa.Column('password', sa.String(length=255), nullable=False),
-    sa.Column('role', sa.String(length=50), nullable=False),
-    sa.Column('position', sa.String(length=100), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('email')
-    )
     op.create_table('user',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sa.String(length=120), nullable=False),
@@ -59,6 +44,23 @@ def upgrade():
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('username')
+    )
+    op.create_table('employees',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('company_id', sa.Integer(), nullable=False),
+    sa.Column('first_name', sa.String(length=100), nullable=False),
+    sa.Column('last_name', sa.String(length=100), nullable=False),
+    sa.Column('email', sa.String(length=120), nullable=False),
+    sa.Column('phone', sa.String(length=20), nullable=True),
+    sa.Column('password', sa.String(length=255), nullable=False),
+    sa.Column('role', sa.String(length=50), nullable=False),
+    sa.Column('position', sa.String(length=100), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email')
     )
     op.create_table('incidents',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -138,8 +140,8 @@ def downgrade():
     op.drop_table('nominas')
     op.drop_table('managers')
     op.drop_table('incidents')
+    op.drop_table('employees')
     op.drop_table('user_admin')
     op.drop_table('user')
-    op.drop_table('employees')
     op.drop_table('companies')
     # ### end Alembic commands ###

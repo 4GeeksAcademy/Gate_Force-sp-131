@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const DashboardEmployee = () => {
@@ -38,8 +38,23 @@ const DashboardEmployee = () => {
                                 👤
                             </div>
                             <div>
-                                <h4 className="fw-bold mb-0">{emp.first_name} {emp.last_name}</h4>
-                                <p className="text-muted mb-0">{emp.position || "Sin cargo asignado"}</p>
+                                <div>
+                                    <h4 className="fw-bold mb-0">{emp.first_name} {emp.last_name}</h4>
+                                    <p className="text-primary fw-semibold mb-0">
+                                        < i className="fas fa-building me-1"></i> {emp.nombre_empresa}
+                                    </p>
+                                    <p className="text-muted mb-0">{emp.position || "Sin cargo asignado"}</p>
+                                    <p className={`badge ${emp.is_active ? "bg-success" : "bg-danger"} mt-2`}>
+                                        {emp.is_active ? "Activo" : "Inactivo"}
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                <Link to="/employees/schedules" className="btn btn-info">
+                                    <i className="fas fa-calendar-alt me-2"></i>Mi Horario
+                                </Link>
+
+
                             </div>
                         </div>
                         <ul className="list-group list-group-flush">
@@ -47,7 +62,7 @@ const DashboardEmployee = () => {
                                 <span className="text-muted fw-semibold">Email</span>
                                 <span>{emp.email}</span>
                             </li>
-                            {/* <li className="list-group-item d-flex justify-content-between">
+                            <li className="list-group-item d-flex justify-content-between">
                                 <span className="text-muted fw-semibold">Teléfono</span>
                                 <span>{emp.phone || "—"}</span>
                             </li>
@@ -78,7 +93,7 @@ const DashboardEmployee = () => {
                             <li className="list-group-item d-flex justify-content-between">
                                 <span className="text-muted fw-semibold">Registros de trabajo</span>
                                 <span>{emp.work_records?.length || 0} registros</span>
-                            </li> */}
+                            </li>
                         </ul>
                     </div>
 

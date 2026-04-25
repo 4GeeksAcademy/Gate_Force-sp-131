@@ -54,6 +54,11 @@ const LoginCompany = () => {
                         </button>
                     </div>
                 </form>
+                <div>
+                    <button className="btn btn-secondary mt-3 btn btn-dark w-100 mb-2" onClick={() => navigate("/")}>
+                        <i className="fas fa-arrow-left me-2"></i>Volver al Inicio
+                    </button>
+                </div>
             </div>
         </div>
     );

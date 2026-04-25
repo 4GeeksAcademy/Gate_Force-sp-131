@@ -1,0 +1,81 @@
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import EmployeeForm from "../components/EmployeesForm.jsx";
+
+export default function EditEmployee() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [employee, setEmployee] = useState(null);
+    const [error, setError] = useState(null);
+
+    const API_URL = import.meta.env.VITE_BACKEND_URL
+        .replace(/\/$/, "")
+        .replace(/\/api$/, "") + "/api/";
+
+    const authFetch = async (url, options = {}) => {
+        const token = localStorage.getItem("token");
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                    ...options.headers
+                }
+            });
+            if (!response.ok) {
+                const errorDetail = await response.json().catch(() => ({ msg: "Error en la operación" }));
+                throw new Error(errorDetail.msg || `Error ${response.status}`);
+            }
+            return response;
+        } catch (err) {
+            console.error("Error en authFetch:", err.message);
+            throw err;
+        }
+    };
+
+    useEffect(() => {
+        const fetchEmployee = async () => {
+            try {
+                const res = await authFetch(`${API_URL}employees/${id}`);
+                const data = await res.json();
+                setEmployee(data);
+            } catch (err) {
+                setError("No se pudo cargar la información del empleado.");
+            }
+        };
+        fetchEmployee();
+    }, [id]);
+
+    const handleUpdate = async (formData) => {
+        try {
+            await authFetch(`${API_URL}employees/${id}`, {
+                method: "PUT",
+                body: JSON.stringify(formData)
+            });
+            navigate("/employees");
+        } catch (err) {
+            alert("Error al actualizar: " + err.message);
+        }
+    };
+
+    if (error) return <div className="container mt-4 alert alert-danger">{error}</div>;
+    if (!employee) return (
+        <div className="d-flex justify-content-center mt-5">
+            <div className="spinner-border text-primary" role="status"></div>
+        </div>
+    );
+
+    return (
+        <div className="container mt-4">
+            <div className="card shadow-sm p-4">
+                <h2 className="mb-4 text-center">Editar Empleado</h2>
+                <EmployeeForm
+                    initialData={employee}
+                    onSubmit={handleUpdate}
+                    isEdit={true}
+                />
+            </div>
+        </div>
+    );
+}
