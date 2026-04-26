@@ -28,7 +28,7 @@ export default function VacacionesEdit() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await fetch(`${API_URL}employees/${formData.employee_id}/vacaciones/${id}`, {
+        await fetch(`${API_URL}/employees${formData.employee_id}/vacaciones/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(formData)

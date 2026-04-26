@@ -20,7 +20,7 @@ def company_required(fn):
         try:
             identity = get_jwt_identity()
             claims = get_jwt()
-            if not identity or claims.get("role") != "company":
+            if not identity or claims.get("role") not in ["company", "admin"]:
                 return jsonify({"msg": "Acceso denegado: solo empresas"}), 403
         except Exception as e:
             return jsonify({"msg": str(e)}), 500
@@ -34,7 +34,7 @@ def company_or_manager_required(fn):
         try:
             identity = get_jwt_identity()
             claims = get_jwt()
-            if not identity or claims.get("role") not in ["company", "manager"]:
+            if not identity or claims.get("role") not in ["company", "manager", "admin"]:
                 return jsonify({"msg": "Acceso denegado: solo empresas o managers"}), 403
         except Exception as e:
             return jsonify({"msg": str(e)}), 500
@@ -126,7 +126,7 @@ def get_company_dashboard():
     try:
         company_id = get_jwt_identity()
         claims = get_jwt()
-        if claims.get("role") != "company":
+        if claims.get("role") not in ["company", "admin"]:
             return jsonify({"msg": "Acceso restringido a empresas"}), 403
         company = Company.query.get(company_id)
         if not company:
@@ -249,7 +249,7 @@ def get_employee_dashboard():
 
 @api.route('/employees', methods=['GET'])
 @jwt_required()
-#@company_or_manager_required
+@company_or_manager_required
 def get_employees():
     employees = Employee.query.all()
     return jsonify([e.serialize() for e in employees]), 200
@@ -257,7 +257,7 @@ def get_employees():
 
 @api.route('/employees/simple', methods=['GET'])
 @jwt_required()
-# #@company_or_manager_required
+@company_or_manager_required
 def get_employees_simple():
     employees = Employee.query.all()
     return jsonify([{"id": e.id, "first_name": e.first_name, "last_name": e.last_name} for e in employees]), 200
@@ -265,7 +265,7 @@ def get_employees_simple():
 
 @api.route('/employees/<int:id>', methods=['GET'])
 @jwt_required()
-# #@company_or_manager_required
+@company_or_manager_required
 def get_employee(id):
     employee = Employee.query.get(id)
     if not employee:
@@ -275,7 +275,7 @@ def get_employee(id):
 
 @api.route('/employees', methods=['POST'])
 @jwt_required()
-#@company_or_manager_required
+@company_or_manager_required
 def create_employee():
     data = request.json
     if not data:
@@ -299,7 +299,7 @@ def create_employee():
 
 @api.route('/employees/<int:id>', methods=['PUT'])
 @jwt_required()
-#@company_or_manager_required
+@company_or_manager_required
 def update_employee(id):
     employee = Employee.query.get(id)
     if not employee:
@@ -320,7 +320,7 @@ def update_employee(id):
 
 @api.route('/employees/<int:id>', methods=['DELETE'])
 @jwt_required()
-#@company_or_manager_required
+@company_or_manager_required
 def delete_employee(id):
     employee = Employee.query.get(id)
     if not employee:
@@ -730,3 +730,35 @@ def delete_manager(id):
     db.session.delete(manager)
     db.session.commit()
     return jsonify({"msg": f"Manager {id} deleted"}), 200
+
+
+# ─── ADMIN AUTH ───────────────────────────────────────────────
+
+@api.route('/admin/login', methods=['POST'])
+def admin_login():
+    data = request.json
+    if not data or not data.get("username") or not data.get("password"):
+        return jsonify({"msg": "Faltan credenciales"}), 400
+
+    admin = UserAdmin.query.filter_by(username=data["username"]).first()
+    if not admin or admin.password != data["password"]:
+        return jsonify({"msg": "Credenciales incorrectas"}), 401
+
+    token = create_access_token(
+        identity=str(admin.id),
+        additional_claims={"role": "admin"}
+    )
+    return jsonify({"token": token, "role": "admin"}), 200
+
+
+@api.route('/admin/dashboard', methods=['GET'])
+@jwt_required()
+def get_admin_dashboard():
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"msg": "Acceso restringido a admins"}), 403
+    admin_id = get_jwt_identity()
+    admin = UserAdmin.query.get(admin_id)
+    if not admin:
+        return jsonify({"msg": "Admin no encontrado"}), 404
+    return jsonify(admin.serialize()), 200
