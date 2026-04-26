@@ -50,8 +50,6 @@ def get_admin(admin_id):
 
 
 @api.route('/admin', methods=['POST'])
-@jwt_required()
-@role_required("admin")
 def add_admin():
     body = request.get_json()
     if not body:
