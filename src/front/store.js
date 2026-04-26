@@ -119,7 +119,7 @@ const getState = ({ getStore, getActions, setStore }) => {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${store.token || localStorage.getItem("token")}`,
+              Authorization: `Bearer ${token}`,
             },
           });
           if (res.ok) {

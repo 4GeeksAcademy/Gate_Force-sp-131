@@ -44,16 +44,17 @@ export default function WorkRecordPage() {
     return (
         <div style={{ padding: "20px" }}>
             <h1>Control de Fichajes</h1>
-
+            {!token || role !== "employee" ? (
+                <p>Debes estar logueado para llenar el control de fichaje</p>
+            ) : null}
             <button onClick={() => navigate("/work-records/new")}>
                 Crear registro
             </button>
 
             {records.map(r => (
                 <div key={r.id} style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
-                    <p><strong>Empleado:</strong> {r.employee_name}</p>
                     <p><strong>Check-in:</strong> {new Date(r.check_in).toLocaleString()}</p>
-                    <p><strong>Check-out:</strong> {new Date(r.check_out).toLocaleString()}</p>
+                    <p><strong>Check-out:</strong> {r.check_out ? new Date(r.check_out).toLocaleString() : "—"}</p>
                     <p><strong>Horas:</strong> {r.total_hours}</p>
                     <p><strong>Status:</strong> {r.status}</p>
 
