@@ -17,9 +17,9 @@ const getState = ({ getStore, getActions, setStore }) => {
 
     actions: {
       loginCompany: async (credentials) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/company/login";
+        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
         try {
-          const res = await fetch(API_URL, {
+          const res = await fetch(`${API_URL}company/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(credentials),
@@ -39,10 +39,9 @@ const getState = ({ getStore, getActions, setStore }) => {
 
       getCompanyData: async () => {
         const store = getStore();
-        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        const API_URL = `${base}/api/company/dashboard`.replace("/api/api/", "/api/");
+        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
         try {
-          const res = await fetch(API_URL, {
+          const res = await fetch(`${API_URL}company/dashboard`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -54,8 +53,6 @@ const getState = ({ getStore, getActions, setStore }) => {
             setStore({ ...store, companyInfo: data });
             return true;
           }
-          const errorData = await res.json().catch(() => ({ msg: "Error no JSON" }));
-          console.error("Error en Dashboard:", errorData.msg || res.statusText);
           return false;
         } catch (error) {
           console.error("Error de conexión:", error);
@@ -79,9 +76,9 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       loginEmployee: async (credentials) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "") + "/employee/login";
+        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
         try {
-          const res = await fetch(API_URL, {
+          const res = await fetch(`${API_URL}employee/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(credentials),
@@ -116,10 +113,9 @@ const getState = ({ getStore, getActions, setStore }) => {
 
       getEmployeeData: async () => {
         const store = getStore();
-        const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-        const API_URL = `${base}/employee/dashboard`;
+        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
         try {
-          const res = await fetch(API_URL, {
+          const res = await fetch(`${API_URL}employee/dashboard`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
