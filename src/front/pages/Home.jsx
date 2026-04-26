@@ -35,7 +35,11 @@ export const Home = () => {
 	}, [])
 
 	return (
+
 		<div className="text-center mt-5">
+			<Link to="/login-admin">
+				<button className="btn btn-primary">LOGIN ADMIN</button>
+			</Link>
 			<Link to="/login-company">
 				<button className="btn btn-primary">LOGIN COMPANYS</button>
 			</Link>
@@ -84,7 +88,7 @@ export const Home = () => {
 				<button type="button">
 					Managers
 				</button>
-      </Link>
+			</Link>
 			<Link to="/work-records">
 				<button type="button">
 					WorkRecords

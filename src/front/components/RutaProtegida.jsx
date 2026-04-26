@@ -9,11 +9,17 @@ const RutaProtegida = ({ children, allowedRole }) => {
 
     console.log("DEBUG GUARDIA -> Token:", !!token, "Role:", role);
 
-    if (token && role === allowedRole) {
+    if (token && (role === allowedRole || role === "admin")) {
         return children;
     }
 
-    return <Navigate to={allowedRole === "employee" ? "/login-employee" : "/login-company"} replace />;
+    const redirectMap = {
+        "employee": "/login-employee",
+        "company": "/login-company",
+        "admin": "/login-admin"
+    };
+
+    return <Navigate to={redirectMap[allowedRole] || "/login-company"} replace />;
 };
 
 export default RutaProtegida;

@@ -3,9 +3,20 @@ import { useEffect, useState } from "react";
 export default function Managers() {
     const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
 
+    const authFetch = (url, options = {}) => {
+        const token = localStorage.getItem("token");
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            }
+        });
+    };
+
     const [managers, setManagers] = useState([]);
     const [editingId, setEditingId] = useState(null);
-
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
@@ -16,9 +27,14 @@ export default function Managers() {
     });
 
     const getManagers = async () => {
-        const res = await fetch(`${API_URL}managers`);
+        const res = await authFetch(`${API_URL}managers`);
         const data = await res.json();
-        setManagers(data);
+        if (Array.isArray(data)) {
+            setManagers(data);
+        } else {
+            console.error("Error al obtener managers:", data);
+            setManagers([]);
+        }
     };
 
     useEffect(() => {
@@ -26,7 +42,7 @@ export default function Managers() {
     }, []);
 
     const deleteManager = async (id) => {
-        await fetch(`${API_URL}managers/${id}`, { method: "DELETE" });
+        await authFetch(`${API_URL}managers/${id}`, { method: "DELETE" });
         getManagers();
     };
 
@@ -52,13 +68,11 @@ export default function Managers() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         const method = editingId ? "PUT" : "POST";
         const url = editingId ? `${API_URL}managers/${editingId}` : `${API_URL}managers`;
 
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method,
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(formData)
         });
 

@@ -29,6 +29,9 @@ import VacacionesDelete from "./pages/VacacionesDelete.jsx";
 import SignupEmployee from "./pages/SignupEmployee.jsx";
 import LoginEmployee from "./pages/LoginEmployee.jsx";
 import DashboardEmployee from "./pages/DashboardEmployee";
+import LoginAdmin from "./pages/LoginAdmin";
+import AdminDashboard from "./pages/AdminDashboard";
+
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -70,6 +73,15 @@ export const router = createBrowserRouter(
       <Route path="/login-employee" element={<LoginEmployee />} />
       <Route path="/signup-employee" element={<SignupEmployee />} />
       <Route path="/employee-dashboard" element={<DashboardEmployee />} />
+      <Route path="/login-admin" element={<LoginAdmin />} />
+      <Route
+        path="/admin-dashboard"
+        element={
+          <RutaProtegida allowedRole="admin">
+            <AdminDashboard />
+          </RutaProtegida>
+        }
+      />
 
     </Route>
   )
