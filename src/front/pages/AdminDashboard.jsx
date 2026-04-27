@@ -105,7 +105,7 @@ const AdminDashboard = () => {
                             <button onClick={() => navigate("/managers")} className="btn btn-outline-warning">
                                 <i className="fas fa-user-tie me-2"></i>Managers
                             </button>
-                            <button onClick={() => navigate("/nominas")} className="btn btn-outline-info">
+                            <button onClick={() => navigate("/mis-nominas")} className="btn btn-outline-info">
                                 <i className="fas fa-file-invoice me-2"></i>Nóminas
                             </button>
                             <button onClick={() => navigate("/work-records")} className="btn btn-outline-secondary">
