@@ -34,6 +34,7 @@ import LoginEmployee from "./pages/LoginEmployee.jsx";
 import LoginAdmin from "./pages/LoginAdmin";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmployeesSchedules from "./components/EmployeesSchedules.jsx";
+import MisNominas from "./pages/MisNominas.jsx";
 
 
 export const router = createBrowserRouter(
@@ -90,6 +91,7 @@ export const router = createBrowserRouter(
       <Route path="/nominas" element={<Nominas />} />
       <Route path="/nominas/new" element={<NominasForm />} />
       <Route path="/nominas/edit/:id" element={<NominasForm />} />
+      <Route path="/mis-nominas" element={<MisNominas />} />
 
       {/* WORK RECORDS ROUTES */}
       <Route path="/work-records" element={<Workrecord />} />

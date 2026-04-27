@@ -108,6 +108,9 @@ const getState = ({ getStore, getActions, setStore }) => {
           if (res.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", "employee");
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("role", "employee");
+            localStorage.setItem("username", data.first_name || "Empleado");
             setStore({ token: data.token, role: "employee" });
             return { success: true };
           }
@@ -137,39 +140,42 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       getEmployeeData: async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-    // 1. Limpiamos la URL de forma segura
-    let baseUrl = import.meta.env.VITE_BACKEND_URL;
-    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1); // Quita la barra final si existe
-    if (baseUrl.endsWith('/api')) baseUrl = baseUrl.slice(0, -4); // Quita /api si ya venía
+        // 1. Limpiamos la URL de forma segura
+        let baseUrl = import.meta.env.VITE_BACKEND_URL;
+        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1); // Quita la barra final si existe
+        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4); // Quita /api si ya venía
 
-    const finalUrl = `${baseUrl}/api/employee/me`;
-    console.log("Llamando a:", finalUrl); // 🔍 Revisa esto en la consola para ver la URL real
+        const finalUrl = `${baseUrl}/api/employee/me`;
+        console.log("Llamando a:", finalUrl); // 🔍 Revisa esto en la consola para ver la URL real
 
-    try {
-        const res = await fetch(finalUrl, {
+        try {
+          const res = await fetch(finalUrl, {
             method: "GET",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            }
-        });
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-        // 2. Antes de hacer .json(), verificamos si la respuesta es exitosa
-        if (!res.ok) {
+          // 2. Antes de hacer .json(), verificamos si la respuesta es exitosa
+          if (!res.ok) {
             const text = await res.text(); // Leemos el HTML del error
-            console.error("Error del servidor (HTML recibido):", text.substring(0, 100));
+            console.error(
+              "Error del servidor (HTML recibido):",
+              text.substring(0, 100),
+            );
             return;
-        }
+          }
 
-        const data = await res.json();
-        setStore({ employeeInfo: data });
-    } catch (error) {
-        console.error("Error de conexión:", error);
-    }
-},
+          const data = await res.json();
+          setStore({ employeeInfo: data });
+        } catch (error) {
+          console.error("Error de conexión:", error);
+        }
+      },
 
       loginAdmin: async (credentials) => {
         const API_URL =
