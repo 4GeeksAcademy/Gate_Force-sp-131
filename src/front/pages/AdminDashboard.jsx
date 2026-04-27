@@ -99,7 +99,7 @@ const AdminDashboard = () => {
                             <button onClick={() => navigate("/employees")} className="btn btn-outline-primary">
                                 <i className="fas fa-users me-2"></i>Empleados
                             </button>
-                            <button onClick={() => navigate("/company")} className="btn btn-outline-success">
+                            <button onClick={() => navigate("/signup-company")} className="btn btn-outline-success">
                                 <i className="fas fa-building me-2"></i>Empresas
                             </button>
                             <button onClick={() => navigate("/managers")} className="btn btn-outline-warning">
