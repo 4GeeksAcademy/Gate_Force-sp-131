@@ -282,18 +282,19 @@ class Incident(db.Model):
             "created_at": self.created_at.strftime("%d-%m-%Y")
         }
 
-
 class Vacaciones(db.Model):
     __tablename__ = "vacaciones"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), nullable=False)
+    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
     vacations: Mapped[int] = mapped_column(nullable=True)
     taken_vacations: Mapped[int] = mapped_column(nullable=True)
     available_vacations: Mapped[int] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(), default=datetime.utcnow)
+    start_date: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
+    end_date: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
+    days_requested: Mapped[int] = mapped_column(nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 
     # relación #
     employee = relationship("Employee", back_populates="vacaciones")
@@ -305,5 +306,9 @@ class Vacaciones(db.Model):
             "vacations": self.vacations,
             "taken_vacations": self.taken_vacations,
             "available_vacations": self.available_vacations,
+            "start_date": self.start_date.strftime("%d-%m-%Y") if self.start_date else None,
+            "end_date": self.end_date.strftime("%d-%m-%Y") if self.end_date else None,
+            "days_requested": self.days_requested,
+            "status": self.status,
             "created_at": self.created_at.strftime("%d-%m-%Y")
         }
