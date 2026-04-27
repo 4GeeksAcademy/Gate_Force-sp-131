@@ -108,8 +108,6 @@ const getState = ({ getStore, getActions, setStore }) => {
           if (res.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", "employee");
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("role", "employee");
             localStorage.setItem("username", data.first_name || "Empleado");
             setStore({ token: data.token, role: "employee" });
             return { success: true };
@@ -126,10 +124,16 @@ const getState = ({ getStore, getActions, setStore }) => {
             /\/api$/,
             "",
           ) + "/api/";
+
+        const token = localStorage.getItem("token");
+
         try {
           const res = await fetch(`${API_URL}employee/signup`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify(formData),
           });
           const data = await res.json();
@@ -143,13 +147,12 @@ const getState = ({ getStore, getActions, setStore }) => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        // 1. Limpiamos la URL de forma segura
         let baseUrl = import.meta.env.VITE_BACKEND_URL;
-        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1); // Quita la barra final si existe
-        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4); // Quita /api si ya venía
+        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
+        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4);
 
         const finalUrl = `${baseUrl}/api/employee/me`;
-        console.log("Llamando a:", finalUrl); // 🔍 Revisa esto en la consola para ver la URL real
+        console.log("Llamando a:", finalUrl);
 
         try {
           const res = await fetch(finalUrl, {
@@ -160,9 +163,8 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
           });
 
-          // 2. Antes de hacer .json(), verificamos si la respuesta es exitosa
           if (!res.ok) {
-            const text = await res.text(); // Leemos el HTML del error
+            const text = await res.text();
             console.error(
               "Error del servidor (HTML recibido):",
               text.substring(0, 100),
@@ -241,9 +243,12 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
         return false;
       },
+
       loadEverything: async () => {
-        await actions.getEmployeeInfo();
-        await actions.getSchedules(localStorage.getItem("employee_id"));
+        const actions = getActions();
+        if (actions.getEmployeeData) {
+          await actions.getEmployeeData();
+        }
       },
     },
   };

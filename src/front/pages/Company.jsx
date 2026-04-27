@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function CompaniesPage() {
-    const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
+    const [companies, setCompanies] = useState([]);
+    const navigate = useNavigate();
 
-    const authFetch = (url, options = {}) => {
+    const API_URL = import.meta.env.VITE_BACKEND_URL
+        .replace(/\/$/, "")
+        .replace(/\/api$/, "") + "/api/";
+
+    const authFetch = async (url, options = {}) => {
         const token = localStorage.getItem("token");
-        return fetch(url, {
+        const response = await fetch(url, {
             ...options,
             headers: {
                 "Content-Type": "application/json",
@@ -13,24 +19,20 @@ export default function CompaniesPage() {
                 ...options.headers
             }
         });
+        return response;
     };
 
-    const [companies, setCompanies] = useState([]);
-    const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState({
-        nombre_empresa: "",
-        password: "",
-        region: "",
-        is_active: true
-    });
-
     const getCompanies = async () => {
-        const res = await authFetch(`${API_URL}companies`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-            setCompanies(data);
-        } else {
-            console.error("Error al obtener companies:", data);
+        try {
+            const res = await authFetch(`${API_URL}companies`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setCompanies(data);
+            } else {
+                setCompanies([]);
+            }
+        } catch (error) {
+            console.error("Error al obtener companies:", error);
             setCompanies([]);
         }
     };
@@ -40,96 +42,76 @@ export default function CompaniesPage() {
     }, []);
 
     const deleteCompany = async (id) => {
-        await authFetch(`${API_URL}companies/${id}`, { method: "DELETE" });
-        getCompanies();
-    };
+        const confirmDelete = window.confirm("¿Seguro que quieres eliminar esta empresa?");
+        if (!confirmDelete) return;
 
-    const startEdit = (company) => {
-        setEditingId(company.id);
-        setFormData({
-            nombre_empresa: company.nombre_empresa,
-            region: company.region,
-            is_active: company.is_active
-        });
-    };
-
-    const cancelEdit = () => {
-        setEditingId(null);
-        setFormData({ nombre_empresa: "", password: "", region: "", is_active: true });
-    };
-
-    const handleChange = (e) => {
-        const value = e.target.name === "is_active" ? e.target.value === "true" : e.target.value;
-        setFormData({ ...formData, [e.target.name]: value });
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const method = editingId ? "PUT" : "POST";
-        const url = editingId ? `${API_URL}companies/${editingId}` : `${API_URL}companies`;
-
-        await authFetch(url, {
-            method,
-            body: JSON.stringify(formData)
-        });
-
-        cancelEdit();
-        getCompanies();
+        try {
+            const res = await authFetch(`${API_URL}companies/${id}`, { method: "DELETE" });
+            if (res.ok) {
+                getCompanies();
+            } else {
+                const errorData = await res.json();
+                alert(errorData.msg || "No se pudo eliminar la empresa");
+            }
+        } catch (error) {
+            console.error("Error al eliminar empresa:", error);
+        }
     };
 
     return (
-        <div style={{ padding: "20px" }}>
-            <h1>Companies</h1>
+        <div className="container mt-4">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h1 className="fw-bold">Empresas</h1>
+                <button
+                    className="btn btn-success"
+                    onClick={() => navigate("/company/new")}
+                >
+                    <i className="fas fa-plus me-2"></i>Nueva empresa
+                </button>
+            </div>
 
-            <form onSubmit={handleSubmit}>
-                <h3>{editingId ? "Edit Company" : "Create Company"}</h3>
+            {companies.length === 0 ? (
+                <div className="alert alert-info">No hay empresas registradas.</div>
+            ) : (
+                <div className="row">
+                    {companies.map((company) => (
+                        <div key={company.id} className="col-md-6 col-lg-4 mb-4">
+                            <div className="card shadow-sm h-100">
+                                <div className="card-body">
+                                    <h5 className="card-title fw-bold">{company.nombre_empresa}</h5>
+                                    <p className="mb-2">
+                                        <strong>Email:</strong> {company.email || "Sin email"}
+                                    </p>
+                                    <p className="mb-2">
+                                        <strong>Región:</strong> {company.region}
+                                    </p>
+                                    <p className="mb-3">
+                                        <strong>Estado:</strong>{" "}
+                                        <span className={`badge ${company.is_active ? "bg-success" : "bg-secondary"}`}>
+                                            {company.is_active ? "Activa" : "Inactiva"}
+                                        </span>
+                                    </p>
 
-                <input
-                    name="nombre_empresa"
-                    placeholder="Company name"
-                    value={formData.nombre_empresa}
-                    onChange={handleChange}
-                    required
-                />
-                <input
-                    name="region"
-                    placeholder="Region"
-                    value={formData.region}
-                    onChange={handleChange}
-                    required
-                />
-                {!editingId && (
-                    <input
-                        name="password"
-                        placeholder="Password"
-                        type="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                    />
-                )}
-                <select name="is_active" value={formData.is_active} onChange={handleChange}>
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                </select>
-
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <button type="submit">{editingId ? "Update" : "Create"}</button>
-                    {editingId && (
-                        <button type="button" onClick={cancelEdit}>Cancel</button>
-                    )}
+                                    <div className="d-flex gap-2">
+                                        <button
+                                            className="btn btn-outline-primary w-100"
+                                            onClick={() => navigate(`/company/edit/${company.id}`)}
+                                        >
+                                            <i className="fas fa-edit me-1"></i>Editar
+                                        </button>
+                                        <button
+                                            className="btn btn-outline-danger w-100"
+                                            onClick={() => deleteCompany(company.id)}
+                                        >
+                                            <i className="fas fa-trash-alt me-1"></i>Borrar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-            </form>
-
-            <ul>
-                {companies.map((company) => (
-                    <li key={company.id} style={{ marginBottom: "10px" }}>
-                        {company.nombre_empresa} - {company.region} - {company.is_active ? "✅ Active" : "❌ Inactive"}
-                        <button onClick={() => startEdit(company)} style={{ marginLeft: "10px" }}>Edit</button>
-                        <button onClick={() => deleteCompany(company.id)} style={{ marginLeft: "5px" }}>Delete</button>
-                    </li>
-                ))}
-            </ul>
+            )}
         </div>
     );
 }

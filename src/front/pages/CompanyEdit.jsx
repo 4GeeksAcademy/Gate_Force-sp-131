@@ -7,6 +7,7 @@ export default function EditEmployee() {
     const navigate = useNavigate();
     const [employee, setEmployee] = useState(null);
     const [companies, setCompanies] = useState([]);
+    const [selectedCompanyId, setSelectedCompanyId] = useState("");
     const [error, setError] = useState(null);
 
     const role = localStorage.getItem("role");
@@ -17,42 +18,36 @@ export default function EditEmployee() {
 
     const authFetch = async (url, options = {}) => {
         const token = localStorage.getItem("token");
-        try {
-            const response = await fetch(url, {
-                ...options,
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`,
-                    ...options.headers
-                }
-            });
-            if (!response.ok) {
-                const errorDetail = await response.json().catch(() => ({ msg: "Error en la operación" }));
-                throw new Error(errorDetail.msg || `Error ${response.status}`);
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
             }
-            return response;
-        } catch (err) {
-            console.error("Error en authFetch:", err.message);
-            throw err;
+        });
+
+        if (!response.ok) {
+            const errorDetail = await response.json().catch(() => ({ msg: "Error en la operación" }));
+            throw new Error(errorDetail.msg || `Error ${response.status}`);
         }
+
+        return response;
     };
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const employeeRes = await authFetch(`${API_URL}employees/${id}`);
-                const employeeData = await employeeRes.json();
+                const res = await authFetch(`${API_URL}employees/${id}`);
+                const data = await res.json();
+                setEmployee(data);
+                setSelectedCompanyId(String(data.company_id || ""));
 
                 if (role === "admin") {
                     const companiesRes = await authFetch(`${API_URL}companies`);
                     const companiesData = await companiesRes.json();
                     setCompanies(Array.isArray(companiesData) ? companiesData : []);
                 }
-
-                setEmployee({
-                    ...employeeData,
-                    company_id: employeeData.company_id || ""
-                });
             } catch (err) {
                 setError("No se pudo cargar la información del empleado.");
             }
@@ -61,21 +56,18 @@ export default function EditEmployee() {
         fetchData();
     }, [id, role]);
 
-    const handleChange = (e) => {
-        setEmployee({
-            ...employee,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    const handleUpdate = async (e) => {
-        e.preventDefault();
-
+    const handleUpdate = async (formData) => {
         try {
+            const payload = {
+                ...formData,
+                ...(role === "admin" ? { company_id: selectedCompanyId } : {})
+            };
+
             await authFetch(`${API_URL}employees/${id}`, {
                 method: "PUT",
-                body: JSON.stringify(employee)
+                body: JSON.stringify(payload)
             });
+
             navigate("/employees");
         } catch (err) {
             alert("Error al actualizar: " + err.message);
@@ -101,13 +93,12 @@ export default function EditEmployee() {
                     <div className="mb-4">
                         <label className="form-label fw-semibold">Empresa</label>
                         <select
-                            name="company_id"
                             className="form-select"
-                            value={employee.company_id}
-                            onChange={handleChange}
+                            value={selectedCompanyId}
+                            onChange={(e) => setSelectedCompanyId(e.target.value)}
                         >
                             <option value="">Selecciona una empresa</option>
-                            {companies.map(company => (
+                            {companies.map((company) => (
                                 <option key={company.id} value={company.id}>
                                     {company.nombre_empresa}
                                 </option>
@@ -118,7 +109,7 @@ export default function EditEmployee() {
 
                 <EmployeeForm
                     initialData={employee}
-                    onSubmit={() => handleUpdate({ preventDefault: () => {} })}
+                    onSubmit={handleUpdate}
                     isEdit={true}
                 />
             </div>

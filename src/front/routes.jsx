@@ -35,6 +35,9 @@ import LoginAdmin from "./pages/LoginAdmin";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmployeesSchedules from "./components/EmployeesSchedules.jsx";
 import MisNominas from "./pages/MisNominas.jsx";
+import CompanyNew from "./pages/CompanyNew.jsx";
+import CompanyEdit from "./pages/CompanyEdit.jsx";
+
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -261,6 +264,23 @@ export const router = createBrowserRouter(
         element={
           <RutaProtegida allowedRole="admin">
             <AdminDashboard />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/company/new"
+        element={
+          <RutaProtegida allowedRole="company">
+            <CompanyNew />
+          </RutaProtegida>
+        }
+      />
+
+      <Route
+        path="/company/edit/:id"
+        element={
+          <RutaProtegida allowedRole="company">
+            <CompanyEdit />
           </RutaProtegida>
         }
       />

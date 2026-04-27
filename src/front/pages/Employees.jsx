@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 export default function EmployeesPage() {
-    // Mantenemos tu lógica de URL intacta
     const API_URL = import.meta.env.VITE_BACKEND_URL
         .replace(/\/$/, "")
         .replace(/\/api$/, "") + "/api/";
 
     const navigate = useNavigate();
     const [employees, setEmployees] = useState([]);
+    const [companyName, setCompanyName] = useState("");
+    const role = localStorage.getItem("role");
 
     const authFetch = async (url, options = {}) => {
         const token = localStorage.getItem("token");
@@ -35,9 +36,26 @@ export default function EmployeesPage() {
 
     const getEmployees = async () => {
         try {
+            let currentCompanyName = "";
+
+            if (role === "company") {
+                const companyRes = await authFetch(`${API_URL}company/dashboard`);
+                const companyData = await companyRes.json();
+                currentCompanyName = companyData.nombre_empresa || "";
+                setCompanyName(currentCompanyName);
+            }
+
             const res = await authFetch(`${API_URL}employees`);
             const data = await res.json();
-            setEmployees(Array.isArray(data) ? data : []);
+            const employeesData = Array.isArray(data) ? data : [];
+
+            if (role === "company") {
+                setEmployees(
+                    employeesData.filter(emp => emp.nombre_empresa === currentCompanyName)
+                );
+            } else {
+                setEmployees(employeesData);
+            }
         } catch (error) {
             console.error("Error al obtener empleados:", error);
         }
@@ -75,7 +93,9 @@ export default function EmployeesPage() {
     return (
         <div className="container mt-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="fw-bold">Plantilla de Empleados</h2>
+                <h2 className="fw-bold">
+                    {role === "company" ? `Plantilla de: ${companyName}` : "Plantilla de Empleados"}
+                </h2>
                 <button className="btn btn-primary" onClick={() => navigate("/employees/new")}>
                     <i className="fas fa-plus me-2"></i>Crear empleado
                 </button>
@@ -88,6 +108,7 @@ export default function EmployeesPage() {
                             <th>Nombre</th>
                             <th>Email</th>
                             <th>Posición</th>
+                            <th>Empresa</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
@@ -98,6 +119,7 @@ export default function EmployeesPage() {
                                 <td>{emp.first_name} {emp.last_name}</td>
                                 <td>{emp.email}</td>
                                 <td>{emp.position || "—"}</td>
+                                <td>{emp.nombre_empresa || "Sin empresa"}</td>
                                 <td>
                                     <span className={`badge ${emp.is_active ? "bg-success" : "bg-danger"}`}>
                                         {emp.is_active ? "Activo" : "Inactivo"}
@@ -105,13 +127,22 @@ export default function EmployeesPage() {
                                 </td>
                                 <td>
                                     <div className="btn-group">
-                                        <button className="btn btn-sm btn-outline-warning" onClick={() => navigate(`/employees/edit/${emp.id}`)}>
+                                        <button
+                                            className="btn btn-sm btn-outline-warning"
+                                            onClick={() => navigate(`/employees/edit/${emp.id}`)}
+                                        >
                                             <i className="fas fa-edit"></i>
                                         </button>
-                                        <button className="btn btn-sm btn-outline-secondary" onClick={() => toggleEmployee(emp.id)}>
+                                        <button
+                                            className="btn btn-sm btn-outline-secondary"
+                                            onClick={() => toggleEmployee(emp.id)}
+                                        >
                                             <i className={emp.is_active ? "fas fa-eye-slash" : "fas fa-eye"}></i>
                                         </button>
-                                        <button className="btn btn-sm btn-outline-danger" onClick={() => deleteEmployee(emp.id)}>
+                                        <button
+                                            className="btn btn-sm btn-outline-danger"
+                                            onClick={() => deleteEmployee(emp.id)}
+                                        >
                                             <i className="fas fa-trash"></i>
                                         </button>
                                         <button
@@ -127,13 +158,6 @@ export default function EmployeesPage() {
                     </tbody>
                 </table>
             </div>
-            <button
-                className="btn btn-outline-primary mb-3"
-                onClick={() => navigate("/company-dashboard")}
-            >
-                <i className="fas fa-arrow-left me-2"></i>
-                Volver al Panel
-            </button>
         </div>
     );
 }
