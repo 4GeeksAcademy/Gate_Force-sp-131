@@ -9,10 +9,8 @@ export default function WorkRecordPage() {
         .replace(/\/$/, "")
         .replace(/\/api$/, "") + "/api/";
 
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-
     const authFetch = (url, options = {}) => {
+        const token = localStorage.getItem("token");
         return fetch(url, {
             ...options,
             headers: {
@@ -24,11 +22,12 @@ export default function WorkRecordPage() {
     };
 
     const fetchRecords = async () => {
-        const res = await authFetch(`${API_URL}employee/work-records`);
-        if (res.ok) {
-            const data = await res.json();
+        const res = await authFetch(`${API_URL}work-records`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
             setRecords(data);
         } else {
+            console.error("Error al obtener registros:", data);
             setRecords([]);
         }
     };
@@ -38,9 +37,7 @@ export default function WorkRecordPage() {
     }, []);
 
     const handleDelete = async (id) => {
-        await authFetch(`${API_URL}work-records/${id}`, {
-            method: "DELETE"
-        });
+        await authFetch(`${API_URL}work-records/${id}`, { method: "DELETE" });
         fetchRecords();
     };
 
@@ -53,18 +50,16 @@ export default function WorkRecordPage() {
             <button onClick={() => navigate("/work-records/new")}>
                 Crear registro
             </button>
+
             {records.map(r => (
                 <div key={r.id} style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
                     <p><strong>Check-in:</strong> {new Date(r.check_in).toLocaleString()}</p>
                     <p><strong>Check-out:</strong> {r.check_out ? new Date(r.check_out).toLocaleString() : "—"}</p>
                     <p><strong>Horas:</strong> {r.total_hours}</p>
                     <p><strong>Status:</strong> {r.status}</p>
-                    <button onClick={() => navigate(`/work-records/edit/${r.id}`)}>
-                        Editar
-                    </button>
-                    <button onClick={() => handleDelete(r.id)}>
-                        Eliminar
-                    </button>
+
+                    <button onClick={() => navigate(`/work-records/edit/${r.id}`)}>Editar</button>
+                    <button onClick={() => handleDelete(r.id)}>Eliminar</button>
                 </div>
             ))}
         </div>

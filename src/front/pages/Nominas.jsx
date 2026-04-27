@@ -9,10 +9,27 @@ export default function NominasPage() {
         .replace(/\/$/, "")
         .replace(/\/api$/, "") + "/api/";
 
+    const authFetch = (url, options = {}) => {
+        const token = localStorage.getItem("token");
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            }
+        });
+    };
+
     const fetchNominas = async () => {
-        const res = await fetch(`${API_URL}nominas`);
+        const res = await authFetch(`${API_URL}nominas`);
         const data = await res.json();
-        setNominas(data);
+        if (Array.isArray(data)) {
+            setNominas(data);
+        } else {
+            console.error("Error al obtener nóminas:", data);
+            setNominas([]);
+        }
     };
 
     useEffect(() => {
@@ -20,9 +37,7 @@ export default function NominasPage() {
     }, []);
 
     const handleDelete = async (id) => {
-        await fetch(`${API_URL}nominas/${id}`, {
-            method: "DELETE"
-        });
+        await authFetch(`${API_URL}nominas/${id}`, { method: "DELETE" });
         fetchNominas();
     };
 
@@ -40,14 +55,8 @@ export default function NominasPage() {
                     <p><strong>Mes:</strong> {n.month}</p>
                     <p><strong>Documento:</strong> {n.document_url}</p>
 
-
-                    <button onClick={() => navigate(`/nominas/edit/${n.id}`)}>
-                        Editar
-                    </button>
-
-                    <button onClick={() => handleDelete(n.id)}>
-                        Eliminar
-                    </button>
+                    <button onClick={() => navigate(`/nominas/edit/${n.id}`)}>Editar</button>
+                    <button onClick={() => handleDelete(n.id)}>Eliminar</button>
                 </div>
             ))}
         </div>

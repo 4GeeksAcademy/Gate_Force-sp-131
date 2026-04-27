@@ -31,13 +31,9 @@ import VacacionesEdit from "./pages/VacacionesEdit.jsx";
 import VacacionesDelete from "./pages/VacacionesDelete.jsx";
 import SignupEmployee from "./pages/SignupEmployee.jsx";
 import LoginEmployee from "./pages/LoginEmployee.jsx";
-import EmployeesSchedules from "./components/EmployeesSchedules.jsx";
-
-
-
-
-
-
+import DashboardEmployee from "./pages/DashboardEmployee";
+import LoginAdmin from "./pages/LoginAdmin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 
 export const router = createBrowserRouter(
@@ -104,15 +100,25 @@ export const router = createBrowserRouter(
       <Route path="/incidents/new" element={<IncidentNew />} />
       <Route path="/incidents/edit/:id" element={<IncidentEdit />} />
       <Route path="/incidents/delete" element={<IncidentDelete />} />
-
-      {/* COMPANY SCHEDULE MANAGER ROUTE */}
-      <Route path="/horarios/:employeeId" element={<Horarios />} />
-
-
-
-
-
-
+      <Route path="/vacaciones" element={<Vacaciones />} />
+      <Route path="/vacaciones/new" element={<VacacionesNew />} />
+      <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
+      <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
+      <Route path="/login-company" element={<LoginCompany />} />
+      <Route path="/signup-company" element={<SignupCompany />} />
+      <Route path="/company-dashboard" element={<RutaProtegida allowedRole="company"><DashBoardCompany /></RutaProtegida>} />
+      <Route path="/login-employee" element={<LoginEmployee />} />
+      <Route path="/signup-employee" element={<SignupEmployee />} />
+      <Route path="/employee-dashboard" element={<DashboardEmployee />} />
+      <Route path="/login-admin" element={<LoginAdmin />} />
+      <Route
+        path="/admin-dashboard"
+        element={
+          <RutaProtegida allowedRole="admin">
+            <AdminDashboard />
+          </RutaProtegida>
+        }
+      />
 
     </Route>
   )
