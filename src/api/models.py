@@ -31,7 +31,15 @@ class Company(db.Model):
     password: Mapped[str] = mapped_column(String(50), nullable=False)
     region: Mapped[str] = mapped_column(String(100), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow)
+
+    # RELACIONES #
+    employees = relationship(
+        "Employee", back_populates="company", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"{self.nombre_empresa}"
 
     def serialize(self):
         return {
@@ -48,6 +56,8 @@ class Employee(db.Model):
     __tablename__ = "employees"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id"), nullable=False)
 
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -79,6 +89,7 @@ class Employee(db.Model):
         "Incident", back_populates="employee", cascade="all, delete")
     vacaciones = relationship(
         "Vacaciones", back_populates="employee", cascade="all, delete")
+    company = relationship("Company", back_populates="employees")
 
     def __repr__(self):
         return f"{self.first_name} {self.last_name}"
@@ -91,6 +102,7 @@ class Employee(db.Model):
             "email": self.email,
             "phone": self.phone,
             "position": self.position,
+            "nombre_empresa": self.company.nombre_empresa if self.company else "Sin empresa",
 
 
             "work_records": [wr.serialize() for wr in self.work_records],
@@ -184,18 +196,22 @@ class Manager(db.Model):
 
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(120), unique=True, nullable=False)
     phone: Mapped[str] = mapped_column(String(20), nullable=True)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
 
     position: Mapped[str] = mapped_column(String(100), nullable=True)
 
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relación con Employee
-    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=True)
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), nullable=True)
     employee = relationship("Employee", back_populates="manager")
 
     def __repr__(self):
@@ -221,7 +237,6 @@ class Schedule(db.Model):
     employee_id: Mapped[int] = mapped_column(
         ForeignKey("employees.id"), nullable=False
     )
-    # "Monday", "Lunes", etc.
     day: Mapped[str] = mapped_column(String(20), nullable=False)
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)

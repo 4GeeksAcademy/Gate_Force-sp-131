@@ -265,8 +265,22 @@ def get_employee_dashboard():
 @jwt_required()
 @role_required("company", "manager", "admin")
 def get_employees():
-    employees = Employee.query.all()
+    identity = get_jwt_identity()
+    company_id = identity
+
+    employees = Employee.query.filter_by(company_id=company_id).all()
+
     return jsonify([e.serialize() for e in employees]), 200
+
+
+@api.route('/employee/me', methods=['GET'])
+@jwt_required()
+def get_current_employee():
+    employee_id = get_jwt_identity()
+    employee = Employee.query.get(employee_id)
+    if not employee:
+        return jsonify({"msg": "Empleado no encontrado"}), 404
+    return jsonify(employee.serialize()), 200
 
 
 @api.route('/employees/simple', methods=['GET'])
@@ -291,24 +305,39 @@ def get_employee(id):
 @jwt_required()
 @role_required("company", "manager", "admin")
 def create_employee():
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-    required_fields = ["first_name", "last_name", "email", "password"]
-    for field in required_fields:
-        if not data.get(field):
-            return jsonify({"msg": f"{field} is required"}), 400
-    if Employee.query.filter_by(email=data["email"]).first():
-        return jsonify({"msg": "Email already exists"}), 400
-    new_employee = Employee(
-        first_name=data["first_name"], last_name=data["last_name"],
-        email=data["email"], phone=data.get("phone"),
-        password=data["password"], role=data.get("role", "employee"),
-        position=data.get("position"), is_active=True
-    )
-    db.session.add(new_employee)
-    db.session.commit()
-    return jsonify(new_employee.serialize()), 201
+    identity = get_jwt_identity()
+    company_id = identity  # Asumimos que la identidad del token de empresa es su ID
+
+    body = request.get_json()
+
+    try:
+        new_employee = Employee(
+            first_name=body['first_name'],
+            last_name=body['last_name'],
+            email=body['email'],
+            password=body['password'],
+            company_id=company_id,
+            phone=body.get('phone'),
+            position=body.get('position')
+        )
+
+        db.session.add(new_employee)
+        db.session.flush()
+        new_vacations = Vacaciones(
+            employee_id=new_employee.id,
+            vacations=15,
+            taken_vacations=0,
+            available_vacations=15
+        )
+        db.session.add(new_vacations)
+        db.session.commit()
+
+        return jsonify(new_employee.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al crear empleado y vacaciones: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor", "error": str(e)}), 500
 
 
 @api.route('/employees/<int:id>', methods=['PUT'])
@@ -330,6 +359,21 @@ def update_employee(id):
         employee.password = data["password"]
     db.session.commit()
     return jsonify(employee.serialize()), 200
+
+
+@api.route('/employees/<int:id>/toggle', methods=['PUT'])
+@jwt_required()
+@company_required
+def toggle_employee(id):
+    employee = Employee.query.get(id)
+
+    if not employee:
+        return jsonify({"msg": "Not found"}), 404
+
+    employee.is_active = not employee.is_active
+    db.session.commit()
+
+    return jsonify({"msg": "Updated"}), 200
 
 
 @api.route('/employees/<int:id>', methods=['DELETE'])
@@ -489,9 +533,8 @@ def parse_time(t):
 @jwt_required()
 @role_required("company", "manager", "employee", "admin")
 def get_horarios(employee_id):
-    employee = Employee.query.get(employee_id)
-    if not employee:
-        return jsonify({"error": "Empleado no encontrado"}), 404
+    employee = Employee.query.get_or_404(employee_id)
+
     schedules = Schedule.query.filter_by(employee_id=employee_id).all()
     return jsonify([s.serialize() for s in schedules]), 200
 
@@ -500,12 +543,7 @@ def get_horarios(employee_id):
 @jwt_required()
 @role_required("company", "manager", "admin")
 def create_horario(employee_id):
-    employee = Employee.query.get(employee_id)
-    if not employee:
-        return jsonify({"error": "Empleado no encontrado"}), 404
     body = request.get_json()
-    if not body:
-        return jsonify({"error": "Body vacío"}), 400
     day = body.get("day")
     start_time = body.get("start_time")
     end_time = body.get("end_time")

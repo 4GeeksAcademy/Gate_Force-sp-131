@@ -9,10 +9,13 @@ const DashBoardCompany = () => {
 
     useEffect(() => {
         const init = async () => {
-            const success = await actions.getCompanyData();
-            setLoading(false);
-            if (!success) {
-                console.error("No se pudo cargar la información");
+            try {
+                const success = await actions.getCompanyData();
+                console.log("respuesta:", success);
+            } catch (error) {
+                console.error("ERROR:", error);
+            } finally {
+                setLoading(false);
             }
         };
         init();
@@ -34,45 +37,43 @@ const DashBoardCompany = () => {
     const company = store.companyInfo;
 
     return (
-        // ... dentro del return de DashBoardCompany.jsx ...
-
         <div className="container mt-5">
-            {/* Botón de Logout arriba a la derecha */}
             <div className="d-flex justify-content-end mb-3">
                 <button onClick={handleLogout} className="btn btn-outline-danger shadow-sm">
                     <i className="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
                 </button>
             </div>
-
-            <div className="card shadow border-0">
-                <div className="card-header bg-primary text-white py-3">
-                    <h3 className="mb-0">Perfil de la Empresa</h3>
+            <div className="text-center mb-4">
+                <h1 className="display-5 fw-bold">Bienvenido, {company?.nombre_empresa || "Empresa"}</h1>
+                <p className="lead text-muted">Panel de Gestión Administrativa</p>
+            </div>
+            <div className="row mt-4">
+                <div className="col-md-6 mb-3">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body text-center">
+                            <h5 className="card-title"> Empleados</h5>
+                            <p className="text-muted">Gestiona tu equipo</p>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => navigate("/employees")}
+                            >
+                                Ver empleados
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div className="card-body p-4">
-                    <div className="row">
-                        <div className="col-md-6 mb-4">
-                            <label className="text-muted small fw-bold text-uppercase">Nombre Comercial</label>
-                            <p className="fs-4 fw-semibold border-bottom pb-2">{company?.nombre_empresa}</p>
-                        </div>
-                        <div className="col-md-6 mb-4">
-                            <label className="text-muted small fw-bold text-uppercase">Correo Corporativo</label>
-                            <p className="fs-4 fw-semibold border-bottom pb-2">{company?.email || "Sin email registrado"}</p>
-                        </div>
-                        <div className="col-md-6 mb-4">
-                            <label className="text-muted small fw-bold text-uppercase">Región / Ubicación</label>
-                            <p className="fs-4 fw-semibold border-bottom pb-2">{company?.region}</p>
-                        </div>
-                        <div className="col-md-3 mb-4">
-                            <label className="text-muted small fw-bold text-uppercase">Fecha de Registro</label>
-                            <p className="fs-5 border-bottom pb-2">{company?.created_at}</p>
-                        </div>
-                        <div className="col-md-3 mb-4">
-                            <label className="text-muted small fw-bold text-uppercase">Estado</label>
-                            <div>
-                                <span className={`badge ${company?.is_active ? 'bg-success' : 'bg-danger'} px-3 py-2`}>
-                                    {company?.is_active ? 'Activa' : 'Inactiva'}
-                                </span>
-                            </div>
+
+                <div className="col-md-6 mb-3">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body text-center">
+                            <h5 className="card-title">Vacaciones</h5>
+                            <p className="text-muted">Controla días libres</p>
+                            <button
+                                className="btn btn-success"
+                                onClick={() => navigate("/vacaciones")}
+                            >
+                                Ver vacaciones
+                            </button>
                         </div>
                     </div>
                 </div>
