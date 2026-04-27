@@ -239,7 +239,11 @@ def employee_login():
         return jsonify({"msg": "Credenciales incorrectas"}), 401
     token = create_access_token(identity=str(
         employee.id), additional_claims={"role": "employee"})
-    return jsonify({"token": token, "role": "employee"}), 200
+    return jsonify({
+        "token": token,
+        "role": "employee",
+        "first_name": employee.first_name
+    }), 200
 
 
 @api.route('/employee/signup', methods=['POST'])
@@ -485,7 +489,62 @@ def delete_work_record(id):
     return jsonify({"msg": "Deleted"}), 200
 
 
+@api.route('/employee/work-records', methods=['GET'])
+@jwt_required()
+def get_my_work_records():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    records = WorkRecord.query.filter_by(employee_id=employee_id).all()
+    return jsonify([r.serialize() for r in records]), 200
+
+
+@api.route('/employee/work-records', methods=['POST'])
+@jwt_required()
+def create_my_work_record():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    data = request.json
+    check_in = datetime.fromisoformat(data["check_in"].replace("Z", "+00:00"))
+    new_record = WorkRecord(
+        employee_id=int(employee_id),
+        check_in=check_in,
+        status="pending"
+    )
+    db.session.add(new_record)
+    db.session.commit()
+    return jsonify(new_record.serialize()), 201
+
+
+@api.route('/employee/work-records/<int:id>', methods=['PUT'])
+@jwt_required()
+def checkout_my_work_record(id):
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    record = WorkRecord.query.filter_by(
+        id=id, employee_id=int(employee_id)).first()
+    if not record:
+        return jsonify({"msg": "Not found"}), 404
+    data = request.json
+    if data.get("check_out"):
+        record.check_out = datetime.fromisoformat(
+            data["check_out"].replace("Z", "").replace("+00:00", ""))
+    if record.check_in and record.check_out:
+        total_seconds = (record.check_out - record.check_in).total_seconds()
+        hours = int(total_seconds // 3600)
+        minutes = int((total_seconds % 3600) // 60)
+        record.total_hours = f"{hours}h {minutes:02d}min"
+        record.status = "completed"
+    db.session.commit()
+    return jsonify(record.serialize()), 200
+
 # ─── NOMINAS CRUD ───────────────────────────────────────────────
+
 
 @api.route('/nominas', methods=['GET'])
 @jwt_required()
@@ -844,3 +903,14 @@ def delete_manager(id):
     db.session.delete(manager)
     db.session.commit()
     return jsonify({"msg": f"Manager {id} deleted"}), 200
+
+
+@api.route('/employee/nominas', methods=['GET'])
+@jwt_required()
+def get_my_nominas():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    nominas = Nomina.query.filter_by(employee_id=employee_id).all()
+    return jsonify([n.serialize() for n in nominas]), 200
