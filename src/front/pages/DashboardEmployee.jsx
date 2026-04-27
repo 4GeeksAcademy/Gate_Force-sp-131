@@ -75,9 +75,9 @@ const DashboardEmployee = () => {
                             <Link to="/employees/schedules" className="btn btn-info btn-sm mb-2 d-block">
                                 <i className="fas fa-calendar-alt me-2"></i>Mi Horario
                             </Link>
-                            <li className="list-group-item d-flex justify-content-between align-items-center">
-                                <a href="/mis-nominas" className="btn btn-sm btn-outline-primary">Ver nóminas</a>
-                            </li>
+                            <Link to="/mis-nominas" className="btn btn-info btn-sm mb-2 d-block">
+                                <i className="fas fa-file-alt me-2"></i>Mi Nóminas
+                            </Link>
 
                             <Link to="/work-records" className="btn btn-dark btn-sm d-block">
                                 <i className="fas fa-clock me-2"></i>Fichajes
