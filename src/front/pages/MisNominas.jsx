@@ -21,7 +21,8 @@ export default function MisNominas() {
     };
 
     const fetchNominas = async () => {
-        const res = await authFetch(`${API_URL}employee/nominas`);
+        const endpoint = role === "admin" ? `${API_URL}nominas` : `${API_URL}employee/nominas`;
+        const res = await authFetch(endpoint);
         const data = await res.json();
         if (Array.isArray(data)) {
             setNominas(data);
@@ -31,12 +32,12 @@ export default function MisNominas() {
     };
 
     useEffect(() => {
-        if (token && role === "employee") {
+        if (token && (role === "employee" || role === "admin")) {
             fetchNominas();
         }
     }, []);
 
-    if (!token || role !== "employee") {
+    if (!token || (role !== "employee" && role !== "admin")) {
         return (
             <div className="container mt-5">
                 <div className="alert alert-warning">

@@ -193,6 +193,7 @@ const getState = ({ getStore, getActions, setStore }) => {
           if (res.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", "admin");
+            localStorage.setItem("username", credentials.username);
             setStore({ token: data.token, role: "admin" });
             return { success: true };
           }
@@ -205,6 +206,7 @@ const getState = ({ getStore, getActions, setStore }) => {
       logout: () => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
+        localStorage.removeItem("username");
         setStore({
           token: null,
           role: null,

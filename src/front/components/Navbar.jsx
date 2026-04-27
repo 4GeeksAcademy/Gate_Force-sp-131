@@ -8,8 +8,10 @@ export const Navbar = () => {
 	const handleLogout = () => {
 		localStorage.removeItem("token");
 		localStorage.removeItem("role");
+		localStorage.removeItem("username");
 		navigate("/");
 	};
+
 	const username = localStorage.getItem("username");
 
 	return (
@@ -29,6 +31,7 @@ export const Navbar = () => {
 							</button>
 						</div>
 					)}
+
 					{token && role === "company" && (
 						<div className="d-flex align-items-center gap-2">
 							<Link to="/company-dashboard" className="btn btn-outline-dark btn-sm">
@@ -39,9 +42,17 @@ export const Navbar = () => {
 							</button>
 						</div>
 					)}
-					<Link to="/demo">
-						<button className="btn btn-primary">Check the Context in action</button>
-					</Link>
+
+					{token && role === "admin" && (
+						<div className="d-flex align-items-center gap-2">
+							<Link to="/admin-dashboard" className="btn btn-outline-dark btn-sm">
+								🛡️ {username || "Panel admin"}
+							</Link>
+							<button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>
+								Cerrar sesión
+							</button>
+						</div>
+					)}
 				</div>
 			</div>
 		</nav>

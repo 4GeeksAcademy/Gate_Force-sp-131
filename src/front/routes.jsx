@@ -1,6 +1,6 @@
 // Import necessary components and functions from react-router-dom.
 
-import { createBrowserRouter, createRoutesFromElements, Route, } from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Route } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
@@ -13,9 +13,9 @@ import DashboardEmployee from "./pages/DashboardEmployee";
 import Admin from "./components/Admin.jsx";
 import Nominas from "./pages/Nominas.jsx";
 import NominasForm from "./pages/NominasForm.jsx";
-import Workrecord from "./pages/Workrecord.jsx"
-import WorkRecordForm from "./pages/WorkRecordForm.jsx"
-import Horarios from "./pages/Horarios.jsx"
+import Workrecord from "./pages/Workrecord.jsx";
+import WorkRecordForm from "./pages/WorkRecordForm.jsx";
+import Horarios from "./pages/Horarios.jsx";
 import Incidents from "./pages/Incidents.jsx";
 import IncidentNew from "./pages/IncidentNew.jsx";
 import IncidentEdit from "./pages/IncidentEdit.jsx";
@@ -23,8 +23,8 @@ import IncidentDelete from "./pages/IncidentDelete.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
 import Managers from "./pages/Managers.jsx";
 import LoginCompany from "./pages/LoginCompany.jsx";
-import DashBoardCompany from "./pages/DashBoardCompany.jsx"
-import RutaProtegida from "./components/RutaProtegida.jsx"
+import DashBoardCompany from "./pages/DashBoardCompany.jsx";
+import RutaProtegida from "./components/RutaProtegida.jsx";
 import SignupCompany from "./pages/SignupCompany.jsx";
 import VacacionesNew from "./pages/VacacionesNew.jsx";
 import VacacionesEdit from "./pages/VacacionesEdit.jsx";
@@ -36,84 +36,225 @@ import AdminDashboard from "./pages/AdminDashboard";
 import EmployeesSchedules from "./components/EmployeesSchedules.jsx";
 import MisNominas from "./pages/MisNominas.jsx";
 
-
 export const router = createBrowserRouter(
   createRoutesFromElements(
-    // CreateRoutesFromElements function allows you to build route elements declaratively.
-    // Create your routes here, if you want to keep the Navbar and Footer in all views, add your new routes inside the containing Route.
-    // Root, on the contrary, create a sister Route, if you have doubts, try it!
-    // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
-    // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
-
-    // Root Route: All navigation will start from here.
-    <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
-
-      {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
+    <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>}>
       <Route path="/" element={<Home />} />
       <Route path="/single/:theId" element={<Single />} />
       <Route path="/demo" element={<Demo />} />
 
-      {/* EMPLOYEES ROUTES */}
-      <Route path="/employees" element={<Employees />} />
-      <Route path="/employee-dashboard" element={<DashboardEmployee />} />
-      <Route path="/employees/new" element={<EmployeesNew />} />
-      <Route path="/employees/edit/:id" element={<EmployeesEdit />} />
+      <Route
+        path="/employees"
+        element={
+          <RutaProtegida allowedRole="company">
+            <Employees />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/employee-dashboard"
+        element={
+          <RutaProtegida allowedRole="employee">
+            <DashboardEmployee />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/employees/new"
+        element={
+          <RutaProtegida allowedRole="company">
+            <EmployeesNew />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/employees/edit/:id"
+        element={
+          <RutaProtegida allowedRole="company">
+            <EmployeesEdit />
+          </RutaProtegida>
+        }
+      />
       <Route path="/login-employee" element={<LoginEmployee />} />
       <Route path="/signup-employee" element={<SignupEmployee />} />
-      <Route path="/employees/schedules" element={<EmployeesSchedules />} />
+      <Route
+        path="/employees/schedules"
+        element={
+          <RutaProtegida allowedRole="employee">
+            <EmployeesSchedules />
+          </RutaProtegida>
+        }
+      />
 
+      <Route
+        path="/managers"
+        element={
+          <RutaProtegida allowedRole="company">
+            <Managers />
+          </RutaProtegida>
+        }
+      />
 
+      <Route
+        path="/admin"
+        element={
+          <RutaProtegida allowedRole="admin">
+            <Admin />
+          </RutaProtegida>
+        }
+      />
 
-      {/* MANAGERS ROUTES */}
-      <Route path="/managers" element={<Managers />} />
-
-      {/* ADMIN ROUTES */}
-      <Route path="/admin" element={<Admin />} />
-
-      {/* COMPANY ROUTES */}
       <Route path="/login-company" element={<LoginCompany />} />
       <Route path="/signup-company" element={<SignupCompany />} />
-      <Route path="/company-dashboard" element={<RutaProtegida allowedRole="company"><DashBoardCompany /></RutaProtegida>} />
-      <Route path="/company" element={<Company />} />
-      <Route path="/horarios/:employeeId" element={<Horarios />} />
+      <Route
+        path="/company-dashboard"
+        element={
+          <RutaProtegida allowedRole="company">
+            <DashBoardCompany />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/company"
+        element={
+          <RutaProtegida allowedRole="company">
+            <Company />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/horarios/:employeeId"
+        element={
+          <RutaProtegida allowedRole="company">
+            <Horarios />
+          </RutaProtegida>
+        }
+      />
 
+      <Route
+        path="/vacaciones"
+        element={
+          <RutaProtegida allowedRole="employee">
+            <Vacaciones />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/vacaciones/new"
+        element={
+          <RutaProtegida allowedRole="company">
+            <VacacionesNew />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/vacaciones/edit/:id"
+        element={
+          <RutaProtegida allowedRole="company">
+            <VacacionesEdit />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/vacaciones/delete"
+        element={
+          <RutaProtegida allowedRole="company">
+            <VacacionesDelete />
+          </RutaProtegida>
+        }
+      />
 
+      <Route
+        path="/nominas"
+        element={
+          <RutaProtegida allowedRole="company">
+            <Nominas />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/nominas/new"
+        element={
+          <RutaProtegida allowedRole="company">
+            <NominasForm />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/nominas/edit/:id"
+        element={
+          <RutaProtegida allowedRole="company">
+            <NominasForm />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/mis-nominas"
+        element={
+          <RutaProtegida allowedRole="employee">
+            <MisNominas />
+          </RutaProtegida>
+        }
+      />
 
-      {/* VACACIONES ROUTES */}
-      <Route path="/vacaciones" element={<Vacaciones />} />
-      <Route path="/vacaciones/new" element={<VacacionesNew />} />
-      <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
-      <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
+      <Route
+        path="/work-records"
+        element={
+          <RutaProtegida allowedRole="company">
+            <Workrecord />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/work-records/new"
+        element={
+          <RutaProtegida allowedRole="company">
+            <WorkRecordForm />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/work-records/edit/:id"
+        element={
+          <RutaProtegida allowedRole="company">
+            <WorkRecordForm />
+          </RutaProtegida>
+        }
+      />
 
+      <Route
+        path="/incidents"
+        element={
+          <RutaProtegida allowedRole="company">
+            <Incidents />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/incidents/new"
+        element={
+          <RutaProtegida allowedRole="company">
+            <IncidentNew />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/incidents/edit/:id"
+        element={
+          <RutaProtegida allowedRole="company">
+            <IncidentEdit />
+          </RutaProtegida>
+        }
+      />
+      <Route
+        path="/incidents/delete"
+        element={
+          <RutaProtegida allowedRole="company">
+            <IncidentDelete />
+          </RutaProtegida>
+        }
+      />
 
-
-      {/* NOMINAS ROUTES */}
-      <Route path="/nominas" element={<Nominas />} />
-      <Route path="/nominas/new" element={<NominasForm />} />
-      <Route path="/nominas/edit/:id" element={<NominasForm />} />
-      <Route path="/mis-nominas" element={<MisNominas />} />
-
-      {/* WORK RECORDS ROUTES */}
-      <Route path="/work-records" element={<Workrecord />} />
-      <Route path="/work-records/new" element={<WorkRecordForm />} />
-      <Route path="/work-records/edit/:id" element={<WorkRecordForm />} />
-
-
-      {/* INCIDENTS ROUTES */}
-      <Route path="/incidents" element={<Incidents />} />
-      <Route path="/incidents/new" element={<IncidentNew />} />
-      <Route path="/incidents/edit/:id" element={<IncidentEdit />} />
-      <Route path="/incidents/delete" element={<IncidentDelete />} />
-      <Route path="/vacaciones" element={<Vacaciones />} />
-      <Route path="/vacaciones/new" element={<VacacionesNew />} />
-      <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
-      <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
-      <Route path="/login-company" element={<LoginCompany />} />
-      <Route path="/signup-company" element={<SignupCompany />} />
-      <Route path="/company-dashboard" element={<RutaProtegida allowedRole="company"><DashBoardCompany /></RutaProtegida>} />
-      <Route path="/login-employee" element={<LoginEmployee />} />
-      <Route path="/signup-employee" element={<SignupEmployee />} />
-      <Route path="/employee-dashboard" element={<DashboardEmployee />} />
       <Route path="/login-admin" element={<LoginAdmin />} />
       <Route
         path="/admin-dashboard"
@@ -123,7 +264,6 @@ export const router = createBrowserRouter(
           </RutaProtegida>
         }
       />
-
     </Route>
   )
-)
+);
