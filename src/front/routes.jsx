@@ -35,6 +35,7 @@ import LoginAdmin from "./pages/LoginAdmin";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmployeesSchedules from "./components/EmployeesSchedules.jsx";
 import MisNominas from "./pages/MisNominas.jsx";
+import SolicitarVacaciones from "./pages/SolicitarVacaciones.jsx";
 
 
 export const router = createBrowserRouter(
@@ -84,7 +85,7 @@ export const router = createBrowserRouter(
       <Route path="/vacaciones/new" element={<VacacionesNew />} />
       <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
       <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
-
+      <Route path="/solicitar-vacaciones" element={<SolicitarVacaciones />} />
 
 
       {/* NOMINAS ROUTES */}

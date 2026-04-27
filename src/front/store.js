@@ -143,14 +143,12 @@ const getState = ({ getStore, getActions, setStore }) => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        // 1. Limpiamos la URL de forma segura
+
         let baseUrl = import.meta.env.VITE_BACKEND_URL;
-        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1); // Quita la barra final si existe
-        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4); // Quita /api si ya venía
-
-        const finalUrl = `${baseUrl}/api/employee/me`;
-        console.log("Llamando a:", finalUrl); // 🔍 Revisa esto en la consola para ver la URL real
-
+        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1); 
+        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4); 
+        const finalUrl = `${baseUrl}/api/employee/dashboard`;
+        console.log("Llamando a:", finalUrl); 
         try {
           const res = await fetch(finalUrl, {
             method: "GET",
@@ -160,9 +158,9 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
           });
 
-          // 2. Antes de hacer .json(), verificamos si la respuesta es exitosa
+         
           if (!res.ok) {
-            const text = await res.text(); // Leemos el HTML del error
+            const text = await res.text(); 
             console.error(
               "Error del servidor (HTML recibido):",
               text.substring(0, 100),
