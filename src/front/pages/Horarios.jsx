@@ -15,13 +15,12 @@ export default function Horarios() {
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState(emptyForm);
 
-    // Función auxiliar para fetch con token
     const authFetch = (url, options = {}) => {
         return fetch(url, {
             ...options,
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`, // Enviamos el token para evitar el 401
+                "Authorization": `Bearer ${token}`,
                 ...options.headers
             }
         });
@@ -41,7 +40,6 @@ export default function Horarios() {
         try {
             const res = await authFetch(`${API_URL}employees/${employeeId}/horarios`);
             const data = await res.json();
-            // 🛡️ Si la respuesta no es un array (ej. error 401), seteamos []
             setSchedules(Array.isArray(data) ? data : []);
         } catch (error) {
             setSchedules([]);

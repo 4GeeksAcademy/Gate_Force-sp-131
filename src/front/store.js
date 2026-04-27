@@ -17,7 +17,11 @@ const getState = ({ getStore, getActions, setStore }) => {
 
     actions: {
       loginCompany: async (credentials) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
         try {
           const res = await fetch(`${API_URL}company/login`, {
             method: "POST",
@@ -39,7 +43,11 @@ const getState = ({ getStore, getActions, setStore }) => {
 
       getCompanyData: async () => {
         const store = getStore();
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
         try {
           const res = await fetch(`${API_URL}company/dashboard`, {
             method: "GET",
@@ -61,11 +69,20 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       signupCompany: async (nombre, password, region, email) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
         try {
           const res = await fetch(`${API_URL}company/signup`, {
             method: "POST",
-            body: JSON.stringify({ nombre_empresa: nombre, password, region, email }),
+            body: JSON.stringify({
+              nombre_empresa: nombre,
+              password,
+              region,
+              email,
+            }),
             headers: { "Content-Type": "application/json" },
           });
           const data = await res.json();
@@ -76,7 +93,11 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       loginEmployee: async (credentials) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
         try {
           const res = await fetch(`${API_URL}employee/login`, {
             method: "POST",
@@ -97,7 +118,11 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       signupEmployee: async (formData) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
         try {
           const res = await fetch(`${API_URL}employee/signup`, {
             method: "POST",
@@ -112,30 +137,46 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       getEmployeeData: async () => {
-        const store = getStore();
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
-        try {
-          const res = await fetch(`${API_URL}employee/dashboard`, {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    // 1. Limpiamos la URL de forma segura
+    let baseUrl = import.meta.env.VITE_BACKEND_URL;
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1); // Quita la barra final si existe
+    if (baseUrl.endsWith('/api')) baseUrl = baseUrl.slice(0, -4); // Quita /api si ya venía
+
+    const finalUrl = `${baseUrl}/api/employee/me`;
+    console.log("Llamando a:", finalUrl); // 🔍 Revisa esto en la consola para ver la URL real
+
+    try {
+        const res = await fetch(finalUrl, {
             method: "GET",
             headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setStore({ employeeInfo: data });
-            return true;
-          }
-          return false;
-        } catch (error) {
-          console.error("Error de conexión:", error);
-          return false;
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        // 2. Antes de hacer .json(), verificamos si la respuesta es exitosa
+        if (!res.ok) {
+            const text = await res.text(); // Leemos el HTML del error
+            console.error("Error del servidor (HTML recibido):", text.substring(0, 100));
+            return;
         }
-      },
+
+        const data = await res.json();
+        setStore({ employeeInfo: data });
+    } catch (error) {
+        console.error("Error de conexión:", error);
+    }
+},
 
       loginAdmin: async (credentials) => {
-        const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
         try {
           const res = await fetch(`${API_URL}admin/login`, {
             method: "POST",
@@ -158,7 +199,12 @@ const getState = ({ getStore, getActions, setStore }) => {
       logout: () => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
-        setStore({ token: null, role: null, companyInfo: null, employeeInfo: null });
+        setStore({
+          token: null,
+          role: null,
+          companyInfo: null,
+          employeeInfo: null,
+        });
         console.log("Sesión cerrada correctamente");
       },
 

@@ -9,8 +9,10 @@ export default function WorkRecordPage() {
         .replace(/\/$/, "")
         .replace(/\/api$/, "") + "/api/";
 
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
     const authFetch = (url, options = {}) => {
-        const token = localStorage.getItem("token");
         return fetch(url, {
             ...options,
             headers: {
@@ -22,12 +24,17 @@ export default function WorkRecordPage() {
     };
 
     const fetchRecords = async () => {
-        const res = await authFetch(`${API_URL}work-records`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-            setRecords(data);
-        } else {
-            console.error("Error al obtener registros:", data);
+        if (!token) return;
+        try {
+            const res = await authFetch(`${API_URL}work-records`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setRecords(data);
+            } else {
+                setRecords([]);
+            }
+        } catch (error) {
+            console.error("Error al obtener registros:", error);
             setRecords([]);
         }
     };
@@ -37,31 +44,74 @@ export default function WorkRecordPage() {
     }, []);
 
     const handleDelete = async (id) => {
-        await authFetch(`${API_URL}work-records/${id}`, { method: "DELETE" });
-        fetchRecords();
+        if (window.confirm("¿Estás seguro de eliminar este registro?")) {
+            const res = await authFetch(`${API_URL}work-records/${id}`, { method: "DELETE" });
+            if (res.ok) fetchRecords();
+        }
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return "—";
+        return new Date(dateStr).toLocaleString();
     };
 
     return (
-        <div style={{ padding: "20px" }}>
-            <h1>Control de Fichajes</h1>
+        <div className="container mt-4">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h1 className="fw-bold text-primary">Control de Fichajes</h1>
+                {token && role === "employee" && (
+                    <button className="btn btn-success" onClick={() => navigate("/work-records/new")}>
+                        <i className="fas fa-plus me-2"></i>Nuevo Fichaje
+                    </button>
+                )}
+            </div>
+
             {!token || role !== "employee" ? (
-                <p>Debes estar logueado para llenar el control de fichaje</p>
-            ) : null}
-            <button onClick={() => navigate("/work-records/new")}>
-                Crear registro
-            </button>
-
-            {records.map(r => (
-                <div key={r.id} style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
-                    <p><strong>Check-in:</strong> {new Date(r.check_in).toLocaleString()}</p>
-                    <p><strong>Check-out:</strong> {r.check_out ? new Date(r.check_out).toLocaleString() : "—"}</p>
-                    <p><strong>Horas:</strong> {r.total_hours}</p>
-                    <p><strong>Status:</strong> {r.status}</p>
-
-                    <button onClick={() => navigate(`/work-records/edit/${r.id}`)}>Editar</button>
-                    <button onClick={() => handleDelete(r.id)}>Eliminar</button>
+                <div className="alert alert-warning shadow-sm">
+                    <i className="fas fa-exclamation-triangle me-2"></i>
+                    Debes estar logueado como <strong>empleado</strong> para gestionar tus fichajes.
                 </div>
-            ))}
+            ) : (
+                <div className="row">
+                    {records.length === 0 ? (
+                        <div className="col-12 text-center text-muted mt-5">
+                            <p>No hay registros de actividad todavía.</p>
+                        </div>
+                    ) : (
+                        records.map(r => (
+                            <div key={r.id} className="col-md-6 col-lg-4 mb-3">
+                                <div className="card shadow-sm border-start border-4 border-primary">
+                                    <div className="card-body">
+                                        <div className="mb-2">
+                                            <small className="text-muted d-block uppercase fw-bold">Entrada</small>
+                                            <span>{formatDate(r.check_in)}</span>
+                                        </div>
+                                        <div className="mb-2">
+                                            <small className="text-muted d-block uppercase fw-bold">Salida</small>
+                                            <span>{formatDate(r.check_out)}</span>
+                                        </div>
+                                        <hr />
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <span className="badge bg-info text-dark">{r.total_hours || '0'} hrs</span>
+                                            <span className={`badge ${r.status === 'completed' ? 'bg-success' : 'bg-warning text-dark'}`}>
+                                                {r.status}
+                                            </span>
+                                        </div>
+                                        <div className="mt-3 d-flex gap-2">
+                                            <button className="btn btn-sm btn-outline-secondary w-100" onClick={() => navigate(`/work-records/edit/${r.id}`)}>
+                                                <i className="fas fa-edit me-1"></i> Editar
+                                            </button>
+                                            <button className="btn btn-sm btn-outline-danger w-100" onClick={() => handleDelete(r.id)}>
+                                                <i className="fas fa-trash-alt me-1"></i> Borrar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
         </div>
     );
 }

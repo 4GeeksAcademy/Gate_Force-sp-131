@@ -31,9 +31,9 @@ import VacacionesEdit from "./pages/VacacionesEdit.jsx";
 import VacacionesDelete from "./pages/VacacionesDelete.jsx";
 import SignupEmployee from "./pages/SignupEmployee.jsx";
 import LoginEmployee from "./pages/LoginEmployee.jsx";
-import DashboardEmployee from "./pages/DashboardEmployee";
 import LoginAdmin from "./pages/LoginAdmin";
 import AdminDashboard from "./pages/AdminDashboard";
+import EmployeesSchedules from "./components/EmployeesSchedules.jsx";
 
 
 export const router = createBrowserRouter(
@@ -74,6 +74,8 @@ export const router = createBrowserRouter(
       <Route path="/signup-company" element={<SignupCompany />} />
       <Route path="/company-dashboard" element={<RutaProtegida allowedRole="company"><DashBoardCompany /></RutaProtegida>} />
       <Route path="/company" element={<Company />} />
+      <Route path="/horarios/:employeeId" element={<Horarios />} />
+
 
 
       {/* VACACIONES ROUTES */}
