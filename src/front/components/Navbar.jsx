@@ -24,9 +24,6 @@ export const Navbar = () => {
 							<Link to="/employee-dashboard" className="btn btn-outline-dark btn-sm">
 								👤 {username || "Mi perfil"}
 							</Link>
-							<Link to="/employee-dashboard" className="btn btn-outline-dark btn-sm">
-								👤 Mi perfil
-							</Link>
 							<button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>
 								Cerrar sesión
 							</button>
