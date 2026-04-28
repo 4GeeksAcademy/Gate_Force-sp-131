@@ -233,6 +233,7 @@ def update_company(id):
         return jsonify({"msg": "Body vacío"}), 400
     company.nombre_empresa = data.get("nombre_empresa", company.nombre_empresa)
     company.region = data.get("region", company.region)
+    company.logo_url = data.get("logo_url", company.logo_url)
     company.is_active = data.get("is_active", company.is_active)
     if data.get("password"):
         company.password = data["password"]
@@ -464,14 +465,32 @@ def create_employee():
 
 @api.route('/employees/<int:id>', methods=['PUT'])
 @jwt_required()
-@role_required("company", "manager", "admin")
+@role_required("company", "manager", "admin", "employee")
 def update_employee(id):
     employee = Employee.query.get(id)
     if not employee:
         return jsonify({"msg": "Employee not found"}), 404
+
     data = request.json
     if not data:
         return jsonify({"msg": "Body vacío"}), 400
+
+    identity = get_jwt_identity()
+    claims = get_jwt()
+    role = claims.get("role")
+
+    if role == "employee":
+        if str(employee.id) != str(identity):
+            return jsonify({"msg": "Acceso denegado"}), 403
+
+        employee.profile_image = data.get("profile_image", employee.profile_image)
+        employee.phone = data.get("phone", employee.phone)
+
+        if data.get("password"):
+            employee.password = data["password"]
+
+        db.session.commit()
+        return jsonify(employee.serialize()), 200
 
     employee.first_name = data.get("first_name", employee.first_name)
     employee.last_name = data.get("last_name", employee.last_name)
@@ -479,12 +498,14 @@ def update_employee(id):
     employee.position = data.get("position", employee.position)
     employee.role = data.get("role", employee.role)
     employee.company_id = data.get("company_id", employee.company_id)
+    employee.profile_image = data.get("profile_image", employee.profile_image)
 
     if data.get("password"):
         employee.password = data["password"]
 
     db.session.commit()
     return jsonify(employee.serialize()), 200
+
 
 
 @api.route('/employees/<int:id>/toggle', methods=['PUT'])
@@ -664,6 +685,18 @@ def create_nomina():
     data = request.json
     if not data.get("employee_id") or not data.get("month"):
         return jsonify({"msg": "Missing data"}), 400
+
+    identity = get_jwt_identity()
+    claims = get_jwt()
+    role = claims.get("role")
+
+    employee = Employee.query.get(data["employee_id"])
+    if not employee:
+        return jsonify({"msg": "Empleado no encontrado"}), 404
+
+    if role == "company" and str(employee.company_id) != str(identity):
+        return jsonify({"msg": "Acceso denegado"}), 403
+
     new_nomina = Nomina(
         employee_id=data["employee_id"],
         month=data["month"],
@@ -672,6 +705,7 @@ def create_nomina():
     db.session.add(new_nomina)
     db.session.commit()
     return jsonify(new_nomina.serialize()), 201
+
 
 
 @api.route('/nominas/<int:id>', methods=['PUT'])
@@ -1016,11 +1050,27 @@ def delete_manager(id):
 
 @api.route('/employee/nominas', methods=['GET'])
 @jwt_required()
+@role_required("employee", "company", "admin")
 def get_my_nominas():
-    employee_id = get_jwt_identity()
+    identity = get_jwt_identity()
     claims = get_jwt()
-    if claims.get("role") != "employee":
-        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    role = claims.get("role")
+
+    if role == "employee":
+        employee_id = identity
+
+    else:
+        employee_id = request.args.get("employee_id")
+        if not employee_id:
+            return jsonify({"msg": "employee_id es requerido"}), 400
+
+        employee = Employee.query.get(employee_id)
+        if not employee:
+            return jsonify({"msg": "Empleado no encontrado"}), 404
+
+        if role == "company" and str(employee.company_id) != str(identity):
+            return jsonify({"msg": "Acceso denegado"}), 403
+
     nominas = Nomina.query.filter_by(employee_id=employee_id).all()
     return jsonify([n.serialize() for n in nominas]), 200
 

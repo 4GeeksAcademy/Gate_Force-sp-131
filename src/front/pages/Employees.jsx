@@ -105,6 +105,7 @@ export default function EmployeesPage() {
                 <table className="table table-hover align-middle">
                     <thead className="table-dark">
                         <tr>
+                            <th>Foto</th>
                             <th>Nombre</th>
                             <th>Email</th>
                             <th>Posición</th>
@@ -116,6 +117,23 @@ export default function EmployeesPage() {
                     <tbody>
                         {employees.map(emp => (
                             <tr key={emp.id}>
+                                <td>
+                                    {emp.profile_image ? (
+                                        <img
+                                            src={emp.profile_image}
+                                            alt={`${emp.first_name} ${emp.last_name}`}
+                                            className="rounded-circle border"
+                                            style={{ width: "44px", height: "44px", objectFit: "cover" }}
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center"
+                                            style={{ width: "44px", height: "44px", fontSize: "14px", fontWeight: "bold" }}
+                                        >
+                                            {emp.first_name?.charAt(0)}{emp.last_name?.charAt(0)}
+                                        </div>
+                                    )}
+                                </td>
                                 <td>{emp.first_name} {emp.last_name}</td>
                                 <td>{emp.email}</td>
                                 <td>{emp.position || "—"}</td>
@@ -146,10 +164,23 @@ export default function EmployeesPage() {
                                             <i className="fas fa-trash"></i>
                                         </button>
                                         <button
-                                            className="btn btn-sm btn-info"
+                                            className="btn btn-sm btn-outline-info"
                                             onClick={() => navigate(`/horarios/${emp.id}`)}
                                         >
                                             Horarios
+                                        </button>
+                                        <button
+                                            className="btn btn-sm btn-outline-primary"
+                                            onClick={() => navigate(`/mis-nominas?employee_id=${emp.id}`)}
+                                        >
+                                            Nóminas
+                                        </button>
+
+                                        <button
+                                            className="btn btn-sm btn-outline-success"
+                                            onClick={() => navigate(`/nominas/new?employee_id=${emp.id}`)}
+                                        >
+                                            Subir nómina
                                         </button>
                                     </div>
                                 </td>

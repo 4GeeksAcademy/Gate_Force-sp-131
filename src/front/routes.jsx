@@ -121,7 +121,7 @@ export const router = createBrowserRouter(
       <Route
         path="/company"
         element={
-          <RutaProtegida allowedRole="company">
+          <RutaProtegida allowedRole="admin">
             <Company />
           </RutaProtegida>
         }
