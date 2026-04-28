@@ -7,8 +7,6 @@ const RutaProtegida = ({ children, allowedRole }) => {
     const token = store.token || localStorage.getItem("token");
     const role = store.role || localStorage.getItem("role");
 
-    console.log("DEBUG GUARDIA -> Token:", !!token, "Role:", role);
-
     if (token && (role === allowedRole || role === "admin")) {
         return children;
     }

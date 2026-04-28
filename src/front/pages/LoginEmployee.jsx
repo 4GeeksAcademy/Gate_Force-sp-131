@@ -9,16 +9,13 @@ const LoginEmployee = () => {
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const result = await actions.loginEmployee({
-            email: email,
-            password: password
-        });
+        const result = await actions.loginEmployee(email, password);
         if (result.success) {
-            navigate("/employee-dashboard");
+            navigate(result.path);
         } else {
-            setError(result.msg || "Credenciales incorrectas");
+            alert("Error de acceso");
         }
     };
 
@@ -33,7 +30,7 @@ const LoginEmployee = () => {
                     <p className="text-muted">Inicia sesión para continuar</p>
                 </div>
                 {error && <div className="alert alert-danger">{error}</div>}
-                <form onSubmit={handleLogin}>
+                <form onSubmit={handleSubmit}>
                     <div className="mb-3">
                         <label className="form-label fw-semibold">Email</label>
                         <input

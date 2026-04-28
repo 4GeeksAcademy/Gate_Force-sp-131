@@ -28,11 +28,9 @@ export default function EmployeesSchedules() {
         }
     };
 
-    useEffect(() => {
-        if (idFinal) {
-            getSchedules(idFinal);
-        }
-    }, [idFinal]);
+    if (store.role !== "employee" && store.role !== "manager") {
+        navigate("/login-employee");
+    }
 
     if (loading) return <div className="text-center mt-5">Cargando horario...</div>;
 

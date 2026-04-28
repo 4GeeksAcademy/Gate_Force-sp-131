@@ -16,10 +16,6 @@ import NominasForm from "./pages/NominasForm.jsx";
 import Workrecord from "./pages/Workrecord.jsx";
 import WorkRecordForm from "./pages/WorkRecordForm.jsx";
 import Horarios from "./pages/Horarios.jsx";
-import Incidents from "./pages/Incidents.jsx";
-import IncidentNew from "./pages/IncidentNew.jsx";
-import IncidentEdit from "./pages/IncidentEdit.jsx";
-import IncidentDelete from "./pages/IncidentDelete.jsx";
 import Vacaciones from "./pages/Vacaciones.jsx";
 import Managers from "./pages/Managers.jsx";
 import LoginCompany from "./pages/LoginCompany.jsx";
@@ -38,6 +34,12 @@ import MisNominas from "./pages/MisNominas.jsx";
 import CompanyNew from "./pages/CompanyNew.jsx";
 import CompanyEdit from "./pages/CompanyEdit.jsx";
 import SolicitarVacaciones from "./pages/SolicitarVacaciones.jsx";
+import CompanyIncidentsManager from "./components/CompanyIncidentsManager.jsx";
+import EmployeeIncidents from "./pages/EmployeeIncidents.jsx";
+import CompanySurveys from "./components/CompanySurveys.jsx";
+import EmployeeSurveys from "./components/EmployeeSurveys.jsx";
+import CompanyManagersControl from "./components/CompanyManagersControl.jsx";
+import DashboardManager from "./pages/DashboardManager.jsx";
 
 
 export const router = createBrowserRouter(
@@ -167,7 +169,7 @@ export const router = createBrowserRouter(
           </RutaProtegida>
         }
       />
-          
+
 
       <Route
         path="/nominas"
@@ -227,38 +229,8 @@ export const router = createBrowserRouter(
         }
       />
 
-      <Route
-        path="/incidents"
-        element={
-          <RutaProtegida allowedRole="company">
-            <Incidents />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/incidents/new"
-        element={
-          <RutaProtegida allowedRole="company">
-            <IncidentNew />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/incidents/edit/:id"
-        element={
-          <RutaProtegida allowedRole="company">
-            <IncidentEdit />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/incidents/delete"
-        element={
-          <RutaProtegida allowedRole="company">
-            <IncidentDelete />
-          </RutaProtegida>
-        }
-      />
+      <Route path="/incidents" element={<CompanyIncidentsManager />} />
+      <Route path="/employee/:employeeId/incidents" element={<EmployeeIncidents />} />
 
       <Route path="/login-admin" element={<LoginAdmin />} />
       <Route
@@ -286,6 +258,12 @@ export const router = createBrowserRouter(
           </RutaProtegida>
         }
       />
+      <Route path="/surveys" element={<CompanySurveys />} />
+      <Route path="/employee/:employeeId/surveys" element={<EmployeeSurveys />} />
+      <Route path="/manage-roles" element={<CompanyManagersControl />} />
+      <Route path="/manager-dashboard" element={<DashboardManager />} />
     </Route>
+
+
   )
 );

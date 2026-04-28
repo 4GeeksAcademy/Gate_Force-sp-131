@@ -7,6 +7,7 @@ const DashboardEmployee = () => {
     const navigate = useNavigate();
     const [error, setError] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [pendingSurveysCount, setPendingSurveysCount] = useState(0);
 
     const API_URL = import.meta.env.VITE_BACKEND_URL
         .replace(/\/$/, "")
@@ -27,6 +28,26 @@ const DashboardEmployee = () => {
             }
         };
         load();
+        const fetchPendingSurveys = async () => {
+            if (store.employeeInfo?.id) {
+                try {
+                    const token = localStorage.getItem("token");
+                    const res = await fetch(`${API_URL}employees/${store.employeeInfo.id}/pending-surveys`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setPendingSurveysCount(data.length);
+                    }
+                } catch (error) {
+                    console.error("Error cargando notificaciones:", error);
+                }
+            }
+        };
+
+        if (store.employeeInfo) {
+            fetchPendingSurveys();
+        }
     }, [store.employeeInfo, actions, navigate]);
 
     const emp = store.employeeInfo;
@@ -160,6 +181,15 @@ const DashboardEmployee = () => {
                         </div>
 
                         <div className="col-auto text-end">
+                            <Link to={`/employee/${emp.id}/surveys`} className="btn btn-info btn-sm mb-2 d-block text-dark fw-bold shadow-sm position-relative">
+                                <i className="fas fa-clipboard-list me-2"></i>Mis Encuestas
+                                {pendingSurveysCount > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {pendingSurveysCount}
+                                        <span className="visually-hidden">encuestas pendientes</span>
+                                    </span>
+                                )}
+                            </Link>
                             <Link to="/employees/schedules" className="btn btn-info btn-sm mb-2 d-block">
                                 <i className="fas fa-calendar-alt me-2"></i>Mi Horario
                             </Link>
@@ -174,6 +204,9 @@ const DashboardEmployee = () => {
                             </Link>
                             <Link to="/work-records" className="btn btn-dark btn-sm d-block">
                                 <i className="fas fa-clock me-2"></i>Fichajes
+                            </Link>
+                            <Link to={`/employee/${emp.id}/incidents`} className="btn btn-warning btn-sm d-block text-dark fw-bold shadow-sm">
+                                <i className="fas fa-ticket-alt me-2"></i>Mis Incidencias
                             </Link>
                         </div>
                     </div>

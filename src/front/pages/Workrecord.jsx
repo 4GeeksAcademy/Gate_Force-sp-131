@@ -45,11 +45,9 @@ export default function WorkRecordPage() {
         }
     };
 
-    useEffect(() => {
-        if (token && (role === "employee" || role === "admin")) {
-            fetchRecords();
-        }
-    }, [token, role]);
+    if (store.role !== "employee" && store.role !== "manager") {
+    navigate("/login-employee");
+}
 
     const handleCheckIn = async () => {
         const now = new Date().toISOString();

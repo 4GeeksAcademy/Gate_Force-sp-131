@@ -4,6 +4,7 @@ export const initialStore = () => {
     role: localStorage.getItem("role") || null,
     companyInfo: null,
     employeeInfo: null,
+    managerInfo: null,
   };
 };
 
@@ -12,6 +13,7 @@ const getState = ({ getStore, getActions, setStore }) => {
     store: {
       token: localStorage.getItem("token") || null,
       role: localStorage.getItem("role") || null,
+      managerInfo: null,
       employeeInfo: null,
     },
 
@@ -92,29 +94,75 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
       },
 
-      loginEmployee: async (credentials) => {
+      loginEmployee: async (email, password) => {
         const API_URL =
           import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
             /\/api$/,
             "",
           ) + "/api/";
+
         try {
-          const res = await fetch(`${API_URL}employee/login`, {
+          const resp = await fetch(`${API_URL}employee/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(credentials),
+            body: JSON.stringify({ email, password }),
           });
-          const data = await res.json();
-          if (res.ok) {
+
+          if (resp.ok) {
+            const data = await resp.json();
+
+            setStore({
+              token: data.token,
+              role: data.role,
+              employeeInfo: data.role === "employee" ? data : null,
+              managerInfo: data.role === "manager" ? data : null,
+            });
+
             localStorage.setItem("token", data.token);
-            localStorage.setItem("role", "employee");
-            localStorage.setItem("username", data.first_name || "Empleado");
-            setStore({ token: data.token, role: "employee" });
-            return { success: true };
+            localStorage.setItem("role", data.role);
+
+            if (data.role === "manager") {
+              return { success: true, path: "/manager-dashboard" };
+            }
+            return { success: true, path: "/employee-dashboard" };
           }
-          return { success: false, msg: data.msg };
+
+          const errorData = await resp.json();
+          return {
+            success: false,
+            msg: errorData.msg || "Error de credenciales",
+          };
         } catch (error) {
-          return { success: false, msg: "Error de red" };
+          console.error("Error en login:", error);
+          return { success: false, msg: "Error de conexión" };
+        }
+      },
+      getManagerData: async () => {
+        const store = getStore();
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
+
+        try {
+          const res = await fetch(`${API_URL}manager/dashboard`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${store.token || localStorage.getItem("token")}`,
+            },
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            setStore({ ...store, managerInfo: data });
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error("Error cargando datos del manager:", error);
+          return false;
         }
       },
 
@@ -154,10 +202,10 @@ const getState = ({ getStore, getActions, setStore }) => {
         const finalUrl = `${baseUrl}/api/employee/me`;
         console.log("Llamando a:", finalUrl);
 
-        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1); 
-        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4); 
+        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
+        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4);
         const finalUrlb = `${baseUrl}/api/employee/dashboard`;
-        console.log("Llamando a:", finalUrlb); 
+        console.log("Llamando a:", finalUrlb);
         try {
           const res = await fetch(finalUrlb, {
             method: "GET",
@@ -218,6 +266,7 @@ const getState = ({ getStore, getActions, setStore }) => {
           role: null,
           companyInfo: null,
           employeeInfo: null,
+          managerInfo: null,
         });
         console.log("Sesión cerrada correctamente");
       },
