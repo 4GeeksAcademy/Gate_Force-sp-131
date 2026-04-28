@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function CompaniesPage() {
     const [companies, setCompanies] = useState([]);
+    const [uploadingId, setUploadingId] = useState(null);
     const navigate = useNavigate();
 
     const API_URL = import.meta.env.VITE_BACKEND_URL
@@ -58,6 +59,56 @@ export default function CompaniesPage() {
         }
     };
 
+    const handleLogoUpload = async (e, companyId) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingId(companyId);
+
+        try {
+            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+            const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", uploadPreset);
+
+            const cloudinaryRes = await fetch(
+                `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+            const cloudinaryData = await cloudinaryRes.json();
+
+            if (!cloudinaryRes.ok || !cloudinaryData.secure_url) {
+                throw new Error("No se pudo subir la imagen");
+            }
+
+            const updateRes = await authFetch(`${API_URL}companies/${companyId}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    logo_url: cloudinaryData.secure_url
+                })
+            });
+
+            if (!updateRes.ok) {
+                const errorData = await updateRes.json().catch(() => ({}));
+                throw new Error(errorData.msg || "No se pudo guardar el logo");
+            }
+
+            getCompanies();
+        } catch (error) {
+            console.error("Error al subir logo:", error);
+            alert(error.message || "Error al subir logo");
+        } finally {
+            setUploadingId(null);
+            e.target.value = "";
+        }
+    };
+
     return (
         <div className="container mt-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -78,19 +129,50 @@ export default function CompaniesPage() {
                         <div key={company.id} className="col-md-6 col-lg-4 mb-4">
                             <div className="card shadow-sm h-100">
                                 <div className="card-body">
-                                    <h5 className="card-title fw-bold">{company.nombre_empresa}</h5>
+                                    <div className="d-flex align-items-center gap-3 mb-3">
+                                        {company.logo_url ? (
+                                            <img
+                                                src={company.logo_url}
+                                                alt={company.nombre_empresa}
+                                                className="rounded-circle border"
+                                                style={{ width: "64px", height: "64px", objectFit: "cover" }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center"
+                                                style={{ width: "64px", height: "64px", fontSize: "24px", fontWeight: "bold" }}
+                                            >
+                                                {company.nombre_empresa?.charAt(0)}
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <h5 className="card-title fw-bold mb-1">{company.nombre_empresa}</h5>
+                                            <span className={`badge ${company.is_active ? "bg-success" : "bg-secondary"}`}>
+                                                {company.is_active ? "Activa" : "Inactiva"}
+                                            </span>
+                                        </div>
+                                    </div>
+
                                     <p className="mb-2">
                                         <strong>Email:</strong> {company.email || "Sin email"}
                                     </p>
-                                    <p className="mb-2">
+                                    <p className="mb-3">
                                         <strong>Región:</strong> {company.region}
                                     </p>
-                                    <p className="mb-3">
-                                        <strong>Estado:</strong>{" "}
-                                        <span className={`badge ${company.is_active ? "bg-success" : "bg-secondary"}`}>
-                                            {company.is_active ? "Activa" : "Inactiva"}
-                                        </span>
-                                    </p>
+
+                                    <div className="d-grid gap-2 mb-3">
+                                        <label className="btn btn-outline-secondary btn-sm">
+                                            {uploadingId === company.id ? "Subiendo logo..." : "Cambiar logo"}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                hidden
+                                                onChange={(e) => handleLogoUpload(e, company.id)}
+                                                disabled={uploadingId === company.id}
+                                            />
+                                        </label>
+                                    </div>
 
                                     <div className="d-flex gap-2">
                                         <button

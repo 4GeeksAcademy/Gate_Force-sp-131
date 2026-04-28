@@ -30,6 +30,7 @@ class Company(db.Model):
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=True)
     password: Mapped[str] = mapped_column(String(50), nullable=False)
     region: Mapped[str] = mapped_column(String(100), nullable=False)
+    logo_url: Mapped[str] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
@@ -48,6 +49,7 @@ class Company(db.Model):
             "nombre_empresa": self.nombre_empresa,
             "email": self.email,
             "region": self.region,
+            "logo_url": self.logo_url,
             "is_active": self.is_active,
             "created_at": self.created_at.strftime("%d/%m/%Y")
         }
@@ -66,6 +68,7 @@ class Employee(db.Model):
         String(120), unique=True, nullable=False)
     phone: Mapped[str] = mapped_column(String(20), nullable=True)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
+    profile_image: Mapped[str] = mapped_column(String(255), nullable=True)
 
     role: Mapped[str] = mapped_column(String(50), default="employee")
     position: Mapped[str] = mapped_column(String(100), nullable=True)
@@ -106,6 +109,7 @@ class Employee(db.Model):
             "position": self.position,
             "role": self.role,
             "is_active": self.is_active,
+            "profile_image": self.profile_image,
             "nombre_empresa": self.company.nombre_empresa if self.company else "Sin empresa",
             "work_records": [wr.serialize() for wr in self.work_records],
             "nominas": [n.serialize() for n in self.nominas],
