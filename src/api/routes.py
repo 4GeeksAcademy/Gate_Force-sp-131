@@ -889,11 +889,17 @@ def create_vacacion(employee_id):
     data = request.json
     if not data:
         return jsonify({"msg": "Body vacío"}), 400
+    start = datetime.fromisoformat(data["start_date"]) if data.get("start_date") else None
+    end = datetime.fromisoformat(data["end_date"]) if data.get("end_date") else None
     new_vacacion = Vacaciones(
         employee_id=employee_id,
         vacations=data.get("vacations"),
         taken_vacations=data.get("taken_vacations"),
-        available_vacations=data.get("available_vacations")
+        available_vacations=data.get("available_vacations"),
+        start_date=start,
+        end_date=end,
+        days_requested=data.get("days_requested"),
+        status=data.get("status", "pending")
     )
     db.session.add(new_vacacion)
     db.session.commit()
@@ -1017,3 +1023,41 @@ def get_my_nominas():
         return jsonify({"msg": "Acceso restringido a empleados"}), 403
     nominas = Nomina.query.filter_by(employee_id=employee_id).all()
     return jsonify([n.serialize() for n in nominas]), 200
+
+
+@api.route('/employee/vacaciones', methods=['GET'])
+@jwt_required()
+def get_my_vacaciones():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    vacaciones = Vacaciones.query.filter_by(employee_id=employee_id).all()
+    return jsonify([v.serialize() for v in vacaciones]), 200
+
+
+@api.route('/employee/vacaciones', methods=['POST'])
+@jwt_required()
+def request_my_vacacion():
+    employee_id = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "employee":
+        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+    data = request.json
+    if not data:
+        return jsonify({"msg": "Body vacio"}), 400
+    if not data.get("start_date") or not data.get("end_date"):
+        return jsonify({"msg": "start_date y end_date son requeridos"}), 400
+    start = datetime.fromisoformat(data["start_date"])
+    end = datetime.fromisoformat(data["end_date"])
+    days_requested = (end - start).days + 1
+    new_vacacion = Vacaciones(
+        employee_id=int(employee_id),
+        start_date=start,
+        end_date=end,
+        days_requested=days_requested,
+        status="pending"
+    )
+    db.session.add(new_vacacion)
+    db.session.commit()
+    return jsonify(new_vacacion.serialize()), 201
