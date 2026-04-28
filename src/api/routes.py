@@ -760,8 +760,14 @@ def create_horario(employee_id):
     day = body.get("day")
     start_time = body.get("start_time")
     end_time = body.get("end_time")
+    
     if not all([day, start_time, end_time]):
         return jsonify({"error": "day, start_time y end_time son obligatorios"}), 422
+        
+    existing_schedule = Schedule.query.filter_by(employee_id=employee_id, day=day).first()
+    if existing_schedule:
+        return jsonify({"error": f"El empleado ya tiene un turno asignado para el {day}"}), 400
+
     new_schedule = Schedule(
         employee_id=employee_id,
         day=day,
@@ -795,11 +801,12 @@ def update_horario(schedule_id):
 
 @api.route('/horarios/<int:schedule_id>', methods=['DELETE'])
 @jwt_required()
-@role_required("company", "admin")
+@role_required("company", "manager", "admin") 
 def delete_horario(schedule_id):
     schedule = Schedule.query.get(schedule_id)
     if not schedule:
         return jsonify({"error": "Horario no encontrado"}), 404
+        
     db.session.delete(schedule)
     db.session.commit()
     return jsonify({"message": f"Horario {schedule_id} eliminado"}), 200
