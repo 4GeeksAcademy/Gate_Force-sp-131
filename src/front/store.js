@@ -108,8 +108,6 @@ const getState = ({ getStore, getActions, setStore }) => {
           if (res.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", "employee");
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("role", "employee");
             localStorage.setItem("username", data.first_name || "Empleado");
             setStore({ token: data.token, role: "employee" });
             return { success: true };
@@ -126,10 +124,16 @@ const getState = ({ getStore, getActions, setStore }) => {
             /\/api$/,
             "",
           ) + "/api/";
+
+        const token = localStorage.getItem("token");
+
         try {
           const res = await fetch(`${API_URL}employee/signup`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify(formData),
           });
           const data = await res.json();
@@ -143,6 +147,12 @@ const getState = ({ getStore, getActions, setStore }) => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
+        let baseUrl = import.meta.env.VITE_BACKEND_URL;
+        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
+        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4);
+
+        const finalUrl = `${baseUrl}/api/employee/me`;
+        console.log("Llamando a:", finalUrl);
 
         let baseUrl = import.meta.env.VITE_BACKEND_URL;
         if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1); 
@@ -158,9 +168,8 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
           });
 
-         
           if (!res.ok) {
-            const text = await res.text(); 
+            const text = await res.text();
             console.error(
               "Error del servidor (HTML recibido):",
               text.substring(0, 100),
@@ -191,6 +200,7 @@ const getState = ({ getStore, getActions, setStore }) => {
           if (res.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", "admin");
+            localStorage.setItem("username", credentials.username);
             setStore({ token: data.token, role: "admin" });
             return { success: true };
           }
@@ -203,6 +213,7 @@ const getState = ({ getStore, getActions, setStore }) => {
       logout: () => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
+        localStorage.removeItem("username");
         setStore({
           token: null,
           role: null,
@@ -237,9 +248,12 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
         return false;
       },
+
       loadEverything: async () => {
-        await actions.getEmployeeInfo();
-        await actions.getSchedules(localStorage.getItem("employee_id"));
+        const actions = getActions();
+        if (actions.getEmployeeData) {
+          await actions.getEmployeeData();
+        }
       },
     },
   };

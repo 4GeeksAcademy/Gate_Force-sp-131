@@ -36,7 +36,8 @@ class Company(db.Model):
 
     # RELACIONES #
     employees = relationship(
-        "Employee", back_populates="company", cascade="all, delete-orphan")
+        "Employee", back_populates="company", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"{self.nombre_empresa}"
@@ -97,20 +98,22 @@ class Employee(db.Model):
     def serialize(self):
         return {
             "id": self.id,
+            "company_id": self.company_id,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "email": self.email,
             "phone": self.phone,
             "position": self.position,
+            "role": self.role,
+            "is_active": self.is_active,
             "nombre_empresa": self.company.nombre_empresa if self.company else "Sin empresa",
-
-
             "work_records": [wr.serialize() for wr in self.work_records],
             "nominas": [n.serialize() for n in self.nominas],
             "schedules": [s.serialize() for s in self.schedules],
             "incidents": [i.serialize() for i in self.incidents],
             "vacaciones": [v.serialize() for v in self.vacaciones]
         }
+
 
 
 class UserAdmin(db.Model):
