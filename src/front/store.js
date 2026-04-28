@@ -154,6 +154,11 @@ const getState = ({ getStore, getActions, setStore }) => {
         const finalUrl = `${baseUrl}/api/employee/me`;
         console.log("Llamando a:", finalUrl);
 
+        let baseUrl = import.meta.env.VITE_BACKEND_URL;
+        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1); 
+        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4); 
+        const finalUrl = `${baseUrl}/api/employee/dashboard`;
+        console.log("Llamando a:", finalUrl); 
         try {
           const res = await fetch(finalUrl, {
             method: "GET",

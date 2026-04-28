@@ -163,8 +163,14 @@ const DashboardEmployee = () => {
                             <Link to="/employees/schedules" className="btn btn-info btn-sm mb-2 d-block">
                                 <i className="fas fa-calendar-alt me-2"></i>Mi Horario
                             </Link>
-                            <Link to="/mis-nominas" className="btn btn-info btn-sm mb-2 d-block">
-                                <i className="fas fa-file-alt me-2"></i>Mi Nóminas
+                            <Link to="/vacaciones/new" className="btn btn-outline-primary btn-sm mb-2 d-block">
+                                Vacaciones disponibles: {(() => {
+                                    const conDias = emp.vacaciones?.filter(v => v.available_vacations != null);
+                                    return conDias?.length > 0 ? conDias[conDias.length - 1].available_vacations : 0;
+                                })()} dias
+                            </Link>
+                            <Link to="/mis-nominas" className="btn btn-outline-primary btn-sm mb-2 d-block">
+                                Ver nóminas
                             </Link>
                             <Link to="/work-records" className="btn btn-dark btn-sm d-block">
                                 <i className="fas fa-clock me-2"></i>Fichajes
@@ -189,6 +195,7 @@ const DashboardEmployee = () => {
                                 <span>{emp.phone || "—"}</span>
                             </div>
                         </div>
+
                     </div>
                 </div>
             ) : (

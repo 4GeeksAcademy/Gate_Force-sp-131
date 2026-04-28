@@ -37,6 +37,7 @@ import EmployeesSchedules from "./components/EmployeesSchedules.jsx";
 import MisNominas from "./pages/MisNominas.jsx";
 import CompanyNew from "./pages/CompanyNew.jsx";
 import CompanyEdit from "./pages/CompanyEdit.jsx";
+import SolicitarVacaciones from "./pages/SolicitarVacaciones.jsx";
 
 
 export const router = createBrowserRouter(
@@ -166,6 +167,7 @@ export const router = createBrowserRouter(
           </RutaProtegida>
         }
       />
+          
 
       <Route
         path="/nominas"
