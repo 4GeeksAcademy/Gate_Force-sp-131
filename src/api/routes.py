@@ -802,12 +802,13 @@ def get_horarios(employee_id):
 @role_required("company", "manager", "admin")
 def create_horario(employee_id):
     identity = get_jwt_identity()
-    role = get_jwt().get("role")
+    claims = get_jwt()
+    role = claims.get("role")
     target_employee = Employee.query.get_or_404(employee_id)
 
     if role != "admin":
-        requester_co_id = Employee.query.get(
-            identity).company_id if role == "manager" else identity
+        requester_co_id = int(identity) if role == "company" else Employee.query.get(
+            identity).company_id
         if target_employee.company_id != requester_co_id:
             return jsonify({"msg": "No autorizado para esta empresa"}), 403
 
@@ -835,6 +836,7 @@ def update_horario(schedule_id):
     schedule = Schedule.query.get_or_404(schedule_id)
     identity = get_jwt_identity()
     role = get_jwt().get("role")
+    claims = get_jwt()
 
     if role != "admin":
         target_employee = Employee.query.get(schedule.employee_id)
@@ -857,12 +859,12 @@ def update_horario(schedule_id):
 
 @api.route('/horarios/<int:schedule_id>', methods=['DELETE'])
 @jwt_required()
-@role_required("company", "manager", "admin") 
+@role_required("company", "manager", "admin")
 def delete_horario(schedule_id):
     schedule = Schedule.query.get(schedule_id)
     if not schedule:
         return jsonify({"error": "Horario no encontrado"}), 404
-        
+
     db.session.delete(schedule)
     db.session.commit()
     return jsonify({"message": f"Horario {schedule_id} eliminado"}), 200

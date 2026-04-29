@@ -107,7 +107,6 @@ const DashBoardCompany = () => {
                 <p className="lead text-muted">Panel de Gestión Administrativa</p>
             </div>
 
-<<<<<<< HEAD
             <div className="row g-4 mb-5 justify-content-center">
                 {/* Tarjeta de Empleados */}
                 <div className="col-md-4">
@@ -121,26 +120,10 @@ const DashBoardCompany = () => {
                             >
                                 Ver empleados
                             </button>
-=======
-            <div className="row mt-4">
-                {[
-                    { title: "Empleados", text: "Gestiona tu equipo", btn: "btn-primary", path: "/employees", label: "Ver empleados" },
-                    { title: "Vacaciones", text: "Controla días libres", btn: "btn-success", path: "/vacaciones", label: "Ver vacaciones" }
-                ].map(({ title, text, btn, path, label }) => (
-                    <div key={title} className="col-md-6 mb-3">
-                        <div className="card shadow-sm border-0 h-100">
-                            <div className="card-body text-center">
-                                <h5 className="card-title">{title}</h5>
-                                <p className="text-muted">{text}</p>
-                                <button className={`btn ${btn}`} onClick={() => navigate(path)}>{label}</button>
-                            </div>
->>>>>>> develop
                         </div>
                     </div>
-                ))}
             </div>
 
-<<<<<<< HEAD
                 {/* Tarjeta de Vacaciones */}
                 <div className="col-md-4">
                     <div className="card shadow-sm border-0 h-100">
@@ -207,33 +190,6 @@ const DashBoardCompany = () => {
                         </div>
                     </div>
                 </div>
-=======
-            <div className="mt-5">
-                <h4 className="fw-bold mb-3">
-                    Solicitudes de Vacaciones Pendientes
-                    {pendingVacaciones.length > 0 && <span className="badge bg-warning text-dark ms-2">{pendingVacaciones.length}</span>}
-                </h4>
-                {pendingVacaciones.length === 0 ? (
-                    <p className="text-muted">No hay solicitudes pendientes.</p>
-                ) : (
-                    <ul className="list-group">
-                        {pendingVacaciones.map(v => (
-                            <li key={v.id} className="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>Empleado ID: {v.employee_id}</strong>
-                                    <div className="text-muted" style={{ fontSize: "0.9em" }}>
-                                        {v.start_date} al {v.end_date} — {v.days_requested} dias
-                                    </div>
-                                </div>
-                                <div className="d-flex gap-2">
-                                    <button className="btn btn-sm btn-success" onClick={() => handleVacacionStatus(v, "approved")}>Aprobar</button>
-                                    <button className="btn btn-sm btn-danger" onClick={() => handleVacacionStatus(v, "rejected")}>Rechazar</button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
->>>>>>> develop
             </div>
         </div>
     );
