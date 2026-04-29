@@ -135,39 +135,11 @@ export const router = createBrowserRouter(
         }
       />
 
-      <Route
-        path="/vacaciones"
-        element={
-          <RutaProtegida allowedRole="employee">
-            <Vacaciones />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/vacaciones/new"
-        element={
-          <RutaProtegida allowedRole="company">
-            <VacacionesNew />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/vacaciones/edit/:id"
-        element={
-          <RutaProtegida allowedRole="company">
-            <VacacionesEdit />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/vacaciones/delete"
-        element={
-          <RutaProtegida allowedRole="company">
-            <VacacionesDelete />
-          </RutaProtegida>
-        }
-      />
-          
+      <Route path="/vacaciones" element={<Vacaciones />} />
+      <Route path="/vacaciones/new" element={<VacacionesNew />} />
+      <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
+      <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
+
 
       <Route
         path="/nominas"
