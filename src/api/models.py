@@ -1,4 +1,4 @@
-from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy import String, Boolean, DateTime, Text
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -99,6 +99,7 @@ class Employee(db.Model):
         return f"{self.first_name} {self.last_name}"
 
     def serialize(self):
+        actual_role = "manager" if self.manager and self.manager.is_active else self.role
         return {
             "id": self.id,
             "company_id": self.company_id,
@@ -107,7 +108,7 @@ class Employee(db.Model):
             "email": self.email,
             "phone": self.phone,
             "position": self.position,
-            "role": self.role,
+            "role": actual_role,
             "is_active": self.is_active,
             "profile_image": self.profile_image,
             "nombre_empresa": self.company.nombre_empresa if self.company else "Sin empresa",
@@ -117,7 +118,6 @@ class Employee(db.Model):
             "incidents": [i.serialize() for i in self.incidents],
             "vacaciones": [v.serialize() for v in self.vacaciones]
         }
-
 
 
 class UserAdmin(db.Model):
@@ -266,16 +266,21 @@ class Schedule(db.Model):
 
 class Incident(db.Model):
     __tablename__ = "incidents"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     employee_id: Mapped[int] = mapped_column(
         ForeignKey("employees.id"), nullable=False)
+
     type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="PENDING")
     category: Mapped[str] = mapped_column(String(50), nullable=True)
+    description: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default="Sin descripción detallada")
     admin_comment: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
-    # relación #
+
+    # Relación
     employee = relationship("Employee", back_populates="incidents")
 
     def serialize(self):
@@ -285,15 +290,19 @@ class Incident(db.Model):
             "type": self.type,
             "status": self.status,
             "category": self.category,
+            "description": self.description,
             "admin_comment": self.admin_comment,
-            "created_at": self.created_at.strftime("%d-%m-%Y")
+            "employee_name": f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido",
+            "created_at": self.created_at.isoformat() if self.created_at else None
         }
+
 
 class Vacaciones(db.Model):
     __tablename__ = "vacaciones"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id"), nullable=False)
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), nullable=False)
     vacations: Mapped[int] = mapped_column(nullable=True)
     taken_vacations: Mapped[int] = mapped_column(nullable=True)
     available_vacations: Mapped[int] = mapped_column(nullable=True)
@@ -301,7 +310,8 @@ class Vacaciones(db.Model):
     end_date: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
     days_requested: Mapped[int] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="pending")
-    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow)
 
     # relación #
     employee = relationship("Employee", back_populates="vacaciones")
@@ -318,4 +328,111 @@ class Vacaciones(db.Model):
             "days_requested": self.days_requested,
             "status": self.status,
             "created_at": self.created_at.strftime("%d-%m-%Y")
+        }
+
+
+class Survey(db.Model):
+    __tablename__ = "surveys"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow)
+
+    # Relaciones
+    questions = relationship(
+        "Question", back_populates="survey", cascade="all, delete-orphan")
+    responses = relationship(
+        "SurveyResponse", back_populates="survey", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"({self.title})"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "questions": [q.serialize() for q in self.questions]
+        }
+
+
+class Question(db.Model):
+    __tablename__ = "questions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    survey_id: Mapped[int] = mapped_column(
+        ForeignKey("surveys.id"), nullable=False)
+
+    text: Mapped[str] = mapped_column(String(255), nullable=False)
+    type: Mapped[str] = mapped_column(String(50), default="TEXT")
+
+    survey = relationship("Survey", back_populates="questions")
+
+    def __repr__(self):
+        return f"{self.text}"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "survey_id": self.survey_id,
+            "text": self.text,
+            "type": self.type
+        }
+
+
+class SurveyResponse(db.Model):
+    __tablename__ = "survey_responses"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    survey_id: Mapped[int] = mapped_column(
+        ForeignKey("surveys.id"), nullable=False)
+    employee_id: Mapped[int] = mapped_column(
+        ForeignKey("employees.id"), nullable=False)
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(), default=datetime.utcnow)
+
+    survey = relationship("Survey", back_populates="responses")
+    employee = relationship("Employee")
+    answers = relationship(
+        "SurveyAnswer", back_populates="response", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"{self.employee.first_name} {self.employee.last_name}"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "survey_id": self.survey_id,
+            "employee_id": self.employee_id,
+            "submitted_at": self.submitted_at.isoformat() if self.submitted_at else None
+        }
+
+
+class SurveyAnswer(db.Model):
+    __tablename__ = "survey_answers"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    response_id: Mapped[int] = mapped_column(
+        ForeignKey("survey_responses.id"), nullable=False)
+    question_id: Mapped[int] = mapped_column(
+        ForeignKey("questions.id"), nullable=False)
+
+    answer_value: Mapped[str] = mapped_column(Text, nullable=False)
+
+    response = relationship("SurveyResponse", back_populates="answers")
+    question = relationship("Question")
+
+    def __repr__(self):
+        return f"SurveyAnswer(response_id={self.response_id}, question_id={self.question_id})"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "question_id": self.question_id,
+            "answer_value": self.answer_value
         }

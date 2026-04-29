@@ -107,6 +107,21 @@ const DashBoardCompany = () => {
                 <p className="lead text-muted">Panel de Gestión Administrativa</p>
             </div>
 
+<<<<<<< HEAD
+            <div className="row g-4 mb-5 justify-content-center">
+                {/* Tarjeta de Empleados */}
+                <div className="col-md-4">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body text-center">
+                            <h5 className="card-title">Empleados</h5>
+                            <p className="text-muted">Gestiona tu equipo</p>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => navigate("/employees")}
+                            >
+                                Ver empleados
+                            </button>
+=======
             <div className="row mt-4">
                 {[
                     { title: "Empleados", text: "Gestiona tu equipo", btn: "btn-primary", path: "/employees", label: "Ver empleados" },
@@ -119,11 +134,80 @@ const DashBoardCompany = () => {
                                 <p className="text-muted">{text}</p>
                                 <button className={`btn ${btn}`} onClick={() => navigate(path)}>{label}</button>
                             </div>
+>>>>>>> develop
                         </div>
                     </div>
                 ))}
             </div>
 
+<<<<<<< HEAD
+                {/* Tarjeta de Vacaciones */}
+                <div className="col-md-4">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body text-center">
+                            <h5 className="card-title">Vacaciones</h5>
+                            <p className="text-muted">Controla días libres</p>
+                            <button
+                                className="btn btn-success"
+                                onClick={() => navigate("/vacaciones")}
+                            >
+                                Ver vacaciones
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tarjeta de Incidencias */}
+                <div className="col-md-4">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body text-center">
+                            <h5 className="card-title">Incidencias</h5>
+                            <p className="text-muted">Atiende reportes y problemas</p>
+                            <button
+                                className="btn btn-warning text-dark fw-bold"
+                                onClick={() => navigate("/incidents")}
+                            >
+                                <i className="fas fa-exclamation-triangle me-2"></i>
+                                Ver incidencias
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tarjeta de Managers */}
+                <div className="col-md-4">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body text-center">
+                            <h5 className="card-title">Managers</h5>
+                            <p className="text-muted">Promociones y jerarquía</p>
+                            <button
+                                className="btn btn-dark fw-bold"
+                                onClick={() => navigate("/manage-roles")}
+                            >
+                                <i className="fas fa-user-shield me-2"></i>
+                                Gestionar Rangos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tarjeta de Encuestas */}
+                <div className="col-md-4">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body text-center">
+                            <h5 className="card-title">Encuestas</h5>
+                            <p className="text-muted">Gestiona encuestas y feedback</p>
+                            <button
+                                className="btn btn-info text-dark fw-bold"
+                                onClick={() => navigate("/surveys")}
+                            >
+                                <i className="fas fa-poll me-2"></i>
+                                Ver encuestas
+                            </button>
+                        </div>
+                    </div>
+                </div>
+=======
             <div className="mt-5">
                 <h4 className="fw-bold mb-3">
                     Solicitudes de Vacaciones Pendientes
@@ -149,6 +233,7 @@ const DashBoardCompany = () => {
                         ))}
                     </ul>
                 )}
+>>>>>>> develop
             </div>
         </div>
     );

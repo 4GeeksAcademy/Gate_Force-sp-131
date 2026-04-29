@@ -4,6 +4,7 @@ export const initialStore = () => {
     role: localStorage.getItem("role") || null,
     companyInfo: null,
     employeeInfo: null,
+    managerInfo: null,
   };
 };
 
@@ -12,6 +13,7 @@ const getState = ({ getStore, getActions, setStore }) => {
     store: {
       token: localStorage.getItem("token") || null,
       role: localStorage.getItem("role") || null,
+      managerInfo: null,
       employeeInfo: null,
     },
 
@@ -92,29 +94,78 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
       },
 
-      loginEmployee: async (credentials) => {
+      loginEmployee: async (email, password) => {
         const API_URL =
           import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
             /\/api$/,
             "",
           ) + "/api/";
+
         try {
-          const res = await fetch(`${API_URL}employee/login`, {
+          const resp = await fetch(`${API_URL}employee/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(credentials),
+            body: JSON.stringify({ email, password }),
           });
-          const data = await res.json();
-          if (res.ok) {
+
+          if (resp.ok) {
+            const data = await resp.json();
+
+            // 1. Guardamos lo básico primero
             localStorage.setItem("token", data.token);
-            localStorage.setItem("role", "employee");
-            localStorage.setItem("username", data.first_name || "Empleado");
-            setStore({ token: data.token, role: "employee" });
-            return { success: true };
+            localStorage.setItem("role", data.role);
+
+            setStore({
+              token: data.token,
+              role: data.role,
+            });
+
+            // 2. LLAMADA CRÍTICA: Esperamos a que los datos del empleado se carguen
+            // Usamos el getActions() para llamar a la función que ya tienes
+            const actions = getActions();
+            const loaded = await actions.getEmployeeData();
+
+            if (loaded) {
+              return {
+                success: true,
+                path:
+                  data.role === "manager"
+                    ? "/manager-dashboard"
+                    : "/employee-dashboard",
+              };
+            }
           }
-          return { success: false, msg: data.msg };
+          return { success: false, msg: "Error en la carga de datos" };
         } catch (error) {
           return { success: false, msg: "Error de red" };
+        }
+      },
+      getManagerData: async () => {
+        const store = getStore();
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
+
+        try {
+          const res = await fetch(`${API_URL}manager/dashboard`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${store.token || localStorage.getItem("token")}`,
+            },
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            setStore({ ...store, managerInfo: data });
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error("Error cargando datos del manager:", error);
+          return false;
         }
       },
 
@@ -144,22 +195,18 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       getEmployeeData: async () => {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+        const store = getStore();
+        const token = store.token || localStorage.getItem("token");
+        if (!token) return false;
 
-        let baseUrl = import.meta.env.VITE_BACKEND_URL;
-        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
-        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4);
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
 
-        const finalUrl = `${baseUrl}/api/employee/me`;
-        console.log("Llamando a:", finalUrl);
-
-        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1); 
-        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4); 
-        const finalUrlb = `${baseUrl}/api/employee/dashboard`;
-        console.log("Llamando a:", finalUrlb); 
         try {
-          const res = await fetch(finalUrlb, {
+          const res = await fetch(`${API_URL}employee/dashboard`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -167,19 +214,14 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
           });
 
-          if (!res.ok) {
-            const text = await res.text();
-            console.error(
-              "Error del servidor (HTML recibido):",
-              text.substring(0, 100),
-            );
-            return;
+          if (res.ok) {
+            const data = await res.json();
+            setStore({ employeeInfo: data });
+            return true;
           }
-
-          const data = await res.json();
-          setStore({ employeeInfo: data });
+          return false;
         } catch (error) {
-          console.error("Error de conexión:", error);
+          return false;
         }
       },
 
@@ -218,6 +260,7 @@ const getState = ({ getStore, getActions, setStore }) => {
           role: null,
           companyInfo: null,
           employeeInfo: null,
+          managerInfo: null,
         });
         console.log("Sesión cerrada correctamente");
       },
