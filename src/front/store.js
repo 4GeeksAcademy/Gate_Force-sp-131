@@ -111,30 +111,33 @@ const getState = ({ getStore, getActions, setStore }) => {
           if (resp.ok) {
             const data = await resp.json();
 
-            setStore({
-              token: data.token,
-              role: data.role,
-              employeeInfo: data.role === "employee" ? data : null,
-              managerInfo: data.role === "manager" ? data : null,
-            });
-
+            // 1. Guardamos lo básico primero
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", data.role);
 
-            if (data.role === "manager") {
-              return { success: true, path: "/manager-dashboard" };
-            }
-            return { success: true, path: "/employee-dashboard" };
-          }
+            setStore({
+              token: data.token,
+              role: data.role,
+            });
 
-          const errorData = await resp.json();
-          return {
-            success: false,
-            msg: errorData.msg || "Error de credenciales",
-          };
+            // 2. LLAMADA CRÍTICA: Esperamos a que los datos del empleado se carguen
+            // Usamos el getActions() para llamar a la función que ya tienes
+            const actions = getActions();
+            const loaded = await actions.getEmployeeData();
+
+            if (loaded) {
+              return {
+                success: true,
+                path:
+                  data.role === "manager"
+                    ? "/manager-dashboard"
+                    : "/employee-dashboard",
+              };
+            }
+          }
+          return { success: false, msg: "Error en la carga de datos" };
         } catch (error) {
-          console.error("Error en login:", error);
-          return { success: false, msg: "Error de conexión" };
+          return { success: false, msg: "Error de red" };
         }
       },
       getManagerData: async () => {
@@ -192,22 +195,18 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       getEmployeeData: async () => {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+        const store = getStore();
+        const token = store.token || localStorage.getItem("token");
+        if (!token) return false;
 
-        let baseUrl = import.meta.env.VITE_BACKEND_URL;
-        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
-        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4);
+        const API_URL =
+          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
+            /\/api$/,
+            "",
+          ) + "/api/";
 
-        const finalUrl = `${baseUrl}/api/employee/me`;
-        console.log("Llamando a:", finalUrl);
-
-        if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
-        if (baseUrl.endsWith("/api")) baseUrl = baseUrl.slice(0, -4);
-        const finalUrlb = `${baseUrl}/api/employee/dashboard`;
-        console.log("Llamando a:", finalUrlb);
         try {
-          const res = await fetch(finalUrlb, {
+          const res = await fetch(`${API_URL}employee/dashboard`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -215,19 +214,14 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
           });
 
-          if (!res.ok) {
-            const text = await res.text();
-            console.error(
-              "Error del servidor (HTML recibido):",
-              text.substring(0, 100),
-            );
-            return;
+          if (res.ok) {
+            const data = await res.json();
+            setStore({ employeeInfo: data });
+            return true;
           }
-
-          const data = await res.json();
-          setStore({ employeeInfo: data });
+          return false;
         } catch (error) {
-          console.error("Error de conexión:", error);
+          return false;
         }
       },
 

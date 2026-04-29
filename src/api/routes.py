@@ -777,7 +777,22 @@ def parse_time(t):
 @jwt_required()
 @role_required("company", "manager", "employee", "admin")
 def get_horarios(employee_id):
-    Employee.query.get_or_404(employee_id)
+    identity = get_jwt_identity()
+    claims = get_jwt()
+    role = claims.get("role")
+
+    target_employee = Employee.query.get_or_404(employee_id)
+    if role == "employee" and str(identity) != str(employee_id):
+        return jsonify({"msg": "No puedes ver horarios de otros empleados"}), 403
+
+    if role in ["company", "manager"]:
+        requester = Employee.query.get(
+            identity) if role == "manager" else Company.query.get(identity)
+        company_id = requester.company_id if role == "manager" else requester.id
+
+        if target_employee.company_id != company_id:
+            return jsonify({"msg": "Este empleado no pertenece a tu empresa"}), 403
+
     schedules = Schedule.query.filter_by(employee_id=employee_id).all()
     return jsonify([s.serialize() for s in schedules]), 200
 
@@ -786,39 +801,61 @@ def get_horarios(employee_id):
 @jwt_required()
 @role_required("company", "manager", "admin")
 def create_horario(employee_id):
+    identity = get_jwt_identity()
+    role = get_jwt().get("role")
+    target_employee = Employee.query.get_or_404(employee_id)
+
+    if role != "admin":
+        requester_co_id = Employee.query.get(
+            identity).company_id if role == "manager" else identity
+        if target_employee.company_id != requester_co_id:
+            return jsonify({"msg": "No autorizado para esta empresa"}), 403
+
     body = request.get_json()
-    day = body.get("day")
-    start_time = body.get("start_time")
-    end_time = body.get("end_time")
+    day, start_time, end_time = body.get("day"), body.get(
+        "start_time"), body.get("end_time")
+
     if not all([day, start_time, end_time]):
-        return jsonify({"error": "day, start_time y end_time son obligatorios"}), 422
-    new_schedule = Schedule(
-        employee_id=employee_id,
-        day=day,
-        start_time=parse_time(start_time),
-        end_time=parse_time(end_time)
-    )
-    db.session.add(new_schedule)
-    db.session.commit()
-    return jsonify(new_schedule.serialize()), 201
+        return jsonify({"msg": "Faltan campos obligatorios"}), 422
+
+    try:
+        new_schedule = Schedule(
+            employee_id=employee_id,
+            day=day,
+            start_time=parse_time(start_time),
+            end_time=parse_time(end_time)
+        )
+        db.session.add(new_schedule)
+        db.session.commit()
+        return jsonify(new_schedule.serialize()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error al crear horario", "error": str(e)}), 500
 
 
 @api.route('/horarios/<int:schedule_id>', methods=['PUT'])
 @jwt_required()
 @role_required("company", "manager", "admin")
 def update_horario(schedule_id):
-    schedule = Schedule.query.get(schedule_id)
-    if not schedule:
-        return jsonify({"error": "Horario no encontrado"}), 404
+    schedule = Schedule.query.get_or_404(schedule_id)
+    identity = get_jwt_identity()
+    role = get_jwt().get("role")
+
+    if role != "admin":
+        target_employee = Employee.query.get(schedule.employee_id)
+        requester_co_id = Employee.query.get(
+            identity).company_id if role == "manager" else identity
+        if target_employee.company_id != requester_co_id:
+            return jsonify({"msg": "No tienes permiso para editar este horario"}), 403
+
     body = request.get_json()
-    if not body:
-        return jsonify({"error": "Body vacío"}), 400
     if "day" in body:
         schedule.day = body["day"]
     if "start_time" in body:
         schedule.start_time = parse_time(body["start_time"])
     if "end_time" in body:
         schedule.end_time = parse_time(body["end_time"])
+
     db.session.commit()
     return jsonify(schedule.serialize()), 200
 
@@ -1249,7 +1286,6 @@ def submit_survey_response(employee_id, survey_id):
     return jsonify({"msg": "Encuesta enviada exitosamente"}), 201
 
 
-
 @api.route('/employees/<int:employee_id>/promote', methods=['POST'])
 @jwt_required()
 @role_required("company", "admin")
@@ -1286,9 +1322,21 @@ def promote_to_manager(employee_id):
 @role_required("company", "admin")
 def delete_managers(manager_id):
     manager = Manager.query.get(manager_id)
+
     if not manager:
         return jsonify({"msg": "Manager no encontrado"}), 404
-    manager.is_active = False
-    db.session.commit()
 
-    return jsonify({"msg": "Acceso de manager revocado exitosamente"}), 200
+    try:
+        manager.is_active = False
+        if manager.employee:
+            manager.employee.role = "employee"
+        db.session.commit()
+
+        return jsonify({
+            "msg": "Acceso de manager revocado y rol de empleado restaurado",
+            "employee_id": manager.employee_id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error al revocar el rol", "error": str(e)}), 500

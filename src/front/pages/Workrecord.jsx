@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export default function WorkRecordPage() {
     const [records, setRecords] = useState([]);
+    const { store, actions } = useGlobalReducer();
     const [activeRecord, setActiveRecord] = useState(null);
     const navigate = useNavigate();
 
@@ -46,8 +48,8 @@ export default function WorkRecordPage() {
     };
 
     if (store.role !== "employee" && store.role !== "manager") {
-    navigate("/login-employee");
-}
+        navigate("/login-employee");
+    }
 
     const handleCheckIn = async () => {
         const now = new Date().toISOString();

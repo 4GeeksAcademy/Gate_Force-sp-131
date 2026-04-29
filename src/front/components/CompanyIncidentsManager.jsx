@@ -187,7 +187,7 @@ export default function CompanyIncidentsManager() {
                         ) : (
                             incidents.map((incident) => (
                                 <tr key={incident.id}>
-                                    <td className="fw-bold">{getEmployeeName(incident.employee_id)}</td>
+                                    <td className="fw-bold">{incident.employee_name}</td>
                                     <td>
                                         <div className="mb-1">
                                             <span className="badge bg-secondary me-1">{incident.type}</span>

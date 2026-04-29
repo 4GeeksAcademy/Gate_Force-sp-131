@@ -292,6 +292,7 @@ class Incident(db.Model):
             "category": self.category,
             "description": self.description,
             "admin_comment": self.admin_comment,
+            "employee_name": f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido",
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 

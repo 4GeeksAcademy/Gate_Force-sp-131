@@ -62,7 +62,7 @@ export default function EmployeeIncidents() {
         });
 
         if (res.ok) {
-            setFormData({ type: "", category: "" }); // Limpiamos el formulario
+            setFormData({ type: "", category: "" });
             getMyIncidents();
             alert("Incidencia reportada correctamente a la empresa.");
         } else {
@@ -74,9 +74,6 @@ export default function EmployeeIncidents() {
         <div className="container mt-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2 className="text-primary"><i className="fas fa-ticket-alt me-2"></i>Mis Incidencias</h2>
-                <button className="btn btn-outline-secondary" onClick={() => navigate(-1)}>
-                    <i className="fas fa-arrow-left me-2"></i>Volver
-                </button>
             </div>
 
             {/* Formulario de Reporte para el Empleado */}
