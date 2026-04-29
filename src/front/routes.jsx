@@ -174,63 +174,14 @@ export const router = createBrowserRouter(
         }
       />
 
-      <Route
-        path="/work-records"
-        element={
-          <RutaProtegida allowedRole="company">
-            <Workrecord />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/work-records/new"
-        element={
-          <RutaProtegida allowedRole="company">
-            <WorkRecordForm />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/work-records/edit/:id"
-        element={
-          <RutaProtegida allowedRole="company">
-            <WorkRecordForm />
-          </RutaProtegida>
-        }
-      />
+      <Route path="/work-records" element={<Workrecord />} />
+      <Route path="/work-records/new" element={<WorkRecordForm />} />
+      <Route path="/work-records/edit/:id" element={<WorkRecordForm />} />
 
-      <Route
-        path="/incidents"
-        element={
-          <RutaProtegida allowedRole="company">
-            <Incidents />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/incidents/new"
-        element={
-          <RutaProtegida allowedRole="company">
-            <IncidentNew />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/incidents/edit/:id"
-        element={
-          <RutaProtegida allowedRole="company">
-            <IncidentEdit />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/incidents/delete"
-        element={
-          <RutaProtegida allowedRole="company">
-            <IncidentDelete />
-          </RutaProtegida>
-        }
-      />
+      <Route path="/incidents" element={<Incidents />} />
+      <Route path="/incidents/new" element={<IncidentNew />} />
+      <Route path="/incidents/edit/:id" element={<IncidentEdit />} />
+      <Route path="/incidents/delete" element={<IncidentDelete />} />
 
       <Route path="/login-admin" element={<LoginAdmin />} />
       <Route

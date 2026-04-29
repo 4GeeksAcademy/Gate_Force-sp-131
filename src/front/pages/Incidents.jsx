@@ -6,22 +6,46 @@ export default function Incidents() {
     const navigate = useNavigate();
     const [incidents, setIncidents] = useState([]);
     const [employees, setEmployees] = useState([]);
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    const authFetch = (url, options = {}) => {
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            }
+        });
+    };
 
     const getIncidents = async () => {
-        const res = await fetch(`${API_URL}incidents`);
+        const endpoint = role === "employee"
+            ? `${API_URL}employee/incidents`
+            : `${API_URL}incidents`;
+        const res = await authFetch(endpoint);
         const data = await res.json();
-        setIncidents(data);
+        if (Array.isArray(data)) {
+            setIncidents(data);
+        } else {
+            setIncidents([]);
+        }
     };
 
     const getEmployees = async () => {
-        const res = await fetch(`${API_URL}employees/simple`);
+        const res = await authFetch(`${API_URL}employees/simple`);
         const data = await res.json();
-        setEmployees(data);
+        if (Array.isArray(data)) {
+            setEmployees(data);
+        } else {
+            setEmployees([]);
+        }
     };
 
     useEffect(() => {
         getIncidents();
-        getEmployees();
+        if (role !== "employee") getEmployees();
     }, []);
 
     const getEmployeeName = (employeeId) => {
@@ -34,18 +58,30 @@ export default function Incidents() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h1>Incidents</h1>
                 <div style={{ display: "flex", gap: "10px" }}>
-                    <button
-                        onClick={() => navigate("/incidents/new")}
-                        style={{ backgroundColor: "#FF9800", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                    >
-                        Crear
-                    </button>
-                    <button
-                        onClick={() => navigate("/incidents/delete")}
-                        style={{ backgroundColor: "#f44336", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                    >
-                        Eliminar
-                    </button>
+                    {role === "employee" && (
+                        <button
+                            onClick={() => navigate("/incidents/new")}
+                            style={{ backgroundColor: "#FF9800", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
+                        >
+                            Nueva Incidencia
+                        </button>
+                    )}
+                    {role !== "employee" && (
+                        <>
+                            <button
+                                onClick={() => navigate("/incidents/new")}
+                                style={{ backgroundColor: "#FF9800", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
+                            >
+                                Crear
+                            </button>
+                            <button
+                                onClick={() => navigate("/incidents/delete")}
+                                style={{ backgroundColor: "#f44336", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
+                            >
+                                Eliminar
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
             <ul>
@@ -59,7 +95,9 @@ export default function Incidents() {
                         paddingBottom: "5px"
                     }}>
                         <div style={{ flexGrow: 1 }}>
-                            <strong>{getEmployeeName(incident.employee_id)}</strong>
+                            {role !== "employee" && (
+                                <strong>{getEmployeeName(incident.employee_id)}</strong>
+                            )}
                             <div style={{ fontSize: "0.9em", color: "#666" }}>
                                 <span>{incident.type}</span> |
                                 <span style={{ margin: "0 5px", fontWeight: "bold" }}>{incident.status}</span> |
@@ -68,12 +106,14 @@ export default function Incidents() {
                                 <span>{incident.created_at}</span>
                             </div>
                         </div>
-                        <button
-                            onClick={() => navigate(`/incidents/edit/${incident.id}`)}
-                            style={{ marginLeft: "15px" }}
-                        >
-                            Edit
-                        </button>
+                        {role !== "employee" && (
+                            <button
+                                onClick={() => navigate(`/incidents/edit/${incident.id}`)}
+                                style={{ marginLeft: "15px" }}
+                            >
+                                Edit
+                            </button>
+                        )}
                     </li>
                 ))}
             </ul>
