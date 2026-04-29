@@ -137,7 +137,6 @@ export const router = createBrowserRouter(
         }
       />
 
-<<<<<<< HEAD
       <Route
         path="/vacaciones"
         element={
@@ -170,12 +169,6 @@ export const router = createBrowserRouter(
           </RutaProtegida>
         }
       />
-=======
-      <Route path="/vacaciones" element={<Vacaciones />} />
-      <Route path="/vacaciones/new" element={<VacacionesNew />} />
-      <Route path="/vacaciones/edit/:id" element={<VacacionesEdit />} />
-      <Route path="/vacaciones/delete" element={<VacacionesDelete />} />
->>>>>>> develop
 
 
       <Route
@@ -215,15 +208,8 @@ export const router = createBrowserRouter(
       <Route path="/work-records/new" element={<WorkRecordForm />} />
       <Route path="/work-records/edit/:id" element={<WorkRecordForm />} />
 
-<<<<<<< HEAD
       <Route path="/incidents" element={<CompanyIncidentsManager />} />
       <Route path="/employee/:employeeId/incidents" element={<EmployeeIncidents />} />
-=======
-      <Route path="/incidents" element={<Incidents />} />
-      <Route path="/incidents/new" element={<IncidentNew />} />
-      <Route path="/incidents/edit/:id" element={<IncidentEdit />} />
-      <Route path="/incidents/delete" element={<IncidentDelete />} />
->>>>>>> develop
 
       <Route path="/login-admin" element={<LoginAdmin />} />
       <Route
