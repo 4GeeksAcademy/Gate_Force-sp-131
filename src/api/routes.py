@@ -812,25 +812,20 @@ def create_horario(employee_id):
             return jsonify({"msg": "No autorizado para esta empresa"}), 403
 
     body = request.get_json()
-    day, start_time, end_time = body.get("day"), body.get(
-        "start_time"), body.get("end_time")
-
+    day = body.get("day")
+    start_time = body.get("start_time")
+    end_time = body.get("end_time")
     if not all([day, start_time, end_time]):
-        return jsonify({"msg": "Faltan campos obligatorios"}), 422
-
-    try:
-        new_schedule = Schedule(
-            employee_id=employee_id,
-            day=day,
-            start_time=parse_time(start_time),
-            end_time=parse_time(end_time)
-        )
-        db.session.add(new_schedule)
-        db.session.commit()
-        return jsonify(new_schedule.serialize()), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"msg": "Error al crear horario", "error": str(e)}), 500
+        return jsonify({"error": "day, start_time y end_time son obligatorios"}), 422
+    new_schedule = Schedule(
+        employee_id=employee_id,
+        day=day,
+        start_time=parse_time(start_time),
+        end_time=parse_time(end_time)
+    )
+    db.session.add(new_schedule)
+    db.session.commit()
+    return jsonify(new_schedule.serialize()), 201
 
 
 @api.route('/horarios/<int:schedule_id>', methods=['PUT'])
@@ -862,11 +857,12 @@ def update_horario(schedule_id):
 
 @api.route('/horarios/<int:schedule_id>', methods=['DELETE'])
 @jwt_required()
-@role_required("company", "admin")
+@role_required("company", "manager", "admin") 
 def delete_horario(schedule_id):
     schedule = Schedule.query.get(schedule_id)
     if not schedule:
         return jsonify({"error": "Horario no encontrado"}), 404
+        
     db.session.delete(schedule)
     db.session.commit()
     return jsonify({"message": f"Horario {schedule_id} eliminado"}), 200

@@ -202,6 +202,9 @@ const DashboardEmployee = () => {
                             <Link to="/mis-nominas" className="btn btn-outline-primary btn-sm mb-2 d-block">
                                 Ver nóminas
                             </Link>
+                            <Link to="/incidents" className="btn btn-warning btn-sm mb-2 d-block">
+                                <i className="fas fa-exclamation-triangle me-2"></i>Mis Incidencias
+                            </Link>
                             <Link to="/work-records" className="btn btn-dark btn-sm d-block">
                                 <i className="fas fa-clock me-2"></i>Fichajes
                             </Link>
