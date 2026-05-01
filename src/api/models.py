@@ -320,6 +320,7 @@ class Vacaciones(db.Model):
         return {
             "id": self.id,
             "employee_id": self.employee_id,
+            "employee_name": f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido",
             "vacations": self.vacations,
             "taken_vacations": self.taken_vacations,
             "available_vacations": self.available_vacations,

@@ -132,7 +132,7 @@ const DashBoardCompany = () => {
                             <p className="text-muted">Controla días libres</p>
                             <button
                                 className="btn btn-success"
-                                onClick={() => navigate("/vacaciones")}
+                                onClick={() => navigate("/company-vacations")}
                             >
                                 Ver vacaciones
                             </button>

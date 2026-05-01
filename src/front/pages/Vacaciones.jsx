@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Vacaciones() {
+export default function VacacionesEmployee() {
     const API_URL = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") + "/api/";
     const navigate = useNavigate();
-    const [vacaciones, setVacaciones] = useState([]);
+    const [misVacaciones, setMisVacaciones] = useState([]);
     const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
+
 
     const authFetch = (url, options = {}) => {
         return fetch(url, {
@@ -19,85 +19,63 @@ export default function Vacaciones() {
         });
     };
 
-    const getVacaciones = async () => {
+    const getMisVacaciones = async () => {
         try {
-            const endpoint = role === "employee" ? "employee/vacaciones" : "vacaciones";
-            const res = await authFetch(`${API_URL}${endpoint}`);
+            const res = await authFetch(`${API_URL}employee/vacaciones`);
             const data = await res.json();
-            if (Array.isArray(data)) {
-                setVacaciones(data);
-            } else {
-                setVacaciones([]);
-            }
+            if (Array.isArray(data)) setMisVacaciones(data);
         } catch (error) {
-            console.error("Error en getVacaciones:", error);
+            console.error("Error obteniendo mis vacaciones:", error);
         }
     };
 
     useEffect(() => {
-        getVacaciones();
+        getMisVacaciones();
     }, []);
 
     return (
         <div style={{ padding: "20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h1>Vacaciones</h1>
-                {!token ? (
-                    <p>Debes estar logueado para gestionar tus vacaciones</p>
-                ) : null}
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <button
-                        onClick={() => navigate("/vacaciones/new")}
-                        style={{ backgroundColor: "#9C27B0", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                    >
-                        Crear
-                    </button>
-                    {role !== "employee" && (
-                        <button
-                            onClick={() => navigate("/vacaciones/delete")}
-                            style={{ backgroundColor: "#f44336", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
-                        >
-                            Eliminar
-                        </button>
-                    )}
-                </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h1>Mis Vacaciones</h1>
+                <button
+                    onClick={() => navigate("/vacaciones/new")}
+                    style={{ backgroundColor: "#9C27B0", color: "white", border: "none", padding: "8px 16px", cursor: "pointer", borderRadius: "4px" }}
+                >
+                    + Solicitar Días
+                </button>
             </div>
 
             <ul style={{ padding: 0 }}>
-                {vacaciones.length === 0 ? (
-                    <p>No hay registros de vacaciones.</p>
+                {misVacaciones.length === 0 ? (
+                    <p>No tienes solicitudes de vacaciones aún.</p>
                 ) : (
-                    vacaciones.map((vacacion) => (
+                    misVacaciones.map((vacacion) => (
                         <li key={vacacion.id} style={{
-                            marginBottom: "10px",
-                            display: "flex",
-                            alignItems: "center",
-                            listStyle: "none",
-                            borderBottom: "1px solid #eee",
-                            paddingBottom: "5px"
+                            marginBottom: "10px", padding: "10px",
+                            border: "1px solid #ddd", borderRadius: "5px", listStyle: "none"
                         }}>
-                            <div style={{ flexGrow: 1 }}>
-                                <div style={{ fontSize: "0.9em", color: "#666" }}>
-                                    <span>Total: {vacacion.vacations}</span> |
-                                    <span style={{ margin: "0 5px" }}>Taken: {vacacion.taken_vacations}</span> |
-                                    <span style={{ fontWeight: "bold" }}>Available: {vacacion.available_vacations}</span> |
-                                    <span>{vacacion.created_at}</span>
-                                </div>
+                            <div>
+                                <strong>Estado: </strong>
+                                <span style={{
+                                    color: vacacion.status === "approved" ? "green" : vacacion.status === "rejected" ? "red" : "orange",
+                                    textTransform: "uppercase", fontWeight: "bold"
+                                }}>
+                                    {vacacion.status || "PENDING"}
+                                </span>
                             </div>
-                            {role !== "employee" && (
-                                <button
-                                    onClick={() => navigate(`/vacaciones/edit/${vacacion.id}`)}
-                                    style={{ marginLeft: "15px" }}
-                                >
-                                    Edit
-                                </button>
-                            )}
+                            <div style={{ fontSize: "0.9em", color: "#666", marginTop: "5px" }}>
+                                <span>Total Días: {vacacion.vacations}</span> |
+                                <span style={{ margin: "0 5px" }}>Tomados: {vacacion.taken_vacations}</span> |
+                                <span>Disponibles: {vacacion.available_vacations}</span>
+                            </div>
+                            <div style={{ fontSize: "0.85em", color: "#888", marginTop: "5px" }}>
+                                Fechas solicitadas: {vacacion.start_date ? vacacion.start_date.split("T")[0] : 'N/A'} - {vacacion.end_date ? vacacion.end_date.split("T")[0] : 'N/A'}
+                            </div>
                         </li>
                     ))
                 )}
             </ul>
-            <button className="btn btn-outline-primary mt-3" onClick={() => navigate("/company-dashboard")}>
-                <i className="fas fa-arrow-left me-2"></i>
+            <button className="btn btn-outline-primary mt-3" onClick={() => navigate("/employee-dashboard")}>
                 Volver al Panel
             </button>
         </div>

@@ -108,9 +108,6 @@ export default function CompanyIncidentsManager() {
         <div className="container mt-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2 className="text-primary"><i className="fas fa-exclamation-triangle me-2"></i>Gestión de Incidencias</h2>
-                <button className="btn btn-outline-secondary" onClick={() => navigate(-1)}>
-                    <i className="fas fa-arrow-left me-2"></i>Volver
-                </button>
             </div>
 
             <div className="card shadow-sm p-4 mb-4">

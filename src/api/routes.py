@@ -1017,14 +1017,19 @@ def update_vacacion(employee_id, id):
         id=id, employee_id=employee_id).first()
     if not vacacion:
         return jsonify({"msg": "Vacacion not found"}), 404
+
     data = request.json
     if not data:
         return jsonify({"msg": "Body vacío"}), 400
+
     vacacion.vacations = data.get("vacations", vacacion.vacations)
     vacacion.taken_vacations = data.get(
         "taken_vacations", vacacion.taken_vacations)
     vacacion.available_vacations = data.get(
         "available_vacations", vacacion.available_vacations)
+
+    vacacion.status = data.get("status", vacacion.status)
+
     db.session.commit()
     return jsonify(vacacion.serialize()), 200
 

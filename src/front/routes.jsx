@@ -23,8 +23,6 @@ import DashBoardCompany from "./pages/DashBoardCompany.jsx";
 import RutaProtegida from "./components/RutaProtegida.jsx";
 import SignupCompany from "./pages/SignupCompany.jsx";
 import VacacionesNew from "./pages/VacacionesNew.jsx";
-import VacacionesEdit from "./pages/VacacionesEdit.jsx";
-import VacacionesDelete from "./pages/VacacionesDelete.jsx";
 import SignupEmployee from "./pages/SignupEmployee.jsx";
 import LoginEmployee from "./pages/LoginEmployee.jsx";
 import LoginAdmin from "./pages/LoginAdmin";
@@ -40,6 +38,7 @@ import CompanySurveys from "./components/CompanySurveys.jsx";
 import EmployeeSurveys from "./components/EmployeeSurveys.jsx";
 import CompanyManagersControl from "./components/CompanyManagersControl.jsx";
 import DashboardManager from "./pages/DashboardManager.jsx";
+import VacacionesCompany from "./components/CompanyVacation.jsx";
 
 
 export const router = createBrowserRouter(
@@ -137,38 +136,8 @@ export const router = createBrowserRouter(
         }
       />
 
-      <Route
-        path="/vacaciones"
-        element={
-          <RutaProtegida allowedRole="employee">
-            <Vacaciones />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/vacaciones/new"
-        element={
-          <RutaProtegida allowedRole="company">
-            <VacacionesNew />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/vacaciones/edit/:id"
-        element={
-          <RutaProtegida allowedRole="company">
-            <VacacionesEdit />
-          </RutaProtegida>
-        }
-      />
-      <Route
-        path="/vacaciones/delete"
-        element={
-          <RutaProtegida allowedRole="company">
-            <VacacionesDelete />
-          </RutaProtegida>
-        }
-      />
+      <Route path="/vacaciones" element={<Vacaciones />} />
+      <Route path="/vacaciones/new" element={<VacacionesNew />} />
 
 
       <Route
@@ -241,6 +210,7 @@ export const router = createBrowserRouter(
       <Route path="/employee/:employeeId/surveys" element={<EmployeeSurveys />} />
       <Route path="/manage-roles" element={<CompanyManagersControl />} />
       <Route path="/manager-dashboard" element={<DashboardManager />} />
+      <Route path="/company-vacations" element={<VacacionesCompany />} />
     </Route>
 
 
