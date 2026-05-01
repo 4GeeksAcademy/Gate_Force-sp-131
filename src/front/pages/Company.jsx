@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function CompaniesPage() {
+function CompaniesPage() {
     const [companies, setCompanies] = useState([]);
     const [uploadingId, setUploadingId] = useState(null);
     const navigate = useNavigate();
@@ -197,3 +197,4 @@ export default function CompaniesPage() {
         </div>
     );
 }
+export default CompaniesPage;

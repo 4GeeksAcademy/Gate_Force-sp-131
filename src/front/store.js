@@ -9,21 +9,22 @@ export const initialStore = () => {
 };
 
 const getState = ({ getStore, getActions, setStore }) => {
+  const buildApiUrl = () =>
+    import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(/\/api$/, "") +
+    "/api/";
+
   return {
     store: {
       token: localStorage.getItem("token") || null,
       role: localStorage.getItem("role") || null,
-      managerInfo: null,
+      companyInfo: null,
       employeeInfo: null,
+      managerInfo: null,
     },
 
     actions: {
       loginCompany: async (credentials) => {
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
-            /\/api$/,
-            "",
-          ) + "/api/";
+        const API_URL = buildApiUrl();
         try {
           const res = await fetch(`${API_URL}company/login`, {
             method: "POST",
@@ -31,12 +32,21 @@ const getState = ({ getStore, getActions, setStore }) => {
             body: JSON.stringify(credentials),
           });
           const data = await res.json();
+
           if (res.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", "company");
-            setStore({ token: data.token, role: "company" });
+
+            const store = getStore();
+            setStore({
+              ...store,
+              token: data.token,
+              role: "company",
+            });
+
             return { success: true };
           }
+
           return { success: false, msg: data.msg };
         } catch (error) {
           return { success: false, msg: "Error de red" };
@@ -45,11 +55,8 @@ const getState = ({ getStore, getActions, setStore }) => {
 
       getCompanyData: async () => {
         const store = getStore();
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
-            /\/api$/,
-            "",
-          ) + "/api/";
+        const API_URL = buildApiUrl();
+
         try {
           const res = await fetch(`${API_URL}company/dashboard`, {
             method: "GET",
@@ -58,11 +65,16 @@ const getState = ({ getStore, getActions, setStore }) => {
               Authorization: `Bearer ${store.token || localStorage.getItem("token")}`,
             },
           });
+
           if (res.ok) {
             const data = await res.json();
-            setStore({ ...store, companyInfo: data });
+            setStore({
+              ...store,
+              companyInfo: data,
+            });
             return true;
           }
+
           return false;
         } catch (error) {
           console.error("Error de conexión:", error);
@@ -71,11 +83,8 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       signupCompany: async (nombre, password, region, email) => {
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
-            /\/api$/,
-            "",
-          ) + "/api/";
+        const API_URL = buildApiUrl();
+
         try {
           const res = await fetch(`${API_URL}company/signup`, {
             method: "POST",
@@ -87,6 +96,7 @@ const getState = ({ getStore, getActions, setStore }) => {
             }),
             headers: { "Content-Type": "application/json" },
           });
+
           const data = await res.json();
           return { success: res.ok, msg: data.msg };
         } catch (error) {
@@ -94,7 +104,7 @@ const getState = ({ getStore, getActions, setStore }) => {
         }
       },
 
-      loginEmployee: async (email, password) => {
+      loginEmployee: async (credentials) => {
         const API_URL =
           import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
             /\/api$/,
@@ -105,23 +115,23 @@ const getState = ({ getStore, getActions, setStore }) => {
           const resp = await fetch(`${API_URL}employee/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify(credentials),
           });
 
-          if (resp.ok) {
-            const data = await resp.json();
+          const data = await resp.json().catch(() => ({}));
 
-            // 1. Guardamos lo básico primero
+          if (resp.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", data.role);
+            localStorage.setItem("username", data.first_name || "Empleado");
 
+            const store = getStore();
             setStore({
+              ...store,
               token: data.token,
               role: data.role,
             });
 
-            // 2. LLAMADA CRÍTICA: Esperamos a que los datos del empleado se carguen
-            // Usamos el getActions() para llamar a la función que ya tienes
             const actions = getActions();
             const loaded = await actions.getEmployeeData();
 
@@ -134,19 +144,23 @@ const getState = ({ getStore, getActions, setStore }) => {
                     : "/employee-dashboard",
               };
             }
+
+            return { success: false, msg: "Error en la carga de datos" };
           }
-          return { success: false, msg: "Error en la carga de datos" };
+
+          return {
+            success: false,
+            msg: data.msg || "Credenciales incorrectas",
+          };
         } catch (error) {
+          console.error("loginEmployee error:", error);
           return { success: false, msg: "Error de red" };
         }
       },
+
       getManagerData: async () => {
         const store = getStore();
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
-            /\/api$/,
-            "",
-          ) + "/api/";
+        const API_URL = buildApiUrl();
 
         try {
           const res = await fetch(`${API_URL}manager/dashboard`, {
@@ -159,9 +173,13 @@ const getState = ({ getStore, getActions, setStore }) => {
 
           if (res.ok) {
             const data = await res.json();
-            setStore({ ...store, managerInfo: data });
+            setStore({
+              ...store,
+              managerInfo: data,
+            });
             return true;
           }
+
           return false;
         } catch (error) {
           console.error("Error cargando datos del manager:", error);
@@ -170,12 +188,7 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
 
       signupEmployee: async (formData) => {
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
-            /\/api$/,
-            "",
-          ) + "/api/";
-
+        const API_URL = buildApiUrl();
         const token = localStorage.getItem("token");
 
         try {
@@ -187,6 +200,7 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
             body: JSON.stringify(formData),
           });
+
           const data = await res.json();
           return { success: res.ok, msg: data.msg };
         } catch (error) {
@@ -199,11 +213,7 @@ const getState = ({ getStore, getActions, setStore }) => {
         const token = store.token || localStorage.getItem("token");
         if (!token) return false;
 
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
-            /\/api$/,
-            "",
-          ) + "/api/";
+        const API_URL = buildApiUrl();
 
         try {
           const res = await fetch(`${API_URL}employee/dashboard`, {
@@ -216,35 +226,47 @@ const getState = ({ getStore, getActions, setStore }) => {
 
           if (res.ok) {
             const data = await res.json();
-            setStore({ employeeInfo: data });
+            setStore({
+              ...store,
+              employeeInfo: data,
+            });
             return true;
           }
+
           return false;
         } catch (error) {
+          console.error("getEmployeeData error:", error);
           return false;
         }
       },
 
       loginAdmin: async (credentials) => {
-        const API_URL =
-          import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "").replace(
-            /\/api$/,
-            "",
-          ) + "/api/";
+        const API_URL = buildApiUrl();
+
         try {
           const res = await fetch(`${API_URL}admin/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(credentials),
           });
+
           const data = await res.json();
+
           if (res.ok) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("role", "admin");
             localStorage.setItem("username", credentials.username);
-            setStore({ token: data.token, role: "admin" });
+
+            const store = getStore();
+            setStore({
+              ...store,
+              token: data.token,
+              role: "admin",
+            });
+
             return { success: true };
           }
+
           return { success: false, msg: data.msg };
         } catch (error) {
           return { success: false, msg: "Error de red" };
@@ -255,6 +277,7 @@ const getState = ({ getStore, getActions, setStore }) => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
         localStorage.removeItem("username");
+
         setStore({
           token: null,
           role: null,
@@ -262,12 +285,10 @@ const getState = ({ getStore, getActions, setStore }) => {
           employeeInfo: null,
           managerInfo: null,
         });
-        console.log("Sesión cerrada correctamente");
       },
 
       toggleEmployee: async (id) => {
         const store = getStore();
-
         const base = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
         const API_URL = `${base}/api/employees/${id}/toggle`.replace(
           "/api/api/",
@@ -282,12 +303,11 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
           });
 
-          if (res.ok) {
-            return true;
-          }
+          if (res.ok) return true;
         } catch (error) {
           console.error("Error al cambiar estado del empleado:", error);
         }
+
         return false;
       },
 

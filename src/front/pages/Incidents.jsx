@@ -21,37 +21,65 @@ export default function Incidents() {
     };
 
     const getIncidents = async () => {
-        const endpoint = role === "employee"
-            ? `${API_URL}employee/incidents`
-            : `${API_URL}incidents`;
-        const res = await authFetch(endpoint);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-            setIncidents(data);
-        } else {
+        try {
+            const endpoint =
+                role === "employee"
+                    ? `${API_URL}employee/incidents`
+                    : `${API_URL}incidents`;
+
+            const res = await authFetch(endpoint);
+            const data = await res.json();
+
+            if (Array.isArray(data)) {
+                setIncidents(data);
+            } else {
+                setIncidents([]);
+            }
+        } catch (error) {
+            console.error("Error cargando incidencias:", error);
             setIncidents([]);
         }
     };
 
     const getEmployees = async () => {
-        const res = await authFetch(`${API_URL}employees/simple`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-            setEmployees(data);
-        } else {
+        try {
+            const res = await authFetch(`${API_URL}employees/simple`);
+            const data = await res.json();
+
+            if (Array.isArray(data)) {
+                setEmployees(data);
+            } else {
+                setEmployees([]);
+            }
+        } catch (error) {
+            console.error("Error cargando empleados:", error);
             setEmployees([]);
         }
     };
 
     useEffect(() => {
-        getIncidents();
-        if (role !== "employee") getEmployees();
-    }, []);
+        if (token && (role === "employee" || role === "company" || role === "admin" || role === "manager")) {
+            getIncidents();
+            if (role !== "employee") {
+                getEmployees();
+            }
+        }
+    }, [token, role]);
 
     const getEmployeeName = (employeeId) => {
         const emp = employees.find(e => e.id === employeeId);
         return emp ? `${emp.first_name} ${emp.last_name}` : employeeId;
     };
+
+    if (!token || !["employee", "company", "admin", "manager"].includes(role)) {
+        return (
+            <div className="container mt-5">
+                <div className="alert alert-warning">
+                    Debes estar logueado para ver esta vista de incidencias.
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ padding: "20px" }}>
@@ -61,22 +89,41 @@ export default function Incidents() {
                     {role === "employee" && (
                         <button
                             onClick={() => navigate("/incidents/new")}
-                            style={{ backgroundColor: "#FF9800", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
+                            style={{
+                                backgroundColor: "#FF9800",
+                                color: "white",
+                                border: "none",
+                                padding: "8px 16px",
+                                cursor: "pointer"
+                            }}
                         >
                             Nueva Incidencia
                         </button>
                     )}
+
                     {role !== "employee" && (
                         <>
                             <button
                                 onClick={() => navigate("/incidents/new")}
-                                style={{ backgroundColor: "#FF9800", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
+                                style={{
+                                    backgroundColor: "#FF9800",
+                                    color: "white",
+                                    border: "none",
+                                    padding: "8px 16px",
+                                    cursor: "pointer"
+                                }}
                             >
                                 Crear
                             </button>
                             <button
                                 onClick={() => navigate("/incidents/delete")}
-                                style={{ backgroundColor: "#f44336", color: "white", border: "none", padding: "8px 16px", cursor: "pointer" }}
+                                style={{
+                                    backgroundColor: "#f44336",
+                                    color: "white",
+                                    border: "none",
+                                    padding: "8px 16px",
+                                    cursor: "pointer"
+                                }}
                             >
                                 Eliminar
                             </button>
@@ -84,16 +131,20 @@ export default function Incidents() {
                     )}
                 </div>
             </div>
+
             <ul>
                 {incidents.map((incident) => (
-                    <li key={incident.id} style={{
-                        marginBottom: "10px",
-                        display: "flex",
-                        alignItems: "center",
-                        listStyle: "none",
-                        borderBottom: "1px solid #eee",
-                        paddingBottom: "5px"
-                    }}>
+                    <li
+                        key={incident.id}
+                        style={{
+                            marginBottom: "10px",
+                            display: "flex",
+                            alignItems: "center",
+                            listStyle: "none",
+                            borderBottom: "1px solid #eee",
+                            paddingBottom: "5px"
+                        }}
+                    >
                         <div style={{ flexGrow: 1 }}>
                             {role !== "employee" && (
                                 <strong>{getEmployeeName(incident.employee_id)}</strong>
@@ -106,6 +157,7 @@ export default function Incidents() {
                                 <span>{incident.created_at}</span>
                             </div>
                         </div>
+
                         {role !== "employee" && (
                             <button
                                 onClick={() => navigate(`/incidents/edit/${incident.id}`)}

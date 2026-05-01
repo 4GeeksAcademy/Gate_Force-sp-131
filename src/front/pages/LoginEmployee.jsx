@@ -11,13 +11,17 @@ const LoginEmployee = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const result = await actions.loginEmployee(email, password);
+        setError("");
+
+        const result = await actions.loginEmployee({ email, password });
+
         if (result.success) {
-            navigate(result.path);
+            navigate("/employee-dashboard");
         } else {
-            alert("Error de acceso");
+            setError(result.msg || "Error de acceso");
         }
     };
+
 
     return (
         <div className="container mt-5">

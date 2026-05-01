@@ -13,7 +13,8 @@ export default function NominaForm() {
     const [uploading, setUploading] = useState(false);
     const [form, setForm] = useState({
         employee_id: employeeIdFromQuery || "",
-        month: "",
+        monthName: "",
+        year: "",
         document_url: ""
     });
 
@@ -33,6 +34,14 @@ export default function NominaForm() {
         });
     };
 
+    const months = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 6 }, (_, i) => String(currentYear - 2 + i));
+
     useEffect(() => {
         authFetch(`${API_URL}employees`)
             .then(res => res.json())
@@ -45,9 +54,14 @@ export default function NominaForm() {
             authFetch(`${API_URL}nominas/${id}`)
                 .then(res => res.json())
                 .then(data => {
+                    const monthParts = (data.month || "").split(" ");
+                    const parsedMonthName = monthParts[0] || "";
+                    const parsedYear = monthParts[1] || "";
+
                     setForm({
                         employee_id: String(data.employee_id || ""),
-                        month: data.month || "",
+                        monthName: parsedMonthName,
+                        year: parsedYear,
                         document_url: data.document_url || ""
                     });
                 });
@@ -103,12 +117,13 @@ export default function NominaForm() {
 
         const method = id ? "PUT" : "POST";
         const url = id ? `${API_URL}nominas/${id}` : `${API_URL}nominas`;
+        const formattedMonth = `${form.monthName} ${form.year}`.trim();
 
         await authFetch(url, {
             method,
             body: JSON.stringify({
                 employee_id: parseInt(form.employee_id),
-                month: form.month,
+                month: formattedMonth,
                 document_url: form.document_url
             })
         });
@@ -145,17 +160,42 @@ export default function NominaForm() {
                         </select>
                     </div>
 
-                    <div>
-                        <label className="form-label">Mes</label>
-                        <input
-                            type="text"
-                            name="month"
-                            placeholder="Ej: Marzo 2026"
-                            value={form.month}
-                            onChange={handleChange}
-                            required
-                            className="form-control"
-                        />
+                    <div className="row">
+                        <div className="col-md-6">
+                            <label className="form-label">Mes</label>
+                            <select
+                                name="monthName"
+                                value={form.monthName}
+                                onChange={handleChange}
+                                required
+                                className="form-select"
+                            >
+                                <option value="" disabled>Seleccionar mes</option>
+                                {months.map(month => (
+                                    <option key={month} value={month}>
+                                        {month}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="col-md-6">
+                            <label className="form-label">Año</label>
+                            <select
+                                name="year"
+                                value={form.year}
+                                onChange={handleChange}
+                                required
+                                className="form-select"
+                            >
+                                <option value="" disabled>Seleccionar año</option>
+                                {years.map(year => (
+                                    <option key={year} value={year}>
+                                        {year}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     <div>

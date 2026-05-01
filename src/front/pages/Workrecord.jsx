@@ -15,6 +15,13 @@ export default function WorkRecordPage() {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
+    useEffect(() => {
+        const userRole = store.role || role;
+        if (!token || (userRole !== "employee" && userRole !== "manager" && userRole !== "admin")) {
+            navigate("/login-employee");
+        }
+    }, [store.role, role, token, navigate]);
+
     const authFetch = (url, options = {}) => {
         return fetch(url, {
             ...options,
@@ -47,9 +54,9 @@ export default function WorkRecordPage() {
         }
     };
 
-    if (store.role !== "employee" && store.role !== "manager") {
-        navigate("/login-employee");
-    }
+    useEffect(() => {
+        fetchRecords();
+    }, [role]);
 
     const handleCheckIn = async () => {
         const now = new Date().toISOString();
@@ -100,10 +107,10 @@ export default function WorkRecordPage() {
                 </h1>
             </div>
 
-            {!token || (role !== "employee" && role !== "admin") ? (
+            {!token || (role !== "employee" && role !== "admin" && role !== "manager") ? (
                 <div className="alert alert-warning shadow-sm">
                     <i className="fas fa-exclamation-triangle me-2"></i>
-                    Debes estar logueado como <strong>empleado</strong> o <strong>admin</strong> para gestionar los fichajes.
+                    Debes estar logueado para gestionar los fichajes.
                 </div>
             ) : (
                 <>

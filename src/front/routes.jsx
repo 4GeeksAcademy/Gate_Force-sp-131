@@ -164,14 +164,8 @@ export const router = createBrowserRouter(
           </RutaProtegida>
         }
       />
-      <Route
-        path="/mis-nominas"
-        element={
-          <RutaProtegida allowedRole="employee">
-            <MisNominas />
-          </RutaProtegida>
-        }
-      />
+      <Route path="/mis-nominas" element={<MisNominas />} />
+
 
       <Route path="/work-records" element={<Workrecord />} />
       <Route path="/work-records/new" element={<WorkRecordForm />} />
