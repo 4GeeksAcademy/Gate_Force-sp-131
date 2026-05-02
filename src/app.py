@@ -20,10 +20,11 @@ ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../dist/')
 app = Flask(__name__)
+
 app.config["JWT_SECRET_KEY"] = "super-secret-key-123"
 jwt = JWTManager(app)
 app.url_map.strict_slashes = False
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # database condiguration
 db_url = os.getenv("DATABASE_URL")

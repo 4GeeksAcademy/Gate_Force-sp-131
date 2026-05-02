@@ -1,1345 +1,667 @@
 """
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
+API Server Routes: Handles Auth, Roles, and HR Operations.
+All functions and declarations are in English for professional standards.
 """
 from flask import request, jsonify, Blueprint
-from api.models import db, Employee, UserAdmin, Company, WorkRecord, Nomina, Incident, Vacaciones, Schedule, Manager, Survey, Question, SurveyResponse, SurveyAnswer
+from api.models import (
+    db, Employee, UserAdmin, Company, WorkRecord, Nomina,
+    Incident, Vacaciones, Schedule, Survey, Question,
+    SurveyResponse, SurveyAnswer, StatusEnum, IncidentTypeEnum, RoleEnum, AuditLog
+)
 from flask_cors import CORS
 from datetime import datetime
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 
 api = Blueprint('api', __name__)
 CORS(api)
 
-
-def company_required(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        claims = get_jwt()
-        if claims.get("role") != "company":
-            return jsonify({"msg": "Acceso restringido: Solo para empresas"}), 403
-        return fn(*args, **kwargs)
-    return wrapper
+# ==========================================
+# 1. HELPERS AND DECORATORS
+# ==========================================
 
 
-def role_required(*roles):
+def role_required(*allowed_roles):
+    """
+    Decorator to restrict access based on JWT claims.
+    Usage: @role_required("ADMIN", "COMPANY")
+    """
     def decorator(fn):
         @wraps(fn)
+        @jwt_required()
         def wrapper(*args, **kwargs):
-            try:
-                identity = get_jwt_identity()
-                claims = get_jwt()
-                if not identity or claims.get("role") not in roles:
-                    return jsonify({"msg": "Acceso denegado"}), 403
-            except Exception as e:
-                return jsonify({"msg": str(e)}), 500
+            claims = get_jwt()
+            user_role = claims.get("role")
+            if user_role not in allowed_roles:
+                return jsonify({"msg": f"Access denied. Required: {allowed_roles}"}), 403
             return fn(*args, **kwargs)
         return wrapper
     return decorator
 
 
-@api.route("/admin", methods=["GET"])
-@jwt_required()
-@role_required("admin")
-def get_admins():
-    admins = UserAdmin.query.all()
-    return jsonify([a.serialize() for a in admins]), 200
-
-
-@api.route('/admin/<int:admin_id>', methods=['GET'])
-@jwt_required()
-@role_required("admin")
-def get_admin(admin_id):
-    admin = UserAdmin.query.get(admin_id)
-    if not admin:
-        return jsonify({"msg": "Admin no encontrado"}), 404
-    return jsonify(admin.serialize()), 200
-
-
-@api.route('/admin', methods=['POST'])
-def add_admin():
-    body = request.get_json()
-    if not body:
-        return jsonify({"msg": "Body vacío"}), 400
-    if not body.get("username") or not body.get("password"):
-        return jsonify({"msg": "Faltan username o password"}), 400
-    existing = UserAdmin.query.filter_by(username=body["username"]).first()
-    if existing:
-        return jsonify({"msg": "El username ya existe"}), 400
-    new_admin = UserAdmin(username=body["username"], password=body["password"])
-    db.session.add(new_admin)
-    db.session.commit()
-    return jsonify(new_admin.serialize()), 201
-
-
-@api.route('/admin/<int:admin_id>', methods=['DELETE'])
-@jwt_required()
-@role_required("admin")
-def delete_admin(admin_id):
-    admin = UserAdmin.query.get(admin_id)
-    if not admin:
-        return jsonify({"msg": "Admin no encontrado"}), 404
-    db.session.delete(admin)
-    db.session.commit()
-    return jsonify({"msg": f"Admin {admin_id} eliminado"}), 200
-
-
-@api.route('/admin/login', methods=['POST'])
-def admin_login():
-    data = request.json
-    if not data or not data.get("username") or not data.get("password"):
-        return jsonify({"msg": "Faltan credenciales"}), 400
-    admin = UserAdmin.query.filter_by(username=data["username"]).first()
-    if not admin or admin.password != data["password"]:
-        return jsonify({"msg": "Credenciales incorrectas"}), 401
-    token = create_access_token(
-        identity=str(admin.id), additional_claims={"role": "admin"}
+def log_action(user_id, role, action, table=None):
+    """Utility to record actions in the AuditLog table."""
+    new_log = AuditLog(
+        user_id=user_id,
+        user_role=role,
+        action=action,
+        target_table=table
     )
-    return jsonify({"token": token, "role": "admin"}), 200
+    db.session.add(new_log)
+    db.session.commit()
+
+# ==========================================
+# 2. AUTHENTICATION (Unified Login)
+# ==========================================
 
 
-@api.route('/admin/dashboard', methods=['GET'])
-@jwt_required()
-@role_required("admin")
-def get_admin_dashboard():
-    admin_id = get_jwt_identity()
-    admin = UserAdmin.query.get(admin_id)
-    if not admin:
-        return jsonify({"msg": "Admin no encontrado"}), 404
-    return jsonify(admin.serialize()), 200
-
-
-@api.route('/company/login', methods=['POST'])
-def login_company():
+@api.route('/login', methods=['POST'])
+def login():
     data = request.json
-    if not data or not data.get("email") or not data.get("password"):
-        return jsonify({"msg": "Missing credentials"}), 400
-    company = Company.query.filter_by(email=data["email"]).first()
-    if not company or company.password != data["password"]:
-        return jsonify({"msg": "Invalid credentials"}), 401
+    email = data.get("email")  # Admin uses username here
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"msg": "Credentials missing"}), 400
+
+    # 1. Check Admin
+    user = UserAdmin.query.filter_by(username=email).first()
+    role = "ADMIN"
+
+    # 2. Check Company
+    if not user:
+        user = Company.query.filter_by(email=email).first()
+        role = "COMPANY"
+
+    # 3. Check Employee
+    if not user:
+        user = Employee.query.filter_by(email=email).first()
+        role = "EMPLOYEE"
+
+    # Validate Password and Status
+    if not user or not check_password_hash(user.password, password):
+        return jsonify({"msg": "Invalid email/username or password"}), 401
+
+    if hasattr(user, 'is_active') and not user.is_active:
+        return jsonify({"msg": "This account is inactive"}), 403
+
+    # Create Token with Role Claim
     token = create_access_token(
-        identity=str(company.id), additional_claims={"role": "company"}
+        identity=str(user.id),
+        additional_claims={"role": role}
     )
-    return jsonify({"token": token, "role": "company"}), 200
 
+    return jsonify({
+        "token": token,
+        "role": role,
+        "user": user.serialize()
+    }), 200
 
-@api.route('/company/signup', methods=['POST'])
-def handle_company_signup():
-    data = request.json
-    try:
-        nombre = data.get("nombre_empresa")
-        pw = data.get("password")
-        reg = data.get("region")
-        email = data.get("email")
-        if not all([nombre, pw, reg, email]):
-            return jsonify({"msg": "Faltan datos requeridos"}), 400
-
-        existing_company = Company.query.filter_by(email=email).first()
-        if existing_company:
-            return jsonify({"msg": "Ya existe una empresa con ese email"}), 400
-
-        nueva_empresa = Company(
-            nombre_empresa=nombre,
-            password=pw,
-            region=reg,
-            email=email,
-            is_active=True
-        )
-        db.session.add(nueva_empresa)
-        db.session.commit()
-        return jsonify({"msg": "Empresa creada exitosamente"}), 201
-    except Exception:
-        db.session.rollback()
-        return jsonify({"msg": "Error interno"}), 500
-
-
-@api.route('/company/dashboard', methods=['GET'])
-@jwt_required()
-@role_required("company", "admin")
-def get_company_dashboard():
-    claims = get_jwt()
-    role = claims.get("role")
-    identity = get_jwt_identity()
-
-    if role == "admin":
-        company_id = request.args.get("company_id")
-        if not company_id:
-            return jsonify({"msg": "company_id es requerido para admin"}), 400
-    else:
-        company_id = identity
-
-    company = Company.query.get(company_id)
-    if not company:
-        return jsonify({"msg": "Empresa no encontrada"}), 404
-    return jsonify(company.serialize()), 200
-
-
-@api.route('/companies', methods=['GET'])
-@jwt_required()
-@role_required("company", "admin")
-def get_companies():
-    companies = Company.query.all()
-    return jsonify([c.serialize() for c in companies]), 200
-
-
-@api.route('/companies/<int:id>', methods=['GET'])
-@jwt_required()
-@role_required("company", "admin")
-def get_company(id):
-    company = Company.query.get(id)
-    if not company:
-        return jsonify({"msg": "Company not found"}), 404
-    return jsonify(company.serialize()), 200
+# ==========================================
+# 3. COMPANY MANAGEMENT
+# ==========================================
 
 
 @api.route('/companies', methods=['POST'])
-@jwt_required()
-@role_required("company", "admin")
-def create_company():
+def signup_company():
+    """Register a new company (Public or Admin route)"""
     data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-
-    required_fields = ["nombre_empresa", "password", "region", "email"]
-    for field in required_fields:
-        if not data.get(field):
-            return jsonify({"msg": f"{field} es requerido"}), 400
-
-    existing_company = Company.query.filter_by(email=data["email"]).first()
-    if existing_company:
-        return jsonify({"msg": "Ya existe una empresa con ese email"}), 400
+    if Company.query.filter_by(email=data.get("email")).first():
+        return jsonify({"msg": "Email already registered"}), 400
 
     new_company = Company(
-        nombre_empresa=data["nombre_empresa"],
-        password=data["password"],
-        region=data["region"],
-        email=data["email"],
-        is_active=True
+        nombre_empresa=data.get("nombre_empresa"),
+        email=data.get("email"),
+        password=generate_password_hash(data.get("password")),
+        region=data.get("region"),
+        logo_url=data.get("logo_url")
     )
     db.session.add(new_company)
     db.session.commit()
     return jsonify(new_company.serialize()), 201
 
 
-@api.route('/companies/<int:id>', methods=['PUT'])
-@jwt_required()
-@role_required("company", "admin")
-def update_company(id):
-    company = Company.query.get(id)
-    if not company:
-        return jsonify({"msg": "Company not found"}), 404
+@api.route('/companies', methods=['GET'])
+@role_required("ADMIN")
+def get_all_companies():
+    companies = Company.query.all()
+    return jsonify([c.serialize() for c in companies]), 200
+
+# ==========================================
+# 4. EMPLOYEE MANAGEMENT
+# ==========================================
+
+
+@api.route('/employees', methods=['POST'])
+@role_required("COMPANY", "ADMIN")
+def create_employee():
     data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-    company.nombre_empresa = data.get("nombre_empresa", company.nombre_empresa)
-    company.region = data.get("region", company.region)
-    company.logo_url = data.get("logo_url", company.logo_url)
-    company.is_active = data.get("is_active", company.is_active)
-    if data.get("password"):
-        company.password = data["password"]
-    db.session.commit()
-    return jsonify(company.serialize()), 200
-
-
-@api.route('/companies/<int:id>', methods=['DELETE'])
-@jwt_required()
-@role_required("company", "admin")
-def delete_company(id):
-    company = Company.query.get(id)
-    if not company:
-        return jsonify({"msg": "Company not found"}), 404
-    db.session.delete(company)
-    db.session.commit()
-    return jsonify({"msg": f"Company {id} deleted"}), 200
-
-
-@api.route('/manager/dashboard', methods=['GET'])
-@jwt_required()
-@role_required("manager", "admin")
-def get_manager_dashboard():
-    employee_id = get_jwt_identity()
-
-    manager = Manager.query.filter_by(employee_id=employee_id).first()
-
-    if not manager:
-        return jsonify({"msg": "Perfil de Manager no encontrado"}), 404
-
-    return jsonify(manager.serialize()), 200
-
-
-@api.route('/employee/login', methods=['POST'])
-def employee_login():
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-
-    employee = Employee.query.filter_by(email=data.get("email")).first()
-    if not employee or employee.password != data.get("password"):
-        return jsonify({"msg": "Credenciales incorrectas"}), 401
-
-    is_manager = Manager.query.filter_by(
-        employee_id=employee.id, is_active=True).first()
-
-    role = "manager" if is_manager else "employee"
-
-    token = create_access_token(
-        identity=str(employee.id),
-        additional_claims={"role": role}
-    )
-
-    return jsonify({
-        "token": token,
-        "access_token": token,
-        "first_name": employee.first_name,
-        "role": role,
-        "user": {
-            "id": employee.id,
-            "email": employee.email,
-            "role": role,
-            "first_name": employee.first_name
-        }
-    }), 200
-
-
-@api.route('/employee/signup', methods=['POST'])
-@jwt_required()
-@role_required("admin", "company")
-def employee_signup():
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-
-    claims = get_jwt()
-    role = claims.get("role")
     identity = get_jwt_identity()
+    role = get_jwt().get("role")
 
-    required = ["first_name", "last_name", "email", "password"]
-    for field in required:
-        if not data.get(field):
-            return jsonify({"msg": f"{field} es requerido"}), 400
+    # Validación básica de seguridad: datos obligatorios
+    required_fields = ["email", "password", "first_name", "last_name"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"msg": "Missing required fields"}), 400
 
-    if Employee.query.filter_by(email=data["email"]).first():
-        return jsonify({"msg": "Email ya registrado"}), 400
+    # Determinar a qué empresa pertenece el empleado
+    company_id = identity if role == "COMPANY" else data.get("company_id")
 
-    if role == "admin":
-        company_id = data.get("company_id")
-        if not company_id:
-            return jsonify({"msg": "company_id es requerido"}), 400
-    elif role == "company":
-        company_id = identity
-    else:
-        return jsonify({"msg": "No autorizado"}), 403
+    if not company_id:
+        return jsonify({"msg": "Company ID is required for admin actions"}), 400
 
-    company = Company.query.get(company_id)
-    if not company:
-        return jsonify({"msg": "La empresa no existe"}), 400
+    # Comprobar si el email ya existe (Integridad de datos)
+    if Employee.query.filter_by(email=data.get("email")).first():
+        return jsonify({"msg": "Email already exists"}), 400
 
     try:
         new_employee = Employee(
             company_id=company_id,
-            first_name=data["first_name"],
-            last_name=data["last_name"],
-            email=data["email"],
-            password=data["password"],
+            first_name=data.get("first_name"),
+            last_name=data.get("last_name"),
+            email=data.get("email"),
+            password=generate_password_hash(
+                data.get("password")),  # Seguridad: Hash siempre
             phone=data.get("phone"),
             position=data.get("position"),
-            role="employee",
             is_active=True
         )
-        db.session.add(new_employee)
-        db.session.flush()
 
-        new_vacations = Vacaciones(
-            employee_id=new_employee.id,
-            vacations=15,
-            taken_vacations=0,
-            available_vacations=15
-        )
-        db.session.add(new_vacations)
-        db.session.commit()
+        db.session.add(new_employee)
+        db.session.commit()  # Guardamos los cambios
+
+        # Registro de auditoría (Log)
+        log_action(identity, role,
+                   f"Created employee {new_employee.email}", "employees")
 
         return jsonify(new_employee.serialize()), 201
+
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"msg": "Error interno del servidor", "error": str(e)}), 500
-
-
-@api.route('/employee/dashboard', methods=['GET'])
-@jwt_required()
-@role_required("employee", "admin", "manager")
-def get_employee_dashboard():
-    employee_id = get_jwt_identity()
-    employee = Employee.query.get(employee_id)
-    if not employee:
-        return jsonify({"msg": "Empleado no encontrado"}), 404
-    return jsonify(employee.serialize()), 200
+        db.session.rollback()  # Si algo falla, revertimos para no dejar datos corruptos
+        return jsonify({"msg": f"Internal server error: {str(e)}"}), 500
 
 
 @api.route('/employees', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "admin")
+@role_required("COMPANY", "ADMIN")
 def get_employees():
     identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
+    role = get_jwt().get("role")
 
-    if role == "admin":
+    if role == "ADMIN":
         employees = Employee.query.all()
     else:
-        employees = Employee.query.filter_by(company_id=identity).all()
+        employees = Employee.query.filter_by(
+            company_id=identity, is_active=True).all()
 
     return jsonify([e.serialize() for e in employees]), 200
 
 
-@api.route('/employee/me', methods=['GET'])
+@api.route('/employees/<int:employee_id>', methods=['GET'])
 @jwt_required()
-@role_required("employee", "admin", "manager")
-def get_current_employee():
-    employee_id = get_jwt_identity()
+def get_single_employee(employee_id):
+    # Solo la empresa dueña o un ADMIN pueden ver al empleado
+    identity = get_jwt_identity()
+    role = get_jwt().get("role")
+
     employee = Employee.query.get(employee_id)
     if not employee:
-        return jsonify({"msg": "Empleado no encontrado"}), 404
+        return jsonify({"msg": "Employee not found"}), 404
+
+    # Seguridad: Evitar que una empresa vea empleados de otra
+    if role == "COMPANY" and str(employee.company_id) != str(identity):
+        return jsonify({"msg": "Unauthorized"}), 403
+
     return jsonify(employee.serialize()), 200
 
 
-@api.route('/employees/simple', methods=['GET'])
+@api.route('/employees/<int:employee_id>', methods=['PUT'])
 @jwt_required()
-@role_required("company", "manager", "admin")
-def get_employees_simple():
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
-
-    if role == "admin":
-        employees = Employee.query.all()
-    else:
-        employees = Employee.query.filter_by(company_id=identity).all()
-
-    return jsonify([
-        {"id": e.id, "first_name": e.first_name, "last_name": e.last_name}
-        for e in employees
-    ]), 200
-
-
-@api.route('/employees/<int:id>', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def get_employee(id):
-    employee = Employee.query.get(id)
-    if not employee:
-        return jsonify({"msg": "Employee not found"}), 404
-    return jsonify(employee.serialize()), 200
-
-
-@api.route('/employees', methods=['POST'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def create_employee():
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
-
-    body = request.get_json()
-    if not body:
-        return jsonify({"msg": "Body vacío"}), 400
-
-    required_fields = ["first_name", "last_name", "email", "password"]
-    for field in required_fields:
-        if not body.get(field):
-            return jsonify({"msg": f"{field} es requerido"}), 400
-
-    if Employee.query.filter_by(email=body["email"]).first():
-        return jsonify({"msg": "Email ya registrado"}), 400
-
-    if role == "admin":
-        company_id = body.get("company_id")
-        if not company_id:
-            return jsonify({"msg": "company_id es requerido"}), 400
-    else:
-        company_id = identity
-
-    company = Company.query.get(company_id)
-    if not company:
-        return jsonify({"msg": "La empresa no existe"}), 400
-
-    try:
-        new_employee = Employee(
-            first_name=body["first_name"],
-            last_name=body["last_name"],
-            email=body["email"],
-            password=body["password"],
-            company_id=company_id,
-            phone=body.get("phone"),
-            position=body.get("position"),
-            role="employee",
-            is_active=True
-        )
-
-        db.session.add(new_employee)
-        db.session.flush()
-
-        new_vacations = Vacaciones(
-            employee_id=new_employee.id,
-            vacations=15,
-            taken_vacations=0,
-            available_vacations=15
-        )
-        db.session.add(new_vacations)
-        db.session.commit()
-
-        return jsonify(new_employee.serialize()), 201
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error al crear empleado y vacaciones: {str(e)}")
-        return jsonify({"msg": "Error interno del servidor", "error": str(e)}), 500
-
-
-@api.route('/employees/<int:id>', methods=['PUT'])
-@jwt_required()
-@role_required("company", "manager", "admin", "employee")
-def update_employee(id):
-    employee = Employee.query.get(id)
-    if not employee:
-        return jsonify({"msg": "Employee not found"}), 404
-
+def update_employee(employee_id):
     data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
+    employee = Employee.query.get(employee_id)
 
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
+    if not employee:
+        return jsonify({"msg": "Employee not found"}), 404
 
-    if role == "employee":
-        if str(employee.id) != str(identity):
-            return jsonify({"msg": "Acceso denegado"}), 403
-
-        employee.profile_image = data.get(
-            "profile_image", employee.profile_image)
-        employee.phone = data.get("phone", employee.phone)
-
-        if data.get("password"):
-            employee.password = data["password"]
-
-        db.session.commit()
-        return jsonify(employee.serialize()), 200
-
+    # Actualizamos campos permitidos
     employee.first_name = data.get("first_name", employee.first_name)
     employee.last_name = data.get("last_name", employee.last_name)
+    employee.email = data.get("email", employee.email)
     employee.phone = data.get("phone", employee.phone)
     employee.position = data.get("position", employee.position)
-    employee.role = data.get("role", employee.role)
-    employee.company_id = data.get("company_id", employee.company_id)
-    employee.profile_image = data.get("profile_image", employee.profile_image)
-
-    if data.get("password"):
-        employee.password = data["password"]
+    employee.is_active = data.get("is_active", employee.is_active)
 
     db.session.commit()
-    return jsonify(employee.serialize()), 200
+    return jsonify({"msg": "Employee updated", "employee": employee.serialize()}), 200
 
 
-@api.route('/employees/<int:id>/toggle', methods=['PUT'])
+@api.route('/employees/<int:employee_id>', methods=['DELETE'])
 @jwt_required()
-@role_required("company", "admin")
-def toggle_employee(id):
-    employee = Employee.query.get(id)
+def delete_employee(employee_id):
+    identity = get_jwt_identity()
+    role = get_jwt().get("role")
 
-    if not employee:
-        return jsonify({"msg": "Not found"}), 404
-
-    employee.is_active = not employee.is_active
-    db.session.commit()
-
-    return jsonify({"msg": "Updated"}), 200
-
-
-@api.route('/employees/<int:id>', methods=['DELETE'])
-@jwt_required()
-@role_required("company", "admin")
-def delete_employee(id):
-    employee = Employee.query.get(id)
+    employee = Employee.query.get(employee_id)
     if not employee:
         return jsonify({"msg": "Employee not found"}), 404
-    db.session.delete(employee)
+
+    # Seguridad: Solo la empresa dueña puede dar de baja
+    if role == "COMPANY" and str(employee.company_id) != str(identity):
+        return jsonify({"msg": "Unauthorized"}), 403
+
+    # Aplicamos el Borrado Lógico (Desactivación)
+    employee.is_active = False
     db.session.commit()
-    return jsonify({"msg": "Employee deleted"}), 200
+
+    # Registramos la acción en la auditoría
+    log_action(identity, role,
+               f"Deactivated employee {employee.email}", "employees")
+
+    return jsonify({"msg": "Employee deactivated successfully"}), 200
+
+
+@api.route('/employee/my-requests', methods=['GET'])
+@jwt_required()
+def get_my_requests():
+    user_id = get_jwt_identity()
+
+    # Obtenemos ambos tipos de registros
+    incidents = Incident.query.filter_by(employee_id=user_id).all()
+    vacations = Vacaciones.query.filter_by(employee_id=user_id).all()
+
+    # Unimos las listas serializadas
+    # Agregamos una marca manual de 'type' a vacaciones para que el badge funcione
+    history = [i.serialize() for i in incidents]
+
+    for v in vacations:
+        serialized_v = v.serialize()
+        # Marca para facilitar la lógica en React
+        serialized_v["is_vacation"] = True
+        history.append(serialized_v)
+
+    return jsonify(history), 200
+# ==========================================
+# 5. WORK RECORDS (TIME TRACKING)
+# ==========================================
 
 
 @api.route('/work-records', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def get_work_records():
-    employee_id = request.args.get("employee_id")
-    query = WorkRecord.query
-    if employee_id:
-        query = query.filter_by(employee_id=employee_id)
-    records = query.all()
+@jwt_required()  # Opcional: Validar que sea rol Admin
+def get_all_work_records():
+    # Traemos todos los registros, ordenados por los más recientes primero
+    records = WorkRecord.query.order_by(WorkRecord.check_in.desc()).all()
     return jsonify([r.serialize() for r in records]), 200
 
 
-@api.route('/work-records/<int:id>', methods=['GET'])
+@api.route('/work-records/status', methods=['GET'])
 @jwt_required()
-@role_required("company", "manager", "admin")
-def get_work_record(id):
-    record = WorkRecord.query.get(id)
-    if not record:
-        return jsonify({"msg": "Not found"}), 404
-    return jsonify(record.serialize()), 200
+def get_work_status():
+    employee_id = get_jwt_identity()
+    # Buscamos si hay un registro sin hora de salida
+    active_session = WorkRecord.query.filter_by(
+        employee_id=employee_id, check_out=None).first()
+
+    return jsonify({
+        "is_on_clock": active_session is not None,
+        "session": active_session.serialize() if active_session else None
+    }), 200
+
+# --- FICHAR ENTRADA ---
 
 
-@api.route('/work-records', methods=['POST'])
+@api.route('/work-records/check-in', methods=['POST'])
 @jwt_required()
-@role_required("company", "manager", "admin")
-def create_work_record():
-    data = request.json
-    check_in = datetime.fromisoformat(data["check_in"])
-    check_out = None
-    total_hours = None
-    if data.get("check_out"):
-        check_out = datetime.fromisoformat(data["check_out"])
-        total_seconds = (check_out - check_in).total_seconds()
-        hours = int(total_seconds // 3600)
-        minutes = int((total_seconds % 3600) // 60)
-        total_hours = f"{hours}h {minutes:02d}min"
+def check_in():
+    employee_id = get_jwt_identity()
+
+    # Validamos que no esté trabajando ya
+    exists = WorkRecord.query.filter_by(
+        employee_id=employee_id, check_out=None).first()
+    if exists:
+        return jsonify({"msg": "Ya tienes un turno activo"}), 400
+
     new_record = WorkRecord(
-        employee_id=data["employee_id"], check_in=check_in,
-        check_out=check_out, total_hours=total_hours,
-        status=data.get("status", "pending")
+        employee_id=employee_id,
+        check_in=datetime.utcnow()
+        # status="PENDING" se asigna solo por el default de su modelo
     )
     db.session.add(new_record)
     db.session.commit()
     return jsonify(new_record.serialize()), 201
 
+# --- FICHAR SALIDA ---
 
-@api.route('/work-records/<int:id>', methods=['PUT'])
+
+@api.route('/work-records/check-out', methods=['POST'])
 @jwt_required()
-@role_required("company", "manager", "admin")
-def update_work_record(id):
-    record = WorkRecord.query.get(id)
-    if not record:
-        return jsonify({"msg": "Not found"}), 404
-    data = request.json
-    if data.get("check_in"):
-        record.check_in = datetime.fromisoformat(data["check_in"])
-    if data.get("check_out"):
-        record.check_out = datetime.fromisoformat(data["check_out"])
-    if record.check_in and record.check_out:
-        total_seconds = (record.check_out - record.check_in).total_seconds()
-        hours = int(total_seconds // 3600)
-        minutes = int((total_seconds % 3600) // 60)
-        record.total_hours = f"{hours}h {minutes:02d}min"
-    db.session.commit()
-    return jsonify(record.serialize()), 200
-
-
-@api.route('/work-records/<int:id>', methods=['DELETE'])
-@jwt_required()
-@role_required("company", "admin")
-def delete_work_record(id):
-    record = WorkRecord.query.get(id)
-    if not record:
-        return jsonify({"msg": "Not found"}), 404
-    db.session.delete(record)
-    db.session.commit()
-    return jsonify({"msg": "Deleted"}), 200
-
-
-@api.route('/employee/work-records', methods=['GET'])
-@jwt_required()
-def get_my_work_records():
+def check_out():
     employee_id = get_jwt_identity()
-    claims = get_jwt()
-    if claims.get("role") != "employee":
-        return jsonify({"msg": "Acceso restringido a empleados"}), 403
-    records = WorkRecord.query.filter_by(employee_id=employee_id).all()
-    return jsonify([r.serialize() for r in records]), 200
+    active_session = WorkRecord.query.filter_by(
+        employee_id=employee_id, check_out=None).first()
+
+    if not active_session:
+        return jsonify({"msg": "No hay turno activo para cerrar"}), 400
+
+    # 1. Marcamos la salida
+    active_session.check_out = datetime.utcnow()
+
+    # 2. Calculamos las horas totales automáticamente
+    diferencia = active_session.check_out - active_session.check_in
+    horas_totales = diferencia.total_seconds() / 3600
+    active_session.total_hours = round(
+        horas_totales, 2)  # Redondeamos a 2 decimales
+
+    db.session.commit()
+    return jsonify(active_session.serialize()), 200
+
+# ==========================================
+# 6. PAYROLL, SCHEDULES, INCIDENTS, AND VACATIONS
+# ==========================================
 
 
-@api.route('/employee/work-records', methods=['POST'])
-@jwt_required()
-def create_my_work_record():
-    employee_id = get_jwt_identity()
-    claims = get_jwt()
-    if claims.get("role") != "employee":
-        return jsonify({"msg": "Acceso restringido a empleados"}), 403
+@api.route('/payroll/upload', methods=['POST'])
+@role_required("COMPANY", "ADMIN")
+def upload_payroll():
     data = request.json
-    check_in = datetime.fromisoformat(data["check_in"].replace("Z", "+00:00"))
-    new_record = WorkRecord(
-        employee_id=int(employee_id),
-        check_in=check_in,
-        status="pending"
+    new_slip = Nomina(
+        employee_id=data.get("employee_id"),
+        month=data.get("month"),
+        document_url=data.get("url")
     )
-    db.session.add(new_record)
+    db.session.add(new_slip)
     db.session.commit()
-    return jsonify(new_record.serialize()), 201
+    return jsonify(new_slip.serialize()), 201
 
 
-@api.route('/employee/work-records/<int:id>', methods=['PUT'])
-@jwt_required()
-def checkout_my_work_record(id):
-    employee_id = get_jwt_identity()
-    claims = get_jwt()
-    if claims.get("role") != "employee":
-        return jsonify({"msg": "Acceso restringido a empleados"}), 403
-    record = WorkRecord.query.filter_by(
-        id=id, employee_id=int(employee_id)).first()
-    if not record:
-        return jsonify({"msg": "Not found"}), 404
+@api.route('/employees/<int:employee_id>/schedules', methods=['POST'])
+@role_required("COMPANY", "ADMIN")
+def set_schedule(employee_id):
     data = request.json
-    if data.get("check_out"):
-        record.check_out = datetime.fromisoformat(
-            data["check_out"].replace("Z", "").replace("+00:00", "")
-        )
-    if record.check_in and record.check_out:
-        total_seconds = (record.check_out - record.check_in).total_seconds()
-        hours = int(total_seconds // 3600)
-        minutes = int((total_seconds % 3600) // 60)
-        record.total_hours = f"{hours}h {minutes:02d}min"
-        record.status = "completed"
-    db.session.commit()
-    return jsonify(record.serialize()), 200
-
-
-@api.route('/nominas', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def get_nominas():
-    nominas = Nomina.query.all()
-    return jsonify([n.serialize() for n in nominas]), 200
-
-
-@api.route('/nominas', methods=['POST'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def create_nomina():
-    data = request.json
-    if not data.get("employee_id") or not data.get("month"):
-        return jsonify({"msg": "Missing data"}), 400
-
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
-
-    employee = Employee.query.get(data["employee_id"])
-    if not employee:
-        return jsonify({"msg": "Empleado no encontrado"}), 404
-
-    if role == "company" and str(employee.company_id) != str(identity):
-        return jsonify({"msg": "Acceso denegado"}), 403
-
-    new_nomina = Nomina(
-        employee_id=data["employee_id"],
-        month=data["month"],
-        document_url=data.get("document_url")
-    )
-    db.session.add(new_nomina)
-    db.session.commit()
-    return jsonify(new_nomina.serialize()), 201
-
-
-@api.route('/nominas/<int:id>', methods=['PUT'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def update_nomina(id):
-    nomina = Nomina.query.get(id)
-    if not nomina:
-        return jsonify({"msg": "Not found"}), 404
-    data = request.json
-    nomina.month = data.get("month", nomina.month)
-    nomina.document_url = data.get("document_url", nomina.document_url)
-    db.session.commit()
-    return jsonify(nomina.serialize()), 200
-
-
-@api.route('/nominas/<int:id>', methods=['DELETE'])
-@jwt_required()
-@role_required("company", "admin")
-def delete_nomina(id):
-    nomina = Nomina.query.get(id)
-    if not nomina:
-        return jsonify({"msg": "Not found"}), 404
-    db.session.delete(nomina)
-    db.session.commit()
-    return jsonify({"msg": "Deleted"}), 200
-
-
-def parse_time(t):
-    for fmt in ("%H:%M:%S", "%H:%M"):
-        try:
-            return datetime.strptime(t, fmt)
-        except ValueError:
-            continue
-    raise ValueError(f"Formato de hora inválido: {t}")
-
-
-@api.route('/employees/<int:employee_id>/horarios', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "employee", "admin")
-def get_horarios(employee_id):
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
-
-    target_employee = Employee.query.get_or_404(employee_id)
-    if role == "employee" and str(identity) != str(employee_id):
-        return jsonify({"msg": "No puedes ver horarios de otros empleados"}), 403
-
-    if role in ["company", "manager"]:
-        requester = Employee.query.get(
-            identity) if role == "manager" else Company.query.get(identity)
-        company_id = requester.company_id if role == "manager" else requester.id
-
-        if target_employee.company_id != company_id:
-            return jsonify({"msg": "Este empleado no pertenece a tu empresa"}), 403
-
-    schedules = Schedule.query.filter_by(employee_id=employee_id).all()
-    return jsonify([s.serialize() for s in schedules]), 200
-
-
-@api.route('/employees/<int:employee_id>/horarios', methods=['POST'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def create_horario(employee_id):
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
-    target_employee = Employee.query.get_or_404(employee_id)
-
-    if role != "admin":
-        requester_co_id = int(identity) if role == "company" else Employee.query.get(
-            identity).company_id
-        if target_employee.company_id != requester_co_id:
-            return jsonify({"msg": "No autorizado para esta empresa"}), 403
-
-    body = request.get_json()
-    day = body.get("day")
-    start_time = body.get("start_time")
-    end_time = body.get("end_time")
-    if not all([day, start_time, end_time]):
-        return jsonify({"error": "day, start_time y end_time son obligatorios"}), 422
     new_schedule = Schedule(
         employee_id=employee_id,
-        day=day,
-        start_time=parse_time(start_time),
-        end_time=parse_time(end_time)
+        day=data.get("day"),
+        start_time=datetime.strptime(data.get("start"), "%H:%M"),
+        end_time=datetime.strptime(data.get("end"), "%H:%M")
     )
     db.session.add(new_schedule)
     db.session.commit()
     return jsonify(new_schedule.serialize()), 201
 
 
-@api.route('/horarios/<int:schedule_id>', methods=['PUT'])
+@api.route('/my-schedules', methods=['GET'])
 @jwt_required()
-@role_required("company", "manager", "admin")
-def update_horario(schedule_id):
-    schedule = Schedule.query.get_or_404(schedule_id)
-    identity = get_jwt_identity()
-    role = get_jwt().get("role")
-    claims = get_jwt()
+def get_my_schedules():
+    try:
+        employee_id = get_jwt_identity()
 
-    if role != "admin":
-        target_employee = Employee.query.get(schedule.employee_id)
-        requester_co_id = Employee.query.get(
-            identity).company_id if role == "manager" else identity
-        if target_employee.company_id != requester_co_id:
-            return jsonify({"msg": "No tienes permiso para editar este horario"}), 403
+        # Traemos todos los horarios ordenados
+        all_schedules = Schedule.query.filter_by(
+            employee_id=employee_id).order_by(Schedule.day).all()
 
-    body = request.get_json()
-    if "day" in body:
-        schedule.day = body["day"]
-    if "start_time" in body:
-        schedule.start_time = parse_time(body["start_time"])
-    if "end_time" in body:
-        schedule.end_time = parse_time(body["end_time"])
+        # Filtro de unicidad: usamos un diccionario para quedarnos solo con uno por día
+        unique_schedules = {}
+        for s in all_schedules:
+            if s.day not in unique_schedules:
+                unique_schedules[s.day] = s.serialize()
 
-    db.session.commit()
-    return jsonify(schedule.serialize()), 200
+        # Devolvemos solo los valores únicos convertidos en lista
+        return jsonify(list(unique_schedules.values())), 200
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"msg": "Error al cargar horarios"}), 500
 
 
-@api.route('/horarios/<int:schedule_id>', methods=['DELETE'])
+@api.route('/incidents/request', methods=['POST'])
 @jwt_required()
-@role_required("company", "manager", "admin")
-def delete_horario(schedule_id):
-    schedule = Schedule.query.get(schedule_id)
-    if not schedule:
-        return jsonify({"error": "Horario no encontrado"}), 404
+def request_incident():
+    try:
+        data = request.json
+        employee_id = get_jwt_identity()
 
-    db.session.delete(schedule)
-    db.session.commit()
-    return jsonify({"message": f"Horario {schedule_id} eliminado"}), 200
+        # Forzamos todo a mayúsculas: "PERSONAL" o "LABORAL"
+        tipo_final = str(data.get("type", "PERSONAL")).upper()
+
+        new_incident = Incident(
+            employee_id=int(employee_id),
+            description=data.get("description"),
+            type=tipo_final,
+            status="PENDING"  # <--- ¡LA MAGIA ESTÁ AQUÍ! En mayúsculas.
+        )
+
+        db.session.add(new_incident)
+        db.session.commit()
+
+        return jsonify({"msg": "Incidencia reportada con éxito"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"--- ERROR CRÍTICO --- \n {str(e)}")
+        return jsonify({"msg": "Error en el servidor", "error": str(e)}), 500
 
 
-@api.route('/incidents', methods=['GET'])
+@api.route('/vacations/request', methods=['POST'])
 @jwt_required()
-@role_required("company", "manager", "admin")
-def get_all_incidents():
+def request_vacation():
+    try:
+        data = request.json
+        employee_id = get_jwt_identity()
+
+        # 1. Convertimos los textos en objetos de fecha reales
+        start_dt = datetime.strptime(data.get("start_date"), '%Y-%m-%d')
+        end_dt = datetime.strptime(data.get("end_date"), '%Y-%m-%d')
+
+        # 2. Calculamos la diferencia de días
+        # Sumamos 1 para que incluya tanto el día de inicio como el de fin
+        delta = (end_dt - start_dt).days + 1
+
+        if delta <= 0:
+            return jsonify({"msg": "La fecha de fin debe ser posterior a la de inicio"}), 400
+
+        # 3. Creamos el registro incluyendo 'days_requested'
+        new_request = Vacaciones(
+            employee_id=employee_id,
+            start_date=start_dt,
+            end_date=end_dt,
+            days_requested=delta,
+            status=StatusEnum.PENDING
+        )
+
+        db.session.add(new_request)
+        db.session.commit()
+        return jsonify({"msg": "Vacation request submitted"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error en vacaciones: {str(e)}")
+        return jsonify({"msg": "Server error", "error": str(e)}), 500
+
+
+@api.route('/company/all-requests', methods=['GET'])
+@jwt_required()
+def get_all_company_requests():
+    # Obtenemos absolutamente todo
     incidents = Incident.query.all()
-    return jsonify([i.serialize() for i in incidents]), 200
+    vacations = Vacaciones.query.all()
+
+    all_requests = []
+
+    # Procesamos incidencias
+    for i in incidents:
+        item = i.serialize()
+        item["is_vacation"] = False
+        item["request_type"] = item.get("type", "INCIDENCIA")
+        all_requests.append(item)
+
+    # Procesamos vacaciones
+    for v in vacations:
+        item = v.serialize()
+        item["is_vacation"] = True
+        item["request_type"] = "VACACIONES"
+        all_requests.append(item)
+
+    # Opcional: Podríamos ordenarlas aquí, pero lo haremos en React para mayor flexibilidad
+    return jsonify(all_requests), 200
 
 
-@api.route('/employees/<int:employee_id>/incidents', methods=['GET'])
+@api.route('/company/resolve-request', methods=['PUT'])
 @jwt_required()
-@role_required("company", "manager", "employee", "admin")
-def get_incidents(employee_id):
-    incidents = Incident.query.filter_by(employee_id=employee_id).all()
-    return jsonify([i.serialize() for i in incidents]), 200
+def resolve_company_request():
+    body = request.get_json()
 
+    # Extraemos los datos que nos envía React
+    req_id = body.get("id")
+    is_vacation = body.get("is_vacation")
+    new_status = body.get("status")  # Llegará como 'APPROVED' o 'REJECTED'
 
-@api.route('/employees/<int:employee_id>/incidents/<int:id>', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "employee", "admin")
-def get_incident(employee_id, id):
-    incident = Incident.query.filter_by(id=id, employee_id=employee_id).first()
-    if not incident:
-        return jsonify({"msg": "Incident not found"}), 404
-    return jsonify(incident.serialize()), 200
+    # Validaciones básicas
+    if not req_id or new_status not in ['APPROVED', 'REJECTED']:
+        return jsonify({"msg": "Datos inválidos"}), 400
 
-
-@api.route('/employees/<int:employee_id>/incidents', methods=['POST'])
-@jwt_required()
-@role_required("company", "manager", "employee", "admin")
-def create_incident(employee_id):
-    employee = Employee.query.get(employee_id)
-    if not employee:
-        return jsonify({"msg": "Employee not found"}), 404
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-    required_fields = ["type", "category", "description"]
-    for field in required_fields:
-        if not data.get(field):
-            return jsonify({"msg": f"{field} is required"}), 400
-    new_incident = Incident(
-        employee_id=employee_id,
-        type=data["type"],
-        status=data.get("status", "PENDING"),
-        category=data["category"],
-        description=data["description"],
-        admin_comment=data.get("admin_comment")
-    )
-    db.session.add(new_incident)
-    db.session.commit()
-    return jsonify(new_incident.serialize()), 201
-
-
-@api.route('/employees/<int:employee_id>/incidents/<int:id>', methods=['PUT'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def update_incident(employee_id, id):
-    incident = Incident.query.filter_by(id=id, employee_id=employee_id).first()
-    if not incident:
-        return jsonify({"msg": "Incident not found"}), 404
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-    incident.type = data.get("type", incident.type)
-    incident.status = data.get("status", incident.status)
-    incident.category = data.get("category", incident.category)
-    incident.admin_comment = data.get("admin_comment", incident.admin_comment)
-    db.session.commit()
-    return jsonify(incident.serialize()), 200
-
-
-@api.route('/employees/<int:employee_id>/incidents/<int:id>', methods=['DELETE'])
-@jwt_required()
-@role_required("company", "admin")
-def delete_incident(employee_id, id):
-    incident = Incident.query.filter_by(id=id, employee_id=employee_id).first()
-    if not incident:
-        return jsonify({"msg": "Incident not found"}), 404
-    db.session.delete(incident)
-    db.session.commit()
-    return jsonify({"msg": f"Incident {id} deleted"}), 200
-
-
-@api.route('/vacaciones', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def get_all_vacaciones():
-    vacaciones = Vacaciones.query.all()
-    return jsonify([v.serialize() for v in vacaciones]), 200
-
-
-@api.route('/employees/<int:employee_id>/vacaciones', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "employee", "admin")
-def get_vacaciones(employee_id):
-    vacaciones = Vacaciones.query.filter_by(employee_id=employee_id).all()
-    return jsonify([v.serialize() for v in vacaciones]), 200
-
-
-@api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "employee", "admin")
-def get_vacacion(employee_id, id):
-    vacacion = Vacaciones.query.filter_by(
-        id=id, employee_id=employee_id).first()
-    if not vacacion:
-        return jsonify({"msg": "Vacacion not found"}), 404
-    return jsonify(vacacion.serialize()), 200
-
-
-@api.route('/employees/<int:employee_id>/vacaciones', methods=['POST'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def create_vacacion(employee_id):
-    employee = Employee.query.get(employee_id)
-    if not employee:
-        return jsonify({"msg": "Employee not found"}), 404
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-    start = datetime.fromisoformat(
-        data["start_date"]) if data.get("start_date") else None
-    end = datetime.fromisoformat(
-        data["end_date"]) if data.get("end_date") else None
-    new_vacacion = Vacaciones(
-        employee_id=employee_id,
-        vacations=data.get("vacations"),
-        taken_vacations=data.get("taken_vacations"),
-        available_vacations=data.get("available_vacations"),
-        start_date=start,
-        end_date=end,
-        days_requested=data.get("days_requested"),
-        status=data.get("status", "pending")
-    )
-    db.session.add(new_vacacion)
-    db.session.commit()
-    return jsonify(new_vacacion.serialize()), 201
-
-
-@api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['PUT'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def update_vacacion(employee_id, id):
-    vacacion = Vacaciones.query.filter_by(
-        id=id, employee_id=employee_id).first()
-    if not vacacion:
-        return jsonify({"msg": "Vacacion not found"}), 404
-
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-
-    vacacion.vacations = data.get("vacations", vacacion.vacations)
-    vacacion.taken_vacations = data.get(
-        "taken_vacations", vacacion.taken_vacations)
-    vacacion.available_vacations = data.get(
-        "available_vacations", vacacion.available_vacations)
-
-    vacacion.status = data.get("status", vacacion.status)
-
-    db.session.commit()
-    return jsonify(vacacion.serialize()), 200
-
-
-@api.route('/employees/<int:employee_id>/vacaciones/<int:id>', methods=['DELETE'])
-@jwt_required()
-@role_required("company", "admin")
-def delete_vacacion(employee_id, id):
-    vacacion = Vacaciones.query.filter_by(
-        id=id, employee_id=employee_id).first()
-    if not vacacion:
-        return jsonify({"msg": "Vacacion not found"}), 404
-    db.session.delete(vacacion)
-    db.session.commit()
-    return jsonify({"msg": f"Vacacion {id} deleted"}), 200
-
-
-@api.route('/managers', methods=['GET'])
-@jwt_required()
-@role_required("company", "admin")
-def get_all_managers():
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
-
-    if role == "admin":
-        managers = Manager.query.all()
+    # Decidimos a qué tabla de la base de datos apuntar
+    if is_vacation:
+        target = Vacaciones.query.get(req_id)
     else:
+        target = Incident.query.get(req_id)
 
-        managers = Manager.query.join(Employee).filter(
-            Employee.company_id == identity).all()
+    # Si por alguna razón no existe, avisamos
+    if not target:
+        return jsonify({"msg": "Solicitud no encontrada"}), 404
 
-    return jsonify([m.serialize() for m in managers]), 200
-
-
-@api.route('/managers/<int:id>', methods=['GET'])
-@jwt_required()
-@role_required("company", "admin")
-def get_manager(id):
-    manager = Manager.query.get(id)
-    if not manager:
-        return jsonify({"msg": "Manager not found"}), 404
-    return jsonify(manager.serialize()), 200
-
-
-@api.route('/managers', methods=['POST'])
-@jwt_required()
-@role_required("company", "admin")
-def create_manager():
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-    required_fields = ["first_name", "last_name", "email", "password"]
-    for field in required_fields:
-        if not data.get(field):
-            return jsonify({"msg": f"{field} is required"}), 400
-    if Manager.query.filter_by(email=data["email"]).first():
-        return jsonify({"msg": "Email already exists"}), 400
-    new_manager = Manager(
-        first_name=data["first_name"],
-        last_name=data["last_name"],
-        email=data["email"],
-        password=data["password"],
-        phone=data.get("phone"),
-        position=data.get("position"),
-        employee_id=data.get("employee_id"),
-        is_active=True
-    )
-    db.session.add(new_manager)
+    # ¡Aplicamos el veredicto!
+    target.status = new_status
     db.session.commit()
-    return jsonify(new_manager.serialize()), 201
 
+    return jsonify({"msg": "Estado actualizado con éxito", "status": new_status}), 200
 
-@api.route('/managers/<int:id>', methods=['PUT'])
+@api.route('/company/stats', methods=['GET'])
 @jwt_required()
-@role_required("company", "admin")
-def update_manager(id):
-    manager = Manager.query.get(id)
-    if not manager:
-        return jsonify({"msg": "Manager not found"}), 404
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacío"}), 400
-    manager.first_name = data.get("first_name", manager.first_name)
-    manager.last_name = data.get("last_name", manager.last_name)
-    manager.phone = data.get("phone", manager.phone)
-    manager.position = data.get("position", manager.position)
-    manager.employee_id = data.get("employee_id", manager.employee_id)
-    if data.get("password"):
-        manager.password = data["password"]
-    db.session.commit()
-    return jsonify(manager.serialize()), 200
+def get_company_stats():
+    try:
+        company_id = get_jwt_identity()
 
+        # 1. Total de empleados de la empresa
+        total_employees = Employee.query.filter_by(company_id=company_id).count()
 
-@api.route('/managers/<int:id>', methods=['DELETE'])
-@jwt_required()
-@role_required("company", "admin")
-def delete_manager(id):
-    manager = Manager.query.get(id)
-    if not manager:
-        return jsonify({"msg": "Manager not found"}), 404
-    db.session.delete(manager)
-    db.session.commit()
-    return jsonify({"msg": f"Manager {id} deleted"}), 200
+        # 2. Solicitudes Pendientes (opcional para el futuro)
+        pending_vacations = Vacaciones.query.join(Employee).filter(
+            Employee.company_id == company_id, 
+            Vacaciones.status == 'PENDING'
+        ).count()
+        pending_incidents = Incident.query.join(Employee).filter(
+            Employee.company_id == company_id, 
+            Incident.status == 'PENDING'
+        ).count()
+        total_pending = pending_vacations + pending_incidents
 
+        # 3. EL RADAR: Turnos activos (check_out es nulo)
+        active_clocks = WorkRecord.query.join(Employee).filter(
+            Employee.company_id == company_id,
+            WorkRecord.check_out == None # ¡Aquí está el truco!
+        ).count()
 
-@api.route('/employee/nominas', methods=['GET'])
-@jwt_required()
-@role_required("employee", "company", "admin")
-def get_my_nominas():
-    identity = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get("role")
+        return jsonify({
+            "totalEmployees": total_employees,
+            "totalPending": total_pending,
+            "activeClocks": active_clocks
+        }), 200
 
-    if role == "employee":
-        employee_id = identity
+    except Exception as e:
+        print(f"Error cargando estadísticas: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor"}), 500
 
-    else:
-        employee_id = request.args.get("employee_id")
-        if not employee_id:
-            return jsonify({"msg": "employee_id es requerido"}), 400
-
-        employee = Employee.query.get(employee_id)
-        if not employee:
-            return jsonify({"msg": "Empleado no encontrado"}), 404
-
-        if role == "company" and str(employee.company_id) != str(identity):
-            return jsonify({"msg": "Acceso denegado"}), 403
-
-    nominas = Nomina.query.filter_by(employee_id=employee_id).all()
-    return jsonify([n.serialize() for n in nominas]), 200
-
-
-@api.route('/employee/vacaciones', methods=['GET'])
-@jwt_required()
-def get_my_vacaciones():
-    employee_id = get_jwt_identity()
-    claims = get_jwt()
-    if claims.get("role") != "employee":
-        return jsonify({"msg": "Acceso restringido a empleados"}), 403
-    vacaciones = Vacaciones.query.filter_by(employee_id=employee_id).all()
-    return jsonify([v.serialize() for v in vacaciones]), 200
-
-
-@api.route('/employee/vacaciones', methods=['POST'])
-@jwt_required()
-def request_my_vacacion():
-    employee_id = get_jwt_identity()
-    claims = get_jwt()
-    if claims.get("role") != "employee":
-        return jsonify({"msg": "Acceso restringido a empleados"}), 403
-    data = request.json
-    if not data:
-        return jsonify({"msg": "Body vacio"}), 400
-    if not data.get("start_date") or not data.get("end_date"):
-        return jsonify({"msg": "start_date y end_date son requeridos"}), 400
-    start = datetime.fromisoformat(data["start_date"])
-    end = datetime.fromisoformat(data["end_date"])
-    days_requested = (end - start).days + 1
-    new_vacacion = Vacaciones(
-        employee_id=int(employee_id),
-        start_date=start,
-        end_date=end,
-        days_requested=days_requested,
-        status="pending"
-    )
-    db.session.add(new_vacacion)
-    db.session.commit()
-    return jsonify(new_vacacion.serialize()), 201
-
-
-@api.route('/surveys', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "admin")
-def get_surveys():
-    surveys = Survey.query.order_by(Survey.created_at.desc()).all()
-    return jsonify([survey.serialize() for survey in surveys]), 200
+# ==========================================
+# 7. SURVEY SYSTEM
+# ==========================================
 
 
 @api.route('/surveys', methods=['POST'])
-@jwt_required()
-@role_required("company", "manager", "admin")
+@role_required("COMPANY", "ADMIN")
 def create_survey():
     data = request.json
-    if not data or not data.get("title") or not data.get("questions"):
-        return jsonify({"msg": "Faltan datos: title y un arreglo de questions son obligatorios"}), 400
-
     new_survey = Survey(
-        title=data["title"],
-        description=data.get("description", ""),
-        is_active=True
+        title=data.get("title"),
+        description=data.get("description")
     )
     db.session.add(new_survey)
     db.session.flush()
 
-    for q_data in data["questions"]:
-        new_question = Question(
-            survey_id=new_survey.id,
-            text=q_data["text"],
-            type=q_data.get("type", "TEXT")
-        )
-        db.session.add(new_question)
+    for q in data.get("questions", []):
+        db.session.add(Question(survey_id=new_survey.id,
+                       text=q["text"], type=q.get("type", "TEXT")))
 
     db.session.commit()
     return jsonify(new_survey.serialize()), 201
 
 
-@api.route('/employees/<int:employee_id>/pending-surveys', methods=['GET'])
-@jwt_required()
-@role_required("company", "manager", "employee", "admin")
-def get_pending_surveys(employee_id):
-    employee = Employee.query.get(employee_id)
-    if not employee:
-        return jsonify({"msg": "Empleado no encontrado"}), 404
-
-    active_surveys = Survey.query.filter_by(is_active=True).all()
-
-    pending_surveys = []
-    for survey in active_surveys:
-        has_responded = SurveyResponse.query.filter_by(
-            survey_id=survey.id, employee_id=employee_id).first()
-
-        if not has_responded:
-            pending_surveys.append(survey.serialize())
-
-    return jsonify(pending_surveys), 200
+@api.route('/surveys/pending', methods=['GET'])
+@role_required("EMPLOYEE")
+def get_pending_surveys():
+    emp_id = get_jwt_identity()
+    all_active = Survey.query.filter_by(is_active=True).all()
+    # Filter surveys not answered by this employee
+    pending = [s.serialize() for s in all_active if not SurveyResponse.query.filter_by(
+        survey_id=s.id, employee_id=emp_id).first()]
+    return jsonify(pending), 200
 
 
-@api.route('/employees/<int:employee_id>/surveys/<int:survey_id>/respond', methods=['POST'])
-@jwt_required()
-@role_required("employee", "admin", "manager")
-def submit_survey_response(employee_id, survey_id):
+@api.route('/surveys/<int:survey_id>/respond', methods=['POST'])
+@role_required("EMPLOYEE")
+def submit_response(survey_id):
     data = request.json
-    if not data or not data.get("answers"):
-        return jsonify({"msg": "Falta el arreglo de answers"}), 400
+    emp_id = get_jwt_identity()
 
-    existing_response = SurveyResponse.query.filter_by(
-        survey_id=survey_id, employee_id=employee_id).first()
-    if existing_response:
-        return jsonify({"msg": "Ya has respondido esta encuesta anteriormente"}), 400
-    new_response = SurveyResponse(
-        survey_id=survey_id,
-        employee_id=employee_id
-    )
-    db.session.add(new_response)
+    response = SurveyResponse(survey_id=survey_id, employee_id=emp_id)
+    db.session.add(response)
     db.session.flush()
 
-    for ans_data in data["answers"]:
-        new_answer = SurveyAnswer(
-            response_id=new_response.id,
-            question_id=ans_data["question_id"],
-            answer_value=str(ans_data["answer_value"])
-        )
-        db.session.add(new_answer)
+    for ans in data.get("answers", []):
+        db.session.add(SurveyAnswer(response_id=response.id,
+                       question_id=ans["q_id"], answer_value=str(ans["value"])))
 
     db.session.commit()
-    return jsonify({"msg": "Encuesta enviada exitosamente"}), 201
+    return jsonify({"msg": "Survey submitted"}), 201
 
 
-@api.route('/employees/<int:employee_id>/promote', methods=['POST'])
-@jwt_required()
-@role_required("company", "admin")
-def promote_to_manager(employee_id):
-    employee = Employee.query.get(employee_id)
-    if not employee:
-        return jsonify({"msg": "Empleado no encontrado"}), 404
+@api.route('/approvals/pending', methods=['GET'])
+@role_required("COMPANY", "ADMIN")
+def get_pending_approvals():
+    identity = get_jwt_identity()
 
-    existing_manager = Manager.query.filter_by(employee_id=employee_id).first()
-    if existing_manager:
-        return jsonify({"msg": "Este empleado ya tiene rango de Manager"}), 400
+    # 1. Para Vacaciones: Si falló "pending", intenta con "PENDING"
+    vacations = Vacaciones.query.join(Employee).filter(
+        Employee.company_id == identity,
+        Vacaciones.status == "PENDING"
+    ).all()
 
-    employee.role = "manager"
-    data = request.json
+    # 2. Para Incidencias: Mantenga minúsculas (que dijo que funcionó)
+    incidents = Incident.query.join(Employee).filter(
+        Employee.company_id == identity,
+        Incident.status == "pending"
+    ).all()
 
-    new_manager = Manager(
-        first_name=employee.first_name,
-        last_name=employee.last_name,
-        email=employee.email,
-        password=employee.password,
-        phone=employee.phone,
-        position=data.get("position", "Manager de Área"),
-        employee_id=employee.id,
-        is_active=True
-    )
+    return jsonify({
+        "vacations": [v.serialize() for v in vacations],
+        "incidents": [i.serialize() for i in incidents]
+    }), 200
 
-    db.session.add(new_manager)
+
+@api.route('/approvals/<string:type>/<int:id>', methods=['PUT'])
+@role_required("COMPANY", "ADMIN")
+def update_approval_status(type, id):
+    data = request.json  # Esperamos {"status": "APPROVED" o "REJECTED"}
+    new_status = data.get("status")
+
+    if type == "vacation":
+        item = Vacaciones.query.get(id)
+    else:
+        item = Incident.query.get(id)
+
+    if not item:
+        return jsonify({"msg": "Request not found"}), 404
+
+    item.status = new_status
     db.session.commit()
-    return jsonify({"msg": f"{employee.first_name} ha sido promovido a Manager"}), 201
 
-
-@api.route('/managers/<int:manager_id>', methods=['DELETE'])
-@jwt_required()
-@role_required("company", "admin")
-def delete_managers(manager_id):
-    manager = Manager.query.get(manager_id)
-
-    if not manager:
-        return jsonify({"msg": "Manager no encontrado"}), 404
-
-    try:
-        manager.is_active = False
-        if manager.employee:
-            manager.employee.role = "employee"
-        db.session.commit()
-
-        return jsonify({
-            "msg": "Acceso de manager revocado y rol de empleado restaurado",
-            "employee_id": manager.employee_id
-        }), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"msg": "Error al revocar el rol", "error": str(e)}), 500
+    return jsonify({"msg": f"{type.capitalize()} {new_status.lower()} successfully"}), 200
