@@ -51,8 +51,27 @@ const EmployeeList = () => {
                         {employees.map((emp) => (
                             <tr key={emp.id}>
                                 <td className="px-4">
-                                    <span className="fw-bold text-dark">{emp.first_name} {emp.last_name}</span>
-                                    <div className="small text-muted">{emp.email}</div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        {emp.profile_image ? (
+                                            <img
+                                                src={emp.profile_image}
+                                                alt={emp.first_name}
+                                                className="rounded-circle object-fit-cover"
+                                                style={{ width: 36, height: 36 }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="rounded-circle bg-secondary d-flex align-items-center justify-content-center flex-shrink-0"
+                                                style={{ width: 36, height: 36 }}
+                                            >
+                                                <i className="bi bi-person-fill text-white" style={{ fontSize: 16 }}></i>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <span className="fw-bold text-dark">{emp.first_name} {emp.last_name}</span>
+                                            <div className="small text-muted">{emp.email}</div>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 {/* Si position viene nulo o vacío del backend, mostrará "Staff" */}

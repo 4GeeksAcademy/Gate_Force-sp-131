@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import ImageUpload from "../components/ImageUpload";
 
 const EditEmployee = () => {
     const { id } = useParams();
@@ -62,6 +63,18 @@ const EditEmployee = () => {
                         </div>
                         <div className="card-body p-4 bg-light">
                             <form onSubmit={handleSave}>
+                                <div className="d-flex justify-content-center mb-4">
+                                    <div className="text-center">
+                                        <ImageUpload
+                                            currentImage={formData.profile_image}
+                                            onUpload={(url) => setFormData({ ...formData, profile_image: url })}
+                                            size={90}
+                                            label="Change profile photo"
+                                        />
+                                        <div className="small text-muted mt-2">Profile photo</div>
+                                    </div>
+                                </div>
+
                                 <h6 className="text-primary fw-bold text-uppercase mb-4">Personal Information</h6>
                                 <div className="row g-3 mb-4">
                                     <div className="col-md-6">

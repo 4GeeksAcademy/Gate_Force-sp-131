@@ -24,9 +24,26 @@ const EmployeeDetails = () => {
                 <i className="bi bi-arrow-left"></i> Back to list
             </button>
             <div className="card border-0 shadow-sm overflow-hidden">
-                <div className="bg-primary p-4 text-white">
-                    <h3 className="fw-bold mb-0">{employee.first_name} {employee.last_name}</h3>
-                    <span className="badge bg-white text-primary mt-2">{employee.position || "Employee"}</span>
+                <div className="bg-primary p-4 text-white d-flex align-items-center gap-4">
+                    {employee.profile_image ? (
+                        <img
+                            src={employee.profile_image}
+                            alt={`${employee.first_name} ${employee.last_name}`}
+                            className="rounded-circle border border-3 border-white shadow object-fit-cover"
+                            style={{ width: 80, height: 80 }}
+                        />
+                    ) : (
+                        <div
+                            className="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center border border-3 border-white"
+                            style={{ width: 80, height: 80 }}
+                        >
+                            <i className="bi bi-person-fill fs-1 text-white"></i>
+                        </div>
+                    )}
+                    <div>
+                        <h3 className="fw-bold mb-0">{employee.first_name} {employee.last_name}</h3>
+                        <span className="badge bg-white text-primary mt-2">{employee.position || "Employee"}</span>
+                    </div>
                 </div>
                 <div className="card-body p-4">
                     <div className="row g-4">

@@ -81,7 +81,14 @@ const getState = ({ getStore, getActions, setStore }) => {
       logout: () => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
+        localStorage.removeItem("user");
         setStore({ token: null, role: null, user: null });
+      },
+
+      updateUser: (partialUser) => {
+        const updated = { ...getStore().user, ...partialUser };
+        localStorage.setItem("user", JSON.stringify(updated));
+        setStore({ user: updated });
       },
 
       // COMPANIES

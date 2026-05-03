@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import LocationCell from "./LocationCell";
 
 const WorkRecordsLog = () => {
     const { actions } = useGlobalReducer();
@@ -17,25 +18,16 @@ const WorkRecordsLog = () => {
         loadLogs();
     }, []);
 
-    // MAGIA: Agrupamos los registros por empleado
     const groupedLogs = logs.reduce((acc, log) => {
-        // Si el empleado no existe en nuestro objeto agrupado, lo creamos
         if (!acc[log.employee_id]) {
             acc[log.employee_id] = {
                 name: log.employee_name || "Usuario Desconocido",
                 records: [],
-                isWorkingNow: false // Indicador para el Admin
+                isWorkingNow: false
             };
         }
-
-        // Guardamos el registro dentro de este empleado
         acc[log.employee_id].records.push(log);
-
-        // Si hay un registro sin check_out, es que está trabajando ahora
-        if (!log.check_out) {
-            acc[log.employee_id].isWorkingNow = true;
-        }
-
+        if (!log.check_out) acc[log.employee_id].isWorkingNow = true;
         return acc;
     }, {});
 
@@ -56,7 +48,6 @@ const WorkRecordsLog = () => {
 
             {Object.keys(groupedLogs).length > 0 ? (
                 <div className="accordion shadow-sm rounded-4 overflow-hidden" id="employeeLogsAccordion">
-                    {/* Iteramos sobre los empleados agrupados */}
                     {Object.values(groupedLogs).map((employee, index) => (
                         <div className="accordion-item border-0 border-bottom" key={index}>
                             <h2 className="accordion-header">
@@ -69,7 +60,6 @@ const WorkRecordsLog = () => {
                                     <i className="bi bi-person-circle me-3 text-primary fs-4"></i>
                                     {employee.name}
 
-                                    {/* Insignia si está trabajando en tiempo real */}
                                     {employee.isWorkingNow && (
                                         <span className="badge bg-success ms-3 pulse">
                                             <i className="bi bi-circle-fill me-1" style={{ fontSize: "0.4rem" }}></i>
@@ -77,7 +67,6 @@ const WorkRecordsLog = () => {
                                         </span>
                                     )}
 
-                                    {/* Contador de registros */}
                                     <span className="badge bg-light text-dark border ms-auto me-2">
                                         {employee.records.length} registros
                                     </span>
@@ -94,6 +83,7 @@ const WorkRecordsLog = () => {
                                                     <th>Salida</th>
                                                     <th>Total Hrs</th>
                                                     <th>Estado</th>
+                                                    <th>Ubicación</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -127,6 +117,9 @@ const WorkRecordsLog = () => {
                                                             <span className={`badge ${log.status?.toUpperCase() === 'APPROVED' ? 'bg-success' : 'bg-warning text-dark'}`}>
                                                                 {log.status?.toUpperCase() || 'PENDING'}
                                                             </span>
+                                                        </td>
+                                                        <td style={{ minWidth: 200, maxWidth: 320 }}>
+                                                            <LocationCell location={log.location} />
                                                         </td>
                                                     </tr>
                                                 ))}

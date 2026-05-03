@@ -80,8 +80,16 @@ def login():
         user = Employee.query.filter_by(email=email).first()
         role = "EMPLOYEE"
 
-    # Validate Password and Status
-    if not user or not check_password_hash(user.password, password):
+    # Validate Password — support both hashed (company/employee) and plaintext (admin)
+    if not user:
+        return jsonify({"msg": "Invalid email/username or password"}), 401
+    stored = user.password
+    password_ok = (
+        stored == password  # plaintext fallback (admin created manually in DB)
+        or (stored.startswith("pbkdf2:") or stored.startswith("scrypt:") or stored.startswith("$2"))
+        and check_password_hash(stored, password)
+    )
+    if not password_ok:
         return jsonify({"msg": "Invalid email/username or password"}), 401
 
     if hasattr(user, 'is_active') and not user.is_active:
@@ -129,6 +137,54 @@ def get_all_companies():
     companies = Company.query.all()
     return jsonify([c.serialize() for c in companies]), 200
 
+
+@api.route('/companies/<int:company_id>/employees', methods=['GET'])
+@role_required("ADMIN")
+def get_company_employees(company_id):
+    employees = Employee.query.filter_by(company_id=company_id).all()
+    return jsonify([e.serialize() for e in employees]), 200
+
+
+@api.route('/admin/audit-logs', methods=['GET'])
+@role_required("ADMIN")
+def get_audit_logs():
+    logs = (
+        AuditLog.query
+        .filter(AuditLog.user_role == "COMPANY", AuditLog.target_table == "employees")
+        .order_by(AuditLog.created_at.desc())
+        .limit(300)
+        .all()
+    )
+    result = []
+    for log in logs:
+        try:
+            company = Company.query.get(int(log.user_id))
+        except Exception:
+            company = None
+        result.append({
+            "id": log.id,
+            "company_id": log.user_id,
+            "company_name": company.nombre_empresa if company else "Unknown",
+            "company_logo": company.logo_url if company else None,
+            "action": log.action,
+            "created_at": log.created_at.strftime("%Y-%m-%d %H:%M") if log.created_at else None,
+        })
+    return jsonify(result), 200
+
+
+@api.route('/company/profile', methods=['PUT'])
+@role_required("COMPANY")
+def update_company_profile():
+    identity = get_jwt_identity()
+    data = request.json
+    company = Company.query.get(int(identity))
+    if not company:
+        return jsonify({"msg": "Company not found"}), 404
+    if "logo_url" in data:
+        company.logo_url = data["logo_url"]
+    db.session.commit()
+    return jsonify(company.serialize()), 200
+
 # ==========================================
 # 4. EMPLOYEE MANAGEMENT
 # ==========================================
@@ -166,6 +222,7 @@ def create_employee():
                 data.get("password")),  # Seguridad: Hash siempre
             phone=data.get("phone"),
             position=data.get("position"),
+            profile_image=data.get("profile_image"),
             is_active=True
         )
 
@@ -232,6 +289,7 @@ def update_employee(employee_id):
     employee.phone = data.get("phone", employee.phone)
     employee.position = data.get("position", employee.position)
     employee.is_active = data.get("is_active", employee.is_active)
+    employee.profile_image = data.get("profile_image", employee.profile_image)
 
     db.session.commit()
     return jsonify({"msg": "Employee updated", "employee": employee.serialize()}), 200
@@ -315,8 +373,8 @@ def get_work_status():
 @jwt_required()
 def check_in():
     employee_id = get_jwt_identity()
+    data = request.json or {}
 
-    # Validamos que no esté trabajando ya
     exists = WorkRecord.query.filter_by(
         employee_id=employee_id, check_out=None).first()
     if exists:
@@ -324,8 +382,8 @@ def check_in():
 
     new_record = WorkRecord(
         employee_id=employee_id,
-        check_in=datetime.utcnow()
-        # status="PENDING" se asigna solo por el default de su modelo
+        check_in=datetime.utcnow(),
+        location=data.get("location")
     )
     db.session.add(new_record)
     db.session.commit()

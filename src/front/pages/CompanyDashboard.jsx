@@ -2,11 +2,17 @@ import React, { useEffect, useState } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Link, useNavigate } from "react-router-dom";
 import LogoutButton from "../components/LogoutButton";
+import ImageUpload from "../components/ImageUpload";
 
 const CompanyDashboard = () => {
-    const { actions } = useGlobalReducer();
+    const { store, actions } = useGlobalReducer();
     const [stats, setStats] = useState({ employees: 0, pendingVacations: 0, activeClocks: 0 });
     const navigate = useNavigate();
+
+    const handleLogoUpload = async (url) => {
+        const { ok } = await actions.apiFetch("/company/profile", "PUT", { logo_url: url });
+        if (ok) actions.updateUser({ logo_url: url });
+    };
 
     useEffect(() => {
         const loadStats = async () => {
@@ -38,10 +44,18 @@ const CompanyDashboard = () => {
         <div className="container py-4">
             <LogoutButton />
 
-            <header className="mb-5 d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 className="h3 fw-bold">Company Command Center</h1>
-                    <p className="text-muted">Manage your workforce and operational tasks.</p>
+            <header className="mb-5 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div className="d-flex align-items-center gap-3">
+                    <ImageUpload
+                        currentImage={store.user?.logo_url}
+                        onUpload={handleLogoUpload}
+                        size={72}
+                        label="Update company logo"
+                    />
+                    <div>
+                        <h1 className="h3 fw-bold mb-0">{store.user?.nombre_empresa || "Company Command Center"}</h1>
+                        <p className="text-muted mb-0 small">Manage your workforce and operational tasks.</p>
+                    </div>
                 </div>
                 <Link to="/create-employee" className="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">
                     <i className="bi bi-person-plus me-2"></i>Add Employee

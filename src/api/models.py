@@ -130,7 +130,8 @@ class Employee(db.Model):
             "role": "employee",
             "position": self.position,
             "is_active": self.is_active,
-            "phone": self.phone
+            "phone": self.phone,
+            "profile_image": self.profile_image
         }
 
 # ==========================================
