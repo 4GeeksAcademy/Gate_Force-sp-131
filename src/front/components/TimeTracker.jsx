@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
-const TimeTracker = () => {
+// getLocation: () => Promise<string|null> — called on check-in for fresh coords
+const TimeTracker = ({ getLocation = null }) => {
     const { actions } = useGlobalReducer();
     const [isOnClock, setIsOnClock] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -32,16 +33,19 @@ const TimeTracker = () => {
 
     const handleClockAction = async () => {
         setLoading(true);
-        const endpoint = isOnClock ? "/work-records/check-out" : "/work-records/check-in";
-        const { ok, data } = await actions.apiFetch(endpoint, "POST");
-
-        if (ok) {
-            setIsOnClock(!isOnClock);
-            if (!isOnClock && data) {
-                // Al fichar ENTRADA, guardamos la hora local para mostrarla
-                setSessionStart(new Date(data.check_in));
-            } else {
-                // Al fichar SALIDA, limpiamos la hora
+        if (!isOnClock) {
+            // Get a fresh GPS fix right at the moment of check-in
+            const freshLocation = getLocation ? await getLocation() : null;
+            const body = freshLocation ? { location: freshLocation } : {};
+            const { ok, data } = await actions.apiFetch("/work-records/check-in", "POST", body);
+            if (ok) {
+                setIsOnClock(true);
+                if (data) setSessionStart(new Date(data.check_in));
+            }
+        } else {
+            const { ok } = await actions.apiFetch("/work-records/check-out", "POST");
+            if (ok) {
+                setIsOnClock(false);
                 setSessionStart(null);
             }
         }

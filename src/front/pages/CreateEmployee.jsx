@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import ImageUpload from "../components/ImageUpload";
 
 const CreateEmployee = () => {
     const { actions } = useGlobalReducer();
@@ -11,7 +12,8 @@ const CreateEmployee = () => {
         password: "",
         first_name: "",
         last_name: "",
-        role: "EMPLOYEE" // Por defecto
+        role: "EMPLOYEE",
+        profile_image: null
     });
 
     const [loading, setLoading] = useState(false);
@@ -38,8 +40,20 @@ const CreateEmployee = () => {
         <div className="container py-5">
             <div className="card border-0 shadow-sm p-4 mx-auto" style={{ maxWidth: "600px" }}>
                 <h2 className="fw-bold mb-4">Add New Employee</h2>
-                
+
                 {error && <div className="alert alert-danger">{error}</div>}
+
+                <div className="d-flex justify-content-center mb-4">
+                    <div className="text-center">
+                        <ImageUpload
+                            currentImage={formData.profile_image}
+                            onUpload={(url) => setFormData({ ...formData, profile_image: url })}
+                            size={90}
+                            label="Add profile photo"
+                        />
+                        <div className="small text-muted mt-2">Profile photo (optional)</div>
+                    </div>
+                </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="row">
