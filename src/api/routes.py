@@ -6,13 +6,14 @@ from flask import request, jsonify, Blueprint
 from api.models import (
     db, Employee, UserAdmin, Company, WorkRecord, Nomina,
     Incident, Vacaciones, Schedule, Survey, Question,
-    SurveyResponse, SurveyAnswer, StatusEnum, IncidentTypeEnum, RoleEnum, AuditLog
+    SurveyResponse, SurveyAnswer, StatusEnum, IncidentTypeEnum, RoleEnum, AuditLog, WellnessCheck
 )
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
+from api.utils import analyze_emotions_with_gemini
 
 api = Blueprint('api', __name__)
 CORS(api)
@@ -535,6 +536,7 @@ def resolve_company_request():
 
     return jsonify({"msg": "Estado actualizado con éxito", "status": new_status}), 200
 
+
 @api.route('/company/stats', methods=['GET'])
 @jwt_required()
 def get_company_stats():
@@ -542,15 +544,16 @@ def get_company_stats():
         company_id = get_jwt_identity()
 
         # 1. Total de empleados de la empresa
-        total_employees = Employee.query.filter_by(company_id=company_id).count()
+        total_employees = Employee.query.filter_by(
+            company_id=company_id).count()
 
         # 2. Solicitudes Pendientes (opcional para el futuro)
         pending_vacations = Vacaciones.query.join(Employee).filter(
-            Employee.company_id == company_id, 
+            Employee.company_id == company_id,
             Vacaciones.status == 'PENDING'
         ).count()
         pending_incidents = Incident.query.join(Employee).filter(
-            Employee.company_id == company_id, 
+            Employee.company_id == company_id,
             Incident.status == 'PENDING'
         ).count()
         total_pending = pending_vacations + pending_incidents
@@ -558,7 +561,7 @@ def get_company_stats():
         # 3. EL RADAR: Turnos activos (check_out es nulo)
         active_clocks = WorkRecord.query.join(Employee).filter(
             Employee.company_id == company_id,
-            WorkRecord.check_out == None # ¡Aquí está el truco!
+            WorkRecord.check_out == None  # ¡Aquí está el truco!
         ).count()
 
         return jsonify({
@@ -571,6 +574,121 @@ def get_company_stats():
         print(f"Error cargando estadísticas: {str(e)}")
         return jsonify({"msg": "Error interno del servidor"}), 500
 
+
+@api.route('/company/surveys', methods=['GET'])
+# Use el decorador que corresponda a sus administradores
+@role_required("COMPANY", "ADMIN")
+def get_company_surveys():
+    try:
+        # 1. Obtenemos todas las encuestas ordenadas desde la más reciente a la más antigua
+        surveys = Survey.query.order_by(Survey.created_at.desc()).all()
+
+        result = []
+        for s in surveys:
+            # 2. Contamos matemáticamente cuántas respuestas tiene esta encuesta en particular
+            response_count = SurveyResponse.query.filter_by(
+                survey_id=s.id).count()
+
+            # 3. Empaquetamos los datos agregando el contador
+            survey_data = s.serialize()
+            survey_data["response_count"] = response_count
+
+            result.append(survey_data)
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        print(f"Error obteniendo el historial de encuestas: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor obteniendo el historial"}), 500
+
+
+@api.route('/company/surveys/<int:survey_id>/results', methods=['GET'])
+@role_required("COMPANY", "ADMIN")
+def get_survey_results(survey_id):
+    try:
+        # 1. Buscamos la encuesta
+        survey = Survey.query.get(survey_id)
+        if not survey:
+            return jsonify({"msg": "Encuesta no encontrada"}), 404
+
+        # 2. Buscamos todas las respuestas de esa encuesta
+        responses = SurveyResponse.query.filter_by(survey_id=survey_id).all()
+
+        # 3. Empaquetamos todo
+        results_data = {
+            "survey_info": survey.serialize(),
+            "responses": []
+        }
+
+        for resp in responses:
+            # Buscamos el empleado para saber su nombre
+            emp = Employee.query.get(resp.employee_id)
+
+            resp_data = resp.serialize()
+            resp_data["employee_name"] = f"{emp.first_name} {emp.last_name}" if emp else "Empleado Desconocido"
+
+            results_data["responses"].append(resp_data)
+
+        return jsonify(results_data), 200
+
+    except Exception as e:
+        print(f"Error obteniendo resultados de la encuesta: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor al cargar resultados"}), 500
+
+
+@api.route('/company/ai-insights', methods=['GET'])
+@role_required("COMPANY", "ADMIN")
+def get_ai_insights():
+    identity = get_jwt_identity()
+    print(f"🔍 Buscando insights para la identidad ID: {identity}")
+    
+    try:
+        # 1. ¿Existen chequeos en la base de datos sin filtrar? (Para debug)
+        total_global = WellnessCheck.query.count()
+        print(f"📊 Total de chequeos en toda la DB: {total_global}")
+
+        # 2. Tu consulta con JOIN
+        checks = db.session.query(WellnessCheck).join(
+            Employee).filter(Employee.company_id == identity).all()
+        
+        print(f"✅ Chequeos encontrados para esta empresa: {len(checks)}")
+
+        if not checks:
+            return jsonify({
+                "average_score": 0,
+                "stats": {"joy": 0, "stress": 0, "sadness": 0, "calm": 0},
+                "total_checks": 0,
+                "history": [],
+                "msg": f"No hay datos. (ID Empresa: {identity}, Total DB: {total_global})"
+            }), 200
+
+        # ... (Resto de tu lógica de promedios igual) ...
+        total = len(checks)
+        sums = {"joy": 0, "stress": 0, "sadness": 0, "calm": 0, "score": 0}
+        for check in checks:
+            sums["joy"] += (check.ai_joy or 0)
+            sums["stress"] += (check.ai_stress or 0)
+            sums["sadness"] += (check.ai_sadness or 0)
+            sums["calm"] += (check.ai_calm or 0)
+            sums["score"] += (check.final_wellness_score or 0)
+
+        report = {
+            "average_score": round(sums["score"] / total, 2),
+            "stats": {
+                "joy": round(sums["joy"] / total, 2),
+                "stress": round(sums["stress"] / total, 2),
+                "sadness": round(sums["sadness"] / total, 2),
+                "calm": round(sums["calm"] / total, 2)
+            },
+            "total_checks": total,
+            "history": [c.serialize() for c in checks[-10:]]
+        }
+        return jsonify(report), 200
+
+    except Exception as e:
+        print(f"❌ Error en ai-insights: {str(e)}")
+        return jsonify({"msg": "Error interno cargando las recomendaciones"}), 500
+
 # ==========================================
 # 7. SURVEY SYSTEM
 # ==========================================
@@ -579,89 +697,231 @@ def get_company_stats():
 @api.route('/surveys', methods=['POST'])
 @role_required("COMPANY", "ADMIN")
 def create_survey():
-    data = request.json
-    new_survey = Survey(
-        title=data.get("title"),
-        description=data.get("description")
-    )
-    db.session.add(new_survey)
-    db.session.flush()
+    try:
+        data = request.json
 
-    for q in data.get("questions", []):
-        db.session.add(Question(survey_id=new_survey.id,
-                       text=q["text"], type=q.get("type", "TEXT")))
+        # 1. Creamos la encuesta capturando si requiere biometría o no
+        new_survey = Survey(
+            title=data.get("title"),
+            description=data.get("description"),
+            requires_biometrics=data.get(
+                "requires_biometrics", False)  # ¡NUEVO!
+        )
+        db.session.add(new_survey)
+        db.session.flush()  # Obtenemos el ID de new_survey
 
-    db.session.commit()
-    return jsonify(new_survey.serialize()), 201
+        # 2. Añadimos las preguntas
+        for q in data.get("questions", []):
+            db.session.add(Question(
+                survey_id=new_survey.id,
+                text=q["text"],
+                type=q.get("type", "TEXT")
+            ))
+
+        db.session.commit()
+        return jsonify({"msg": "Encuesta creada con éxito", "data": new_survey.serialize()}), 201
+
+    except Exception as e:
+        db.session.rollback()  # Salvavidas de la base de datos
+        print(f"Error creando encuesta: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor"}), 500
 
 
 @api.route('/surveys/pending', methods=['GET'])
 @role_required("EMPLOYEE")
 def get_pending_surveys():
-    emp_id = get_jwt_identity()
-    all_active = Survey.query.filter_by(is_active=True).all()
-    # Filter surveys not answered by this employee
-    pending = [s.serialize() for s in all_active if not SurveyResponse.query.filter_by(
-        survey_id=s.id, employee_id=emp_id).first()]
-    return jsonify(pending), 200
+    try:
+        emp_id = get_jwt_identity()
+        all_active = Survey.query.filter_by(is_active=True).all()
+
+        # Filtramos las encuestas que este empleado aún no ha respondido
+        pending = []
+        for s in all_active:
+            answered = SurveyResponse.query.filter_by(
+                survey_id=s.id, employee_id=emp_id).first()
+            if not answered:
+                pending.append(s.serialize())
+
+        return jsonify(pending), 200
+
+    except Exception as e:
+        print(f"Error obteniendo encuestas pendientes: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor"}), 500
 
 
 @api.route('/surveys/<int:survey_id>/respond', methods=['POST'])
 @role_required("EMPLOYEE")
 def submit_response(survey_id):
-    data = request.json
-    emp_id = get_jwt_identity()
+    try:
+        data = request.json
+        emp_id = get_jwt_identity()
+        photo_url = data.get("photo_url")
 
-    response = SurveyResponse(survey_id=survey_id, employee_id=emp_id)
-    db.session.add(response)
-    db.session.flush()
+        # Verificamos que la encuesta exista
+        survey = Survey.query.get(survey_id)
+        if not survey:
+            return jsonify({"msg": "Encuesta no encontrada"}), 404
 
-    for ans in data.get("answers", []):
-        db.session.add(SurveyAnswer(response_id=response.id,
-                       question_id=ans["q_id"], answer_value=str(ans["value"])))
+        # --- LÓGICA DE IA REAL ---
+        # Primero llamamos a Gemini con la foto que viene del frontend
+        ai_results = None
+        if photo_url:
+            ai_results = analyze_emotions_with_gemini(photo_url)
 
-    db.session.commit()
-    return jsonify({"msg": "Survey submitted"}), 201
+        # Si la encuesta requiere biometría pero la IA falló o no hay foto, frenamos aquí
+        if survey.requires_biometrics and not ai_results:
+            return jsonify({"msg": "El análisis de IA es obligatorio para esta encuesta y ha fallado."}), 400
+
+        # 1. Guardamos la respuesta principal con los datos QUE VIENEN DE LA IA
+        # Si no hay IA (encuesta normal), ponemos valores por defecto
+        response = SurveyResponse(
+            survey_id=survey_id,
+            employee_id=emp_id,
+            photo_url=photo_url,
+            ai_joy=ai_results.get("joy", 0) if ai_results else 0,
+            ai_stress=ai_results.get("stress", 0) if ai_results else 0,
+            ai_sadness=ai_results.get("sadness", 0) if ai_results else 0,
+            ai_calm=ai_results.get("calm", 0) if ai_results else 0,
+            final_wellness_score=ai_results.get(
+                "score", 0) if ai_results else 0,
+            admin_recommendation=ai_results.get(
+                "recommendation", "N/A") if ai_results else "Encuesta sin biometría"
+        )
+
+        db.session.add(response)
+        db.session.flush()
+
+        # 2. Guardamos las respuestas a las preguntas (esto sigue igual)
+        for ans in data.get("answers", []):
+            q_id = ans.get("question_id") or ans.get("q_id")
+            if q_id:
+                db.session.add(SurveyAnswer(
+                    response_id=response.id,
+                    question_id=q_id,
+                    answer_value=str(ans.get("value"))
+                ))
+
+        db.session.commit()
+        return jsonify({
+            "msg": "Encuesta procesada con IA real correctamente",
+            "ai_summary": ai_results['recommendation'] if ai_results else "Completado"
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error procesando la respuesta: {str(e)}")
+        return jsonify({"msg": "Error interno al procesar la encuesta con IA"}), 500
 
 
 @api.route('/approvals/pending', methods=['GET'])
 @role_required("COMPANY", "ADMIN")
 def get_pending_approvals():
-    identity = get_jwt_identity()
+    try:
+        identity = get_jwt_identity()
 
-    # 1. Para Vacaciones: Si falló "pending", intenta con "PENDING"
-    vacations = Vacaciones.query.join(Employee).filter(
-        Employee.company_id == identity,
-        Vacaciones.status == "PENDING"
-    ).all()
+        # 1. Vacaciones: Usamos ilike("pending") para que lea "PENDING", "pending" o "Pending". ¡A prueba de balas!
+        vacations = Vacaciones.query.join(Employee).filter(
+            Employee.company_id == identity,
+            Vacaciones.status.ilike("pending")
+        ).all()
 
-    # 2. Para Incidencias: Mantenga minúsculas (que dijo que funcionó)
-    incidents = Incident.query.join(Employee).filter(
-        Employee.company_id == identity,
-        Incident.status == "pending"
-    ).all()
+        # 2. Incidencias: Misma protección
+        incidents = Incident.query.join(Employee).filter(
+            Employee.company_id == identity,
+            Incident.status.ilike("pending")
+        ).all()
 
-    return jsonify({
-        "vacations": [v.serialize() for v in vacations],
-        "incidents": [i.serialize() for i in incidents]
-    }), 200
+        return jsonify({
+            "vacations": [v.serialize() for v in vacations],
+            "incidents": [i.serialize() for i in incidents]
+        }), 200
+
+    except Exception as e:
+        print(f"Error obteniendo aprobaciones pendientes: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor"}), 500
 
 
-@api.route('/approvals/<string:type>/<int:id>', methods=['PUT'])
+@api.route('/approvals/<string:req_type>/<int:id>', methods=['PUT'])
 @role_required("COMPANY", "ADMIN")
-def update_approval_status(type, id):
-    data = request.json  # Esperamos {"status": "APPROVED" o "REJECTED"}
-    new_status = data.get("status")
+def update_approval_status(req_type, id):
+    try:
+        data = request.json
 
-    if type == "vacation":
-        item = Vacaciones.query.get(id)
-    else:
-        item = Incident.query.get(id)
+        # Forzamos que el estado siempre se convierta a MAYÚSCULAS antes de guardarse
+        new_status = data.get("status", "").upper()
 
-    if not item:
-        return jsonify({"msg": "Request not found"}), 404
+        if new_status not in ["APPROVED", "REJECTED", "PENDING"]:
+            return jsonify({"msg": "Estado no válido"}), 400
 
-    item.status = new_status
-    db.session.commit()
+        # Identificamos qué tabla modificar
+        if req_type == "vacation":
+            item = Vacaciones.query.get(id)
+        elif req_type == "incident":
+            item = Incident.query.get(id)
+        else:
+            return jsonify({"msg": "Tipo de solicitud no reconocido"}), 400
 
-    return jsonify({"msg": f"{type.capitalize()} {new_status.lower()} successfully"}), 200
+        if not item:
+            return jsonify({"msg": "Solicitud no encontrada"}), 404
+
+        # Actualizamos y guardamos
+        item.status = new_status
+        db.session.commit()
+
+        return jsonify({"msg": f"Solicitud actualizada correctamente a {new_status}"}), 200
+
+    except Exception as e:
+        db.session.rollback()  # Salvavidas activado
+        print(f"Error actualizando el estado de la solicitud: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor"}), 500
+
+
+@api.route('/wellness-check', methods=['POST'])
+@role_required("EMPLOYEE")
+def wellness_check():
+    try:
+        data = request.json
+        photo_b64 = data.get("photo_url")
+
+        if not photo_b64:
+            return jsonify({"msg": "No se ha recibido ninguna imagen"}), 400
+
+        # 1. Llamada a la IA (con el modo simulacro integrado en utils.py)
+        analysis = analyze_emotions_with_gemini(photo_b64)
+
+        if not analysis:
+            return jsonify({"msg": "Error crítico analizando la imagen"}), 500
+
+        # 2. Creación del registro en la base de datos
+        new_check = WellnessCheck(
+            employee_id=get_jwt_identity(),
+            photo_url=photo_b64,
+            ai_joy=analysis['joy'],
+            ai_stress=analysis['stress'],
+            ai_sadness=analysis['sadness'],
+            ai_calm=analysis['calm'],
+            final_wellness_score=analysis['score'],
+            admin_recommendation=analysis['recommendation']
+        )
+
+        # 3. GUARDAR en la base de datos (¡Esto faltaba!)
+        db.session.add(new_check)
+        db.session.commit()
+
+        # 4. RESPONDER al frontend (¡Esto también faltaba!)
+        return jsonify({
+            "msg": "Análisis completado",
+            "results": {
+                "ai_joy": analysis['joy'],
+                "ai_stress": analysis['stress'],
+                "ai_sadness": analysis['sadness'],
+                "ai_calm": analysis['calm'],
+                "final_wellness_score": analysis['score'],
+                "admin_recommendation": analysis['recommendation']
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()  # Si algo falla, limpiamos la base de datos
+        print(f"Error en wellness_check: {str(e)}")
+        return jsonify({"msg": "Error interno del servidor al procesar el chequeo"}), 500

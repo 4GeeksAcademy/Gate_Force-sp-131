@@ -117,6 +117,8 @@ class Employee(db.Model):
         "Vacaciones", back_populates="employee", cascade="all, delete-orphan")
     survey_responses = relationship(
         "SurveyResponse", back_populates="employee", cascade="all, delete-orphan")
+    wellness_checks = relationship(
+        "WellnessCheck", back_populates="employee", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -270,12 +272,28 @@ class Survey(db.Model):
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
+
+    # NUEVO: ¿Esta encuesta exige un análisis facial con selfie?
+    requires_biometrics: Mapped[bool] = mapped_column(Boolean(), default=False)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
+
     questions = relationship(
         "Question", back_populates="survey", cascade="all, delete-orphan")
     responses = relationship(
         "SurveyResponse", back_populates="survey", cascade="all, delete-orphan")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "is_active": self.is_active,
+            "requires_biometrics": self.requires_biometrics,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+            "questions": [q.serialize() for q in self.questions]
+        }
 
 
 class Question(db.Model):
@@ -284,8 +302,17 @@ class Question(db.Model):
     survey_id: Mapped[int] = mapped_column(
         ForeignKey("surveys.id", ondelete="CASCADE"))
     text: Mapped[str] = mapped_column(String(255), nullable=False)
-    type: Mapped[str] = mapped_column(String(50), default="TEXT")
+    type: Mapped[str] = mapped_column(
+        String(50), default="TEXT")  # TEXT, RATING, BOOLEAN
+
     survey = relationship("Survey", back_populates="questions")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "text": self.text,
+            "type": self.type
+        }
 
 
 class SurveyResponse(db.Model):
@@ -297,10 +324,36 @@ class SurveyResponse(db.Model):
         ForeignKey("employees.id", ondelete="CASCADE"))
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
+
+    # NUEVO: Integración del Análisis Biométrico (Opcional, por si la encuesta lo requiere)
+    photo_url: Mapped[str] = mapped_column(Text, nullable=True)
+    ai_joy: Mapped[float] = mapped_column(db.Float, nullable=True)
+    ai_stress: Mapped[float] = mapped_column(db.Float, nullable=True)
+    ai_sadness: Mapped[float] = mapped_column(db.Float, nullable=True)
+    ai_calm: Mapped[float] = mapped_column(db.Float, nullable=True)
+    final_wellness_score: Mapped[float] = mapped_column(
+        db.Float, nullable=True)
+    admin_recommendation: Mapped[str] = mapped_column(
+        String(500), nullable=True)
+
     survey = relationship("Survey", back_populates="responses")
     employee = relationship("Employee", back_populates="survey_responses")
     answers = relationship(
         "SurveyAnswer", back_populates="response", cascade="all, delete-orphan")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "survey_id": self.survey_id,
+            "employee_id": self.employee_id,
+            "submitted_at": self.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if self.submitted_at else None,
+            "biometrics": {
+                "photo_url": self.photo_url,
+                "score": self.final_wellness_score,
+                "recommendation": self.admin_recommendation
+            },
+            "answers": [a.serialize() for a in self.answers]
+        }
 
 
 class SurveyAnswer(db.Model):
@@ -311,4 +364,75 @@ class SurveyAnswer(db.Model):
     question_id: Mapped[int] = mapped_column(
         ForeignKey("questions.id", ondelete="CASCADE"))
     answer_value: Mapped[str] = mapped_column(Text, nullable=False)
+
     response = relationship("SurveyResponse", back_populates="answers")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "question_id": self.question_id,
+            "answer_value": self.answer_value
+        }
+
+
+class WellnessCheck(db.Model):
+    __tablename__ = 'wellness_checks'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # CORREGIDO: Apunta a "employees.id" (plural) para coincidir con __tablename__
+    employee_id: Mapped[int] = mapped_column(ForeignKey(
+        'employees.id', ondelete="CASCADE"), index=True)
+
+    # NUEVO: Columnas que faltaban y se usan en serialize
+    self_reported_mood: Mapped[Optional[str]
+                               ] = mapped_column(String(50), nullable=True)
+    survey_comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Biometría IA
+    photo_url: Mapped[str] = mapped_column(Text, nullable=True)
+    ai_joy: Mapped[float] = mapped_column(Float, nullable=True)
+    ai_stress: Mapped[float] = mapped_column(Float, nullable=True)
+    ai_sadness: Mapped[float] = mapped_column(Float, nullable=True)
+    ai_calm: Mapped[float] = mapped_column(Float, nullable=True)
+    final_wellness_score: Mapped[float] = mapped_column(Float, nullable=True)
+    admin_recommendation: Mapped[str] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)
+
+    # Relación inversa
+    employee = relationship("Employee", back_populates="wellness_checks")
+
+    def serialize(self):
+        employee_name = f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido"
+        date_str = self.created_at.strftime(
+            "%Y-%m-%d %H:%M:%S") if self.created_at else None
+
+        return {
+            "id": self.id,
+            "employee_id": self.employee_id,
+            "employee_name": employee_name,
+            "photo_url": self.photo_url or "",
+            "ai_joy": float(self.ai_joy) if self.ai_joy is not None else 0,
+            "ai_stress": float(self.ai_stress) if self.ai_stress is not None else 0,
+            "ai_sadness": float(self.ai_sadness) if self.ai_sadness is not None else 0,
+            "ai_calm": float(self.ai_calm) if self.ai_calm is not None else 0,
+            "final_wellness_score": float(self.final_wellness_score) if self.final_wellness_score is not None else 0,
+            "admin_recommendation": self.admin_recommendation or "Sin recomendación disponible",
+            "created_at": date_str,
+            "survey": {
+                "mood": self.self_reported_mood,
+                "comment": self.survey_comment
+            },
+            "ai_analysis": {
+                "joy": self.ai_joy,
+                "stress": self.ai_stress,
+                "sadness": self.ai_sadness,
+                "calm": self.ai_calm
+            },
+            "photo_url": self.photo_url,
+            "results": {
+                "score": self.final_wellness_score,
+                "recommendation": self.admin_recommendation
+            }
+        }

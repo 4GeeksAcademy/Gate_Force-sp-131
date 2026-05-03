@@ -161,6 +161,22 @@ const CompanyDashboard = () => {
                         </div>
                     </Link>
                 </div>
+                <div className="col-md-6">
+                    <Link to="/AIRecommendationsHub" className="text-decoration-none">
+                        <div className="card h-100 border-0 shadow-sm rounded-4 card-hover-effect">
+                            <div className="card-body p-4 d-flex align-items-center">
+                                <div className="bg-dark text-white rounded-circle p-3 me-4">
+                                    <i className="bi bi-calendar-week fs-3"></i>
+                                </div>
+                                <div>
+                                    <h5 className="fw-bold text-dark mb-1">AI Recommendations</h5>
+                                    <p className="text-muted small mb-0">Get personalized insights for your team</p>
+                                </div>
+                                <i className="bi bi-chevron-right ms-auto text-muted fs-4"></i>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
             </div>
 
         </div>

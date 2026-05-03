@@ -15,6 +15,7 @@ import ManageEmployees from "./pages/ManageEmployees";
 import EmployeeDetails from "./pages/EmployeeDetails";
 import EditEmployee from "./pages/EditEmployee";
 import MySchedules from "./pages/MySchedules";
+import WellnessSurvey from "./pages/WellnessSurvey";
 
 import PrivateRoute from "./components/PrivateRoute";
 import MyPayroll from "./components/MyPayroll";
@@ -25,6 +26,8 @@ import CompanyManagement from "./components/CompanyManagement";
 import PayrollHub from "./components/PayrollHub";
 import SchedulePlanner from "./components/SchedulePlanner";
 import WorkRecordsLog from "./components/WorkRecordsLog";
+import EmployeeSurveys from "./components/EmployeeSurveys";
+import AIRecommendationsHub from "./components/AIRecommendationsHub.jsx";
 
 
 
@@ -52,7 +55,10 @@ export const router = createBrowserRouter(
       <Route path="/report-request" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><EmployeeRequestHub /></PrivateRoute>} />
       <Route path="/employee-details/:id" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><EmployeeDetails /></PrivateRoute>} />
       <Route path="/edit-employee/:id" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><EditEmployee /></PrivateRoute>} />
-      <Route path="/my-schedules" element={<MySchedules />}  />
+      <Route path="/my-schedules" element={<MySchedules />} />
+      <Route path="/wellness-survey" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><WellnessSurvey /></PrivateRoute>} />
+      <Route path="/survey" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><EmployeeSurveys /></PrivateRoute>} />
+
 
       {/* --- RUTAS PROTEGIDAS PARA EMPRESAS --- */}
       <Route
@@ -77,6 +83,7 @@ export const router = createBrowserRouter(
         }
       />
       <Route path="/schedule-planner" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><SchedulePlanner /></PrivateRoute>} />
+      <Route path="/AIRecommendationsHub" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><AIRecommendationsHub /></PrivateRoute>} />
 
 
 
