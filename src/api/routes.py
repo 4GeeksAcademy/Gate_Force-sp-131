@@ -709,7 +709,7 @@ def get_survey_results(survey_id):
 def get_ai_insights():
     identity = get_jwt_identity()
     print(f"🔍 Buscando insights para la identidad ID: {identity}")
-    
+
     try:
         # 1. ¿Existen chequeos en la base de datos sin filtrar? (Para debug)
         total_global = WellnessCheck.query.count()
@@ -718,7 +718,7 @@ def get_ai_insights():
         # 2. Tu consulta con JOIN
         checks = db.session.query(WellnessCheck).join(
             Employee).filter(Employee.company_id == identity).all()
-        
+
         print(f"✅ Chequeos encontrados para esta empresa: {len(checks)}")
 
         if not checks:
@@ -993,3 +993,131 @@ def wellness_check():
         db.session.rollback()  # Si algo falla, limpiamos la base de datos
         print(f"Error en wellness_check: {str(e)}")
         return jsonify({"msg": "Error interno del servidor al procesar el chequeo"}), 500
+
+
+@api.route('/chat/messages', methods=['GET'])
+@role_required("COMPANY", "EMPLOYEE")
+def get_chat_messages():
+    """
+    COMPANY: recibe ?employee_id=X para ver la conversación con ese empleado.
+    EMPLOYEE: no necesita parámetros, ve su conversación con su empresa.
+    """
+    from api.models import ChatMessage
+    claims = get_jwt()
+    role = claims.get("role")
+    user_id = int(get_jwt_identity())
+
+    if role == "EMPLOYEE":
+        employee = Employee.query.get_or_404(user_id)
+        messages = ChatMessage.query.filter_by(
+            company_id=employee.company_id,
+            employee_id=user_id
+        ).order_by(ChatMessage.created_at.asc()).all()
+
+        # Marcar como leídos los mensajes enviados por la empresa
+        ChatMessage.query.filter_by(
+            company_id=employee.company_id,
+            employee_id=user_id,
+            sender_role="COMPANY",
+            is_read=False
+        ).update({"is_read": True})
+        db.session.commit()
+
+    elif role == "COMPANY":
+        employee_id = request.args.get("employee_id", type=int)
+        if not employee_id:
+            return jsonify({"msg": "employee_id is required"}), 400
+        messages = ChatMessage.query.filter_by(
+            company_id=user_id,
+            employee_id=employee_id
+        ).order_by(ChatMessage.created_at.asc()).all()
+
+        # Marcar como leídos los mensajes enviados por el empleado
+        ChatMessage.query.filter_by(
+            company_id=user_id,
+            employee_id=employee_id,
+            sender_role="EMPLOYEE",
+            is_read=False
+        ).update({"is_read": True})
+        db.session.commit()
+
+    return jsonify([m.serialize() for m in messages]), 200
+
+
+@api.route('/chat/messages', methods=['POST'])
+@role_required("COMPANY", "EMPLOYEE")
+def send_chat_message():
+    """Envía un mensaje. El receptor se deduce del rol del emisor."""
+    from api.models import ChatMessage
+    claims = get_jwt()
+    role = claims.get("role")
+    user_id = int(get_jwt_identity())
+    data = request.json
+
+    content = data.get("content", "").strip()
+    if not content:
+        return jsonify({"msg": "Message content is required"}), 400
+
+    if role == "EMPLOYEE":
+        employee = Employee.query.get_or_404(user_id)
+        msg = ChatMessage(
+            company_id=employee.company_id,
+            employee_id=user_id,
+            sender_role="EMPLOYEE",
+            content=content
+        )
+    elif role == "COMPANY":
+        employee_id = data.get("employee_id")
+        if not employee_id:
+            return jsonify({"msg": "employee_id is required"}), 400
+        msg = ChatMessage(
+            company_id=user_id,
+            employee_id=employee_id,
+            sender_role="COMPANY",
+            content=content
+        )
+
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify(msg.serialize()), 201
+
+
+@api.route('/chat/unread-count', methods=['GET'])
+@role_required("COMPANY", "EMPLOYEE")
+def get_unread_count():
+    """
+    EMPLOYEE: cuántos mensajes sin leer de su empresa.
+    COMPANY: cuántos mensajes sin leer por empleado (devuelve lista con employee_id y count).
+    """
+    from api.models import ChatMessage
+    from sqlalchemy import func
+    claims = get_jwt()
+    role = claims.get("role")
+    user_id = int(get_jwt_identity())
+
+    if role == "EMPLOYEE":
+        employee = Employee.query.get_or_404(user_id)
+        count = ChatMessage.query.filter_by(
+            company_id=employee.company_id,
+            employee_id=user_id,
+            sender_role="COMPANY",
+            is_read=False
+        ).count()
+        return jsonify({"unread": count}), 200
+
+    elif role == "COMPANY":
+        results = db.session.query(
+            ChatMessage.employee_id,
+            func.count(ChatMessage.id).label("unread")
+        ).filter_by(
+            company_id=user_id,
+            sender_role="EMPLOYEE",
+            is_read=False
+        ).group_by(ChatMessage.employee_id).all()
+
+
+@api.route('/hello')
+def hello():
+    return jsonify({"message": "Hello from Flask!"}), 200
+
+    return jsonify([{"employee_id": r.employee_id, "unread": r.unread} for r in results]), 200

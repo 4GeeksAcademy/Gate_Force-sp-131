@@ -437,3 +437,28 @@ class WellnessCheck(db.Model):
                 "recommendation": self.admin_recommendation
             }
         }
+    
+class ChatMessage(db.Model):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"), index=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), index=True)
+    sender_role: Mapped[str] = mapped_column(String(20), nullable=False)  # "COMPANY" o "EMPLOYEE"
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean(), default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    company = relationship("Company", foreign_keys=[company_id])
+    employee = relationship("Employee", foreign_keys=[employee_id])
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "company_id": self.company_id,
+            "employee_id": self.employee_id,
+            "sender_role": self.sender_role,
+            "content": self.content,
+            "is_read": self.is_read,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }

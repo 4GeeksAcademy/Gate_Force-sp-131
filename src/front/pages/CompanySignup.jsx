@@ -41,7 +41,7 @@ const CompanySignup = () => {
                 <div className="col-lg-6 d-none d-lg-flex bg-primary align-items-center justify-content-center text-white">
                     <div className="p-5 text-center">
                         <h1 className="display-3 fw-bold">GateForce</h1>
-                        <p className="lead">Empower your workforce with the most advanced management tool.</p>
+                        <p className="lead"></p>
                     </div>
                 </div>
 
