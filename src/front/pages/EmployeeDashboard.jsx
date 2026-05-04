@@ -78,6 +78,9 @@ const EmployeeDashboard = () => {
                                 <Link to="/survey" className="btn btn-outline-secondary">
                                     <i className="bi bi-clipboard-check me-2"></i>Employee Survey
                                 </Link>
+                                <Link to="/chat" className="btn btn-outline-secondary">
+                                    <i className="bi bi-chat-dots me-2"></i>Chat with Company
+                                </Link>
                             </div>
                         </div>
                     </div>

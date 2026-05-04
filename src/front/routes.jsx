@@ -30,6 +30,7 @@ import SchedulePlanner from "./components/SchedulePlanner";
 import WorkRecordsLog from "./components/WorkRecordsLog";
 import EmployeeSurveys from "./components/EmployeeSurveys";
 import AIRecommendationsHub from "./components/AIRecommendationsHub.jsx";
+import Chat from "./pages/Chat";
 
 
 
@@ -61,6 +62,7 @@ export const router = createBrowserRouter(
       <Route path="/my-schedules" element={<MySchedules />} />
       <Route path="/wellness-survey" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><WellnessSurvey /></PrivateRoute>} />
       <Route path="/survey" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><EmployeeSurveys /></PrivateRoute>} />
+      <Route path="/chat" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><Chat /></PrivateRoute>} />
 
 
       {/* --- RUTAS PROTEGIDAS PARA EMPRESAS --- */}
@@ -87,6 +89,7 @@ export const router = createBrowserRouter(
       />
       <Route path="/schedule-planner" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><SchedulePlanner /></PrivateRoute>} />
       <Route path="/AIRecommendationsHub" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><AIRecommendationsHub /></PrivateRoute>} />
+      <Route path="/chat/:employeeId" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><Chat /></PrivateRoute>} />
 
 
 

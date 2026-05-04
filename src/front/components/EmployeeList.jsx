@@ -121,6 +121,13 @@ const EmployeeList = () => {
                                                     {/* Corregido a className */}
                                                     <i className="fa-solid fa-circle-info"></i>
                                                 </button>
+                                                <button
+                                                    className="btn btn-outline-info btn-sm"
+                                                    onClick={() => navigate(`/chat/${emp.id}`)}
+                                                    title="Chatear"
+                                                >
+                                                    <i className="fa-solid fa-comments"></i>
+                                                </button>
                                                 {emp.is_active && (
                                                     <button
                                                         className="btn btn-outline-danger btn-sm"
