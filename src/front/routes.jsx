@@ -10,6 +10,7 @@ import EmployeeDashboard from "./pages/EmployeeDashboard";
 import CompanyDashboard from "./pages/CompanyDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import AuditLog from "./pages/AuditLog";
+import MyWorkRecords from "./pages/MyWorkRecords";
 import CompanySignup from "./pages/CompanySignup";
 import CreateEmployee from "./pages/CreateEmployee";
 import ManageEmployees from "./pages/ManageEmployees";
@@ -52,6 +53,7 @@ export const router = createBrowserRouter(
           </PrivateRoute>
         }
       />
+      <Route path="/my-work-records" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><MyWorkRecords /></PrivateRoute>} />
       <Route path="/my-payroll" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><MyPayroll /></PrivateRoute>} />
       <Route path="/report-request" element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><EmployeeRequestHub /></PrivateRoute>} />
       <Route path="/employee-details/:id" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><EmployeeDetails /></PrivateRoute>} />

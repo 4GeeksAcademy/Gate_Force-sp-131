@@ -60,6 +60,9 @@ const EmployeeDashboard = () => {
                         <div className="card-body">
                             <h5 className="card-title mb-4">Employee Services</h5>
                             <div className="d-flex flex-wrap gap-2">
+                                <Link to="/my-work-records" className="btn btn-outline-secondary">
+                                    <i className="bi bi-clock-history me-2"></i>My Work Records
+                                </Link>
                                 <Link to="/my-payroll" className="btn btn-outline-secondary">
                                     <i className="bi bi-file-earmark-pdf me-2"></i>My Payrolls
                                 </Link>

@@ -1,11 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+
+const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: 7 }, (_, i) => currentYear - 3 + i);
 
 const PayrollHub = () => {
     const { actions } = useGlobalReducer();
     const [employees, setEmployees] = useState([]);
-    const [formData, setFormData] = useState({ employee_id: "", month: "", url: "" });
+    const [formData, setFormData] = useState({ employee_id: "", month_name: "", year: String(currentYear), url: "" });
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [fileName, setFileName] = useState("");
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         const loadEmployees = async () => {
@@ -15,13 +26,49 @@ const PayrollHub = () => {
         loadEmployees();
     }, []);
 
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploading(true);
+        setFileName(file.name);
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+        try {
+            const res = await fetch(
+                `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                { method: "POST", body: fd }
+            );
+            const data = await res.json();
+            if (data.secure_url) {
+                setFormData(prev => ({ ...prev, url: data.secure_url }));
+            } else {
+                alert("Upload failed. Check Cloudinary settings.");
+                setFileName("");
+            }
+        } catch {
+            alert("Upload error.");
+            setFileName("");
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.url) { alert("Please upload a document first."); return; }
         setLoading(true);
-        const { ok } = await actions.apiFetch("/payroll/upload", "POST", formData);
+        const month = `${formData.month_name} ${formData.year}`;
+        const { ok } = await actions.apiFetch("/payroll/upload", "POST", {
+            employee_id: formData.employee_id,
+            month,
+            url: formData.url,
+        });
         if (ok) {
             alert("Payroll uploaded successfully!");
-            setFormData({ employee_id: "", month: "", url: "" });
+            setFormData({ employee_id: "", month_name: "", year: String(currentYear), url: "" });
+            setFileName("");
+            if (fileInputRef.current) fileInputRef.current.value = "";
         }
         setLoading(false);
     };
@@ -45,27 +92,85 @@ const PayrollHub = () => {
                             ))}
                         </select>
                     </div>
-                    <div className="row">
-                        <div className="col-md-6 mb-3">
-                            <label className="form-label small fw-bold">Month / Year</label>
-                            <input
-                                type="text" className="form-control" placeholder="e.g. October 2026"
-                                value={formData.month}
-                                onChange={e => setFormData({ ...formData, month: e.target.value })}
+
+                    <div className="row mb-3">
+                        <div className="col-7">
+                            <label className="form-label small fw-bold">Month</label>
+                            <select
+                                className="form-select"
+                                value={formData.month_name}
+                                onChange={e => setFormData({ ...formData, month_name: e.target.value })}
                                 required
-                            />
+                            >
+                                <option value="">Select month...</option>
+                                {MONTHS.map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                            </select>
                         </div>
-                        <div className="col-md-6 mb-3">
-                            <label className="form-label small fw-bold">Document URL (PDF)</label>
-                            <input
-                                type="url" className="form-control" placeholder="https://storage.com/doc.pdf"
-                                value={formData.url}
-                                onChange={e => setFormData({ ...formData, url: e.target.value })}
+                        <div className="col-5">
+                            <label className="form-label small fw-bold">Year</label>
+                            <select
+                                className="form-select"
+                                value={formData.year}
+                                onChange={e => setFormData({ ...formData, year: e.target.value })}
                                 required
-                            />
+                            >
+                                {YEARS.map(y => (
+                                    <option key={y} value={String(y)}>{y}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
-                    <button type="submit" disabled={loading} className="btn btn-primary w-100 fw-bold mt-3">
+
+                    <div className="mb-3">
+                        <label className="form-label small fw-bold">Payroll Document</label>
+                        <div
+                            className="border rounded-3 p-3 text-center"
+                            style={{ cursor: "pointer", borderStyle: "dashed !important", background: "#f8f9fa" }}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            {uploading ? (
+                                <div className="d-flex align-items-center justify-content-center gap-2 text-primary">
+                                    <div className="spinner-border spinner-border-sm" />
+                                    <span className="small">Uploading…</span>
+                                </div>
+                            ) : formData.url ? (
+                                <div className="d-flex align-items-center justify-content-center gap-2 text-success">
+                                    <i className="bi bi-check-circle-fill fs-5"></i>
+                                    <span className="small text-truncate" style={{ maxWidth: 300 }}>{fileName || "Document uploaded"}</span>
+                                </div>
+                            ) : (
+                                <div className="text-muted small">
+                                    <i className="bi bi-cloud-upload fs-4 d-block mb-1"></i>
+                                    Click to upload PDF or image
+                                </div>
+                            )}
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*,.pdf"
+                            className="d-none"
+                            onChange={handleFileUpload}
+                        />
+                        {formData.url && (
+                            <div className="mt-1 d-flex justify-content-between align-items-center">
+                                <a href={formData.url} target="_blank" rel="noreferrer" className="small text-primary">
+                                    <i className="bi bi-box-arrow-up-right me-1"></i>Preview
+                                </a>
+                                <button
+                                    type="button"
+                                    className="btn btn-link btn-sm text-danger p-0"
+                                    onClick={() => { setFormData(prev => ({ ...prev, url: "" })); setFileName(""); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                                >
+                                    <i className="bi bi-x-circle me-1"></i>Remove
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <button type="submit" disabled={loading || uploading} className="btn btn-primary w-100 fw-bold mt-3">
                         {loading ? "Processing..." : "Assign Payroll"}
                     </button>
                 </form>
