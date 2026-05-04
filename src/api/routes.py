@@ -353,6 +353,19 @@ def get_all_work_records():
     return jsonify([r.serialize() for r in records]), 200
 
 
+@api.route('/work-records/mine', methods=['GET'])
+@jwt_required()
+def get_my_work_records():
+    employee_id = get_jwt_identity()
+    records = (
+        WorkRecord.query
+        .filter_by(employee_id=employee_id)
+        .order_by(WorkRecord.check_in.desc())
+        .all()
+    )
+    return jsonify([r.serialize() for r in records]), 200
+
+
 @api.route('/work-records/status', methods=['GET'])
 @jwt_required()
 def get_work_status():
@@ -402,14 +415,11 @@ def check_out():
     if not active_session:
         return jsonify({"msg": "No hay turno activo para cerrar"}), 400
 
-    # 1. Marcamos la salida
     active_session.check_out = datetime.utcnow()
 
-    # 2. Calculamos las horas totales automáticamente
     diferencia = active_session.check_out - active_session.check_in
-    horas_totales = diferencia.total_seconds() / 3600
-    active_session.total_hours = round(
-        horas_totales, 2)  # Redondeamos a 2 decimales
+    active_session.total_hours = round(diferencia.total_seconds() / 3600, 2)
+    active_session.status = StatusEnum.APPROVED
 
     db.session.commit()
     return jsonify(active_session.serialize()), 200
