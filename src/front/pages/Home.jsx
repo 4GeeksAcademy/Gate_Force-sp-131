@@ -2,7 +2,7 @@ import React, { useEffect } from "react"
 import { Link } from "react-router-dom";
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-import Employees from "./Employees.jsx";
+
 
 export const Home = () => {
 
@@ -37,29 +37,23 @@ export const Home = () => {
 	return (
 
 		<div className="text-center mt-5">
-			<Link to="/login-admin">
-				<button className="btn btn-primary">LOGIN ADMIN</button>
+			<Link to="/login" className="btn btn-primary mb-4">
+				Go to Login
 			</Link>
-			<Link to="/login-company">
-				<button className="btn btn-primary">LOGIN COMPANYS</button>
+			<h1 className="display-4">Hello Rigo!</h1>
+			<p className="lead">This is a boilerplate for a full-stack application using React and Flask.</p>
+			<hr className="my-4" />
+			<p>Click the button below to see the magic happen!</p>
+			<Link to="/demo" className="btn btn-primary btn-lg">
+				Go to Demo
 			</Link>
-			<Link to="/login-employee">
-				<button className="btn btn-primary">LOGIN EMPLOYEES</button>
-			</Link>
-			<h1 className="display-4">Hello Rigo!!</h1>
-			<Link to="/admin">
-				<button className="btn btn-primary btn-lg">Ir a Admin</button>
-			</Link>
-			<Link to="/vacaciones">
-				<button className="btn btn-primary btn-lg">
-					Vacaciones
-				</button>
-			</Link>
-			<Link to="/incidents">
-				<button className="btn btn-primary btn-lg">
-					Incidents
-				</button>
-			</Link>
+			<p className="mt-4">
+				Made with <span className="text-danger">❤</span> by{" "}
+				<a href="https://www.linkedin.com/in/rigoberto-hernandez/" target="_blank" rel="noopener noreferrer">
+					Rigoberto Hernández
+				</a>
+				.
+			</p>
 			<p className="lead">
 
 				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />
@@ -73,33 +67,6 @@ export const Home = () => {
 					</span>
 				)}
 			</div>
-
-			<Link to="/Company">
-				<button type="button">
-					Company
-				</button>
-			</Link>
-			<Link to="/employees">
-				<button type="button">
-					Employees
-				</button>
-			</Link>
-			<Link to="/managers">
-				<button type="button">
-					Managers
-				</button>
-			</Link>
-			<Link to="/work-records">
-				<button type="button">
-					WorkRecords
-				</button>
-			</Link>
-			<Link to="/nominas">
-				<button type="button">
-					Nominas
-				</button>
-			</Link>
-
 		</div>
 	);
 }; 

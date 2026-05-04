@@ -1,355 +1,289 @@
-from sqlalchemy import String, Boolean, DateTime, Text
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Integer, Boolean, ForeignKey, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+import enum
 from datetime import datetime
+from typing import List, Optional
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import String, Boolean, DateTime, Text, ForeignKey, Enum, Integer, Float
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 db = SQLAlchemy()
 
+# ==========================================
+# 1. ENUMERACIONES (Unificadas a minúsculas)
+# ==========================================
 
-class User(db.Model):
+
+class RoleEnum(enum.Enum):
+    ADMIN = "admin"
+    COMPANY = "company"
+    EMPLOYEE = "employee"
+
+
+class StatusEnum(enum.Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class IncidentTypeEnum(enum.Enum):
+    """Ajustado con mayúscula inicial para coincidir con la DB"""
+    MEDICAL = "Medical"
+    PERSONAL = "Personal"
+    OTHER = "Other"
+    LABORAL = "Laboral"
+
+# ==========================================
+# 2. AUDITORÍA
+# ==========================================
+
+
+class AuditLog(db.Model):
+    __tablename__ = "audit_logs"
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_role: Mapped[str] = mapped_column(String(50), nullable=False)
+    action: Mapped[str] = mapped_column(String(255), nullable=False)
+    target_table: Mapped[str] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)
+
+# ==========================================
+# 3. ENTIDADES DE AUTENTICACIÓN
+# ==========================================
+
+
+class UserAdmin(db.Model):
+    __tablename__ = "user_admin"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "email": self.email,
-            # do not serialize the password, its a security breach
-        }
+        return {"id": self.id, "username": self.username, "role": "admin"}
 
 
 class Company(db.Model):
     __tablename__ = "companies"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre_empresa: Mapped[str] = mapped_column(String(150), nullable=False)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=True)
-    password: Mapped[str] = mapped_column(String(50), nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(120), unique=True, index=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(255), nullable=False)
     region: Mapped[str] = mapped_column(String(100), nullable=False)
     logo_url: Mapped[str] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
 
-    # RELACIONES #
     employees = relationship(
-        "Employee", back_populates="company", cascade="all, delete-orphan"
-    )
-
-    def __repr__(self):
-        return f"{self.nombre_empresa}"
+        "Employee", back_populates="company", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
-            "id": self.id,
-            "nombre_empresa": self.nombre_empresa,
-            "email": self.email,
-            "region": self.region,
-            "logo_url": self.logo_url,
-            "is_active": self.is_active,
-            "created_at": self.created_at.strftime("%d/%m/%Y")
+            "id": self.id, "nombre_empresa": self.nombre_empresa, "email": self.email,
+            "region": self.region, "logo_url": self.logo_url, "role": "company"
         }
 
 
 class Employee(db.Model):
     __tablename__ = "employees"
-
     id: Mapped[int] = mapped_column(primary_key=True)
-    company_id: Mapped[int] = mapped_column(
-        ForeignKey("companies.id"), nullable=False)
-
+    company_id: Mapped[int] = mapped_column(ForeignKey(
+        "companies.id", ondelete="CASCADE"), index=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=True)
+        String(120), unique=True, index=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
-    profile_image: Mapped[str] = mapped_column(String(255), nullable=True)
-
-    role: Mapped[str] = mapped_column(String(50), default="employee")
+    phone: Mapped[str] = mapped_column(String(20), nullable=True)
     position: Mapped[str] = mapped_column(String(100), nullable=True)
-
+    profile_image: Mapped[str] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # RELACIONES #
-    work_records = relationship(
-        "WorkRecord", back_populates="employee", cascade="all, delete")
-    nominas = relationship(
-        "Nomina", back_populates="employee", cascade="all, delete")
-    manager = relationship(
-        "Manager", back_populates="employee", uselist=False, cascade="all, delete")
-    schedules = relationship(
-        "Schedule", back_populates="employee", cascade="all, delete")
-
-    incidents = relationship(
-        "Incident", back_populates="employee", cascade="all, delete")
-    vacaciones = relationship(
-        "Vacaciones", back_populates="employee", cascade="all, delete")
     company = relationship("Company", back_populates="employees")
-
-    def __repr__(self):
-        return f"{self.first_name} {self.last_name}"
+    work_records = relationship(
+        "WorkRecord", back_populates="employee", cascade="all, delete-orphan")
+    nominas = relationship(
+        "Nomina", back_populates="employee", cascade="all, delete-orphan")
+    schedules = relationship(
+        "Schedule", back_populates="employee", cascade="all, delete-orphan")
+    incidents = relationship(
+        "Incident", back_populates="employee", cascade="all, delete-orphan")
+    vacaciones = relationship(
+        "Vacaciones", back_populates="employee", cascade="all, delete-orphan")
+    survey_responses = relationship(
+        "SurveyResponse", back_populates="employee", cascade="all, delete-orphan")
+    wellness_checks = relationship(
+        "WellnessCheck", back_populates="employee", cascade="all, delete-orphan")
 
     def serialize(self):
-        actual_role = "manager" if self.manager and self.manager.is_active else self.role
         return {
             "id": self.id,
             "company_id": self.company_id,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "email": self.email,
-            "phone": self.phone,
+            "role": "employee",
             "position": self.position,
-            "role": actual_role,
             "is_active": self.is_active,
-            "profile_image": self.profile_image,
-            "nombre_empresa": self.company.nombre_empresa if self.company else "Sin empresa",
-            "work_records": [wr.serialize() for wr in self.work_records],
-            "nominas": [n.serialize() for n in self.nominas],
-            "schedules": [s.serialize() for s in self.schedules],
-            "incidents": [i.serialize() for i in self.incidents],
-            "vacaciones": [v.serialize() for v in self.vacaciones]
+            "phone": self.phone,
+            "profile_image": self.profile_image
         }
 
-
-class UserAdmin(db.Model):
-    __tablename__ = "user_admin"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(String(20), unique=True)
-    password: Mapped[str] = mapped_column(String(12), nullable=False)
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return f"{self.username}"
-
-    def serialize(self):
-        return {
-            "id": self.id,
-            "username": self.username,
-            "created_at": self.created_at.strftime("%d/%m/%Y")
-        }
+# ==========================================
+# 4. GESTIÓN OPERATIVA
+# ==========================================
 
 
 class WorkRecord(db.Model):
     __tablename__ = "work_records"
-
     id: Mapped[int] = mapped_column(primary_key=True)
-
-    employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), nullable=False)
-
+    employee_id: Mapped[int] = mapped_column(ForeignKey(
+        "employees.id", ondelete="CASCADE"), index=True)
     check_in: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    check_out: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    check_out: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
+    total_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    status: Mapped[StatusEnum] = mapped_column(
+        Enum(StatusEnum, name="statusenum"), default=StatusEnum.PENDING)
+    location: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
 
-    total_hours: Mapped[str] = mapped_column(String(50), nullable=True)
-
-    status: Mapped[str] = mapped_column(String(50), default="pending")
-    location: Mapped[str] = mapped_column(String(120), nullable=True)
-
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-
-    # relación #
     employee = relationship("Employee", back_populates="work_records")
 
     def serialize(self):
+        employee_name = f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Usuario Desconocido"
+
         return {
             "id": self.id,
             "employee_id": self.employee_id,
-            "employee_name": f"{self.employee.first_name} {self.employee.last_name}",
-            "check_in": self.check_in,
-            "check_out": self.check_out,
+            "employee_name": employee_name,
+            "check_in": self.check_in.isoformat() + "Z" if self.check_in else None,
+            "check_out": self.check_out.isoformat() + "Z" if self.check_out else None,
             "total_hours": self.total_hours,
-            "status": self.status
+            "status": self.status.value if hasattr(self.status, 'value') else self.status,
+            "location": self.location
         }
-
-
-class Nomina(db.Model):
-    __tablename__ = "nominas"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), nullable=False)
-    month: Mapped[str] = mapped_column(String(20), nullable=False)
-    document_url: Mapped[str] = mapped_column(String(255), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-
-    # relación #
-    employee = relationship("Employee", back_populates="nominas")
-
-    def serialize(self):
-        return {
-            "id": self.id,
-            "month": self.month,
-            "document_url": self.document_url,
-            "employee_id": self.employee_id,
-            "employee_name": f"{self.employee.first_name} {self.employee.last_name}"
-        }
-
-
-class Manager(db.Model):
-    __tablename__ = "managers"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    email: Mapped[str] = mapped_column(
-        String(120), unique=True, nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=True)
-    password: Mapped[str] = mapped_column(String(255), nullable=False)
-
-    position: Mapped[str] = mapped_column(String(100), nullable=True)
-
-    is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(), default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relación con Employee
-    employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), nullable=True)
-    employee = relationship("Employee", back_populates="manager")
-
-    def __repr__(self):
-        return f"{self.first_name} {self.last_name}"
-
-    def serialize(self):
-        return {
-            "id": self.id,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
-            "email": self.email,
-            "phone": self.phone,
-            "position": self.position,
-            "is_active": self.is_active,
-            "employee_id": self.employee_id
-        }
-
-
-class Schedule(db.Model):
-    __tablename__ = "schedules"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), nullable=False
-    )
-    day: Mapped[str] = mapped_column(String(20), nullable=False)
-    start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-
-    def serialize(self):
-        return {
-            "id": self.id,
-            "employee_id": self.employee_id,
-            "day": self.day,
-            "start_time": self.start_time.strftime("%H:%M"),
-            "end_time": self.end_time.strftime("%H:%M")
-        }
-
-    # Relación
-    employee = relationship("Employee", back_populates="schedules")
-
-    def __repr__(self):
-        return f"Schedule(employee_id={self.employee_id}, day={self.day})"
 
 
 class Incident(db.Model):
     __tablename__ = "incidents"
-
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), nullable=False)
+    employee_id: Mapped[int] = mapped_column(ForeignKey(
+        "employees.id", ondelete="CASCADE"), index=True)
 
     type: Mapped[str] = mapped_column(String(50), nullable=False)
-    status: Mapped[str] = mapped_column(String(50), default="PENDING")
-    category: Mapped[str] = mapped_column(String(50), nullable=True)
-    description: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default="Sin descripción detallada")
-    admin_comment: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[StatusEnum] = mapped_column(
+        Enum(StatusEnum, name="statusenum"), default=StatusEnum.PENDING)
+    admin_comment: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
 
-    # Relación
     employee = relationship("Employee", back_populates="incidents")
 
     def serialize(self):
+        employee_name = f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido"
+
         return {
             "id": self.id,
             "employee_id": self.employee_id,
+            "employee_name": employee_name,  # ¡Clave para el Admin!
             "type": self.type,
-            "status": self.status,
-            "category": self.category,
             "description": self.description,
-            "admin_comment": self.admin_comment,
-            "employee_name": f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido",
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "status": self.status.value if hasattr(self.status, 'value') else self.status,
+            "created_at": self.created_at.strftime("%Y-%m-%d") if hasattr(self, 'created_at') and self.created_at else None
         }
 
 
 class Vacaciones(db.Model):
     __tablename__ = "vacaciones"
-
     id: Mapped[int] = mapped_column(primary_key=True)
-    employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), nullable=False)
-    vacations: Mapped[int] = mapped_column(nullable=True)
-    taken_vacations: Mapped[int] = mapped_column(nullable=True)
-    available_vacations: Mapped[int] = mapped_column(nullable=True)
-    start_date: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
-    end_date: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
-    days_requested: Mapped[int] = mapped_column(nullable=True)
-    status: Mapped[str] = mapped_column(String(50), default="pending")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(), default=datetime.utcnow)
+    employee_id: Mapped[int] = mapped_column(ForeignKey(
+        "employees.id", ondelete="CASCADE"), index=True)
+    start_date: Mapped[datetime] = mapped_column(DateTime(), nullable=False)
+    end_date: Mapped[datetime] = mapped_column(DateTime(), nullable=False)
+    days_requested: Mapped[int] = mapped_column(nullable=False)
 
-    # relación #
+    # Unificado: Mismo Enum que el resto del sistema
+    status: Mapped[StatusEnum] = mapped_column(
+        Enum(StatusEnum, name="statusenum"), default=StatusEnum.PENDING)
+
     employee = relationship("Employee", back_populates="vacaciones")
+
+    def serialize(self):
+        employee_name = f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido"
+
+        return {
+            "id": self.id,
+            "employee_id": self.employee_id,
+            "employee_name": employee_name,  # ¡Clave para el Admin!
+            "start": self.start_date.strftime("%Y-%m-%d"),
+            "end": self.end_date.strftime("%Y-%m-%d"),
+            "status": self.status.value if hasattr(self.status, 'value') else self.status
+        }
+
+# ==========================================
+# 5. NOMINAS, HORARIOS Y ENCUESTAS (Resto del código mantenido)
+# ==========================================
+
+
+class Nomina(db.Model):
+    __tablename__ = "nominas"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey(
+        "employees.id", ondelete="CASCADE"), index=True)
+    month: Mapped[str] = mapped_column(String(20), nullable=False)
+    document_url: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    employee = relationship("Employee", back_populates="nominas")
+
+    def serialize(self):
+        return {"id": self.id, "month": self.month, "url": self.document_url}
+
+
+class Schedule(db.Model):
+    __tablename__ = "schedules"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey(
+        "employees.id", ondelete="CASCADE"), index=True)
+    day: Mapped[str] = mapped_column(String(20), nullable=False)
+    start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    employee = relationship("Employee", back_populates="schedules")
 
     def serialize(self):
         return {
             "id": self.id,
-            "employee_id": self.employee_id,
-            "employee_name": f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido",
-            "vacations": self.vacations,
-            "taken_vacations": self.taken_vacations,
-            "available_vacations": self.available_vacations,
-            "start_date": self.start_date.strftime("%d-%m-%Y") if self.start_date else None,
-            "end_date": self.end_date.strftime("%d-%m-%Y") if self.end_date else None,
-            "days_requested": self.days_requested,
-            "status": self.status,
-            "created_at": self.created_at.strftime("%d-%m-%Y")
+            "day": self.day,
+            "start_time": self.start_time.strftime("%H:%M"),
+            "end_time": self.end_time.strftime("%H:%M"),
+            "employee_id": self.employee_id
         }
 
 
 class Survey(db.Model):
     __tablename__ = "surveys"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True)
+
+    # NUEVO: ¿Esta encuesta exige un análisis facial con selfie?
+    requires_biometrics: Mapped[bool] = mapped_column(Boolean(), default=False)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
 
-    # Relaciones
     questions = relationship(
         "Question", back_populates="survey", cascade="all, delete-orphan")
     responses = relationship(
         "SurveyResponse", back_populates="survey", cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f"({self.title})"
 
     def serialize(self):
         return {
@@ -357,30 +291,26 @@ class Survey(db.Model):
             "title": self.title,
             "description": self.description,
             "is_active": self.is_active,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "requires_biometrics": self.requires_biometrics,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
             "questions": [q.serialize() for q in self.questions]
         }
 
 
 class Question(db.Model):
     __tablename__ = "questions"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     survey_id: Mapped[int] = mapped_column(
-        ForeignKey("surveys.id"), nullable=False)
-
+        ForeignKey("surveys.id", ondelete="CASCADE"))
     text: Mapped[str] = mapped_column(String(255), nullable=False)
-    type: Mapped[str] = mapped_column(String(50), default="TEXT")
+    type: Mapped[str] = mapped_column(
+        String(50), default="TEXT")  # TEXT, RATING, BOOLEAN
 
     survey = relationship("Survey", back_populates="questions")
-
-    def __repr__(self):
-        return f"{self.text}"
 
     def serialize(self):
         return {
             "id": self.id,
-            "survey_id": self.survey_id,
             "text": self.text,
             "type": self.type
         }
@@ -388,52 +318,147 @@ class Question(db.Model):
 
 class SurveyResponse(db.Model):
     __tablename__ = "survey_responses"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     survey_id: Mapped[int] = mapped_column(
-        ForeignKey("surveys.id"), nullable=False)
+        ForeignKey("surveys.id", ondelete="CASCADE"))
     employee_id: Mapped[int] = mapped_column(
-        ForeignKey("employees.id"), nullable=False)
+        ForeignKey("employees.id", ondelete="CASCADE"))
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(), default=datetime.utcnow)
 
+    # NUEVO: Integración del Análisis Biométrico (Opcional, por si la encuesta lo requiere)
+    photo_url: Mapped[str] = mapped_column(Text, nullable=True)
+    ai_joy: Mapped[float] = mapped_column(db.Float, nullable=True)
+    ai_stress: Mapped[float] = mapped_column(db.Float, nullable=True)
+    ai_sadness: Mapped[float] = mapped_column(db.Float, nullable=True)
+    ai_calm: Mapped[float] = mapped_column(db.Float, nullable=True)
+    final_wellness_score: Mapped[float] = mapped_column(
+        db.Float, nullable=True)
+    admin_recommendation: Mapped[str] = mapped_column(
+        String(500), nullable=True)
+
     survey = relationship("Survey", back_populates="responses")
-    employee = relationship("Employee")
+    employee = relationship("Employee", back_populates="survey_responses")
     answers = relationship(
         "SurveyAnswer", back_populates="response", cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f"{self.employee.first_name} {self.employee.last_name}"
 
     def serialize(self):
         return {
             "id": self.id,
             "survey_id": self.survey_id,
             "employee_id": self.employee_id,
-            "submitted_at": self.submitted_at.isoformat() if self.submitted_at else None
+            "submitted_at": self.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if self.submitted_at else None,
+            "biometrics": {
+                "photo_url": self.photo_url,
+                "score": self.final_wellness_score,
+                "recommendation": self.admin_recommendation
+            },
+            "answers": [a.serialize() for a in self.answers]
         }
 
 
 class SurveyAnswer(db.Model):
     __tablename__ = "survey_answers"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     response_id: Mapped[int] = mapped_column(
-        ForeignKey("survey_responses.id"), nullable=False)
+        ForeignKey("survey_responses.id", ondelete="CASCADE"))
     question_id: Mapped[int] = mapped_column(
-        ForeignKey("questions.id"), nullable=False)
-
+        ForeignKey("questions.id", ondelete="CASCADE"))
     answer_value: Mapped[str] = mapped_column(Text, nullable=False)
 
     response = relationship("SurveyResponse", back_populates="answers")
-    question = relationship("Question")
-
-    def __repr__(self):
-        return f"SurveyAnswer(response_id={self.response_id}, question_id={self.question_id})"
 
     def serialize(self):
         return {
             "id": self.id,
             "question_id": self.question_id,
             "answer_value": self.answer_value
+        }
+
+
+class WellnessCheck(db.Model):
+    __tablename__ = 'wellness_checks'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # CORREGIDO: Apunta a "employees.id" (plural) para coincidir con __tablename__
+    employee_id: Mapped[int] = mapped_column(ForeignKey(
+        'employees.id', ondelete="CASCADE"), index=True)
+
+    # NUEVO: Columnas que faltaban y se usan en serialize
+    self_reported_mood: Mapped[Optional[str]
+                               ] = mapped_column(String(50), nullable=True)
+    survey_comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Biometría IA
+    photo_url: Mapped[str] = mapped_column(Text, nullable=True)
+    ai_joy: Mapped[float] = mapped_column(Float, nullable=True)
+    ai_stress: Mapped[float] = mapped_column(Float, nullable=True)
+    ai_sadness: Mapped[float] = mapped_column(Float, nullable=True)
+    ai_calm: Mapped[float] = mapped_column(Float, nullable=True)
+    final_wellness_score: Mapped[float] = mapped_column(Float, nullable=True)
+    admin_recommendation: Mapped[str] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)
+
+    # Relación inversa
+    employee = relationship("Employee", back_populates="wellness_checks")
+
+    def serialize(self):
+        employee_name = f"{self.employee.first_name} {self.employee.last_name}" if self.employee else "Desconocido"
+        date_str = self.created_at.strftime(
+            "%Y-%m-%d %H:%M:%S") if self.created_at else None
+
+        return {
+            "id": self.id,
+            "employee_id": self.employee_id,
+            "employee_name": employee_name,
+            "photo_url": self.photo_url or "",
+            "ai_joy": float(self.ai_joy) if self.ai_joy is not None else 0,
+            "ai_stress": float(self.ai_stress) if self.ai_stress is not None else 0,
+            "ai_sadness": float(self.ai_sadness) if self.ai_sadness is not None else 0,
+            "ai_calm": float(self.ai_calm) if self.ai_calm is not None else 0,
+            "final_wellness_score": float(self.final_wellness_score) if self.final_wellness_score is not None else 0,
+            "admin_recommendation": self.admin_recommendation or "Sin recomendación disponible",
+            "created_at": date_str,
+            "survey": {
+                "mood": self.self_reported_mood,
+                "comment": self.survey_comment
+            },
+            "ai_analysis": {
+                "joy": self.ai_joy,
+                "stress": self.ai_stress,
+                "sadness": self.ai_sadness,
+                "calm": self.ai_calm
+            },
+            "photo_url": self.photo_url,
+            "results": {
+                "score": self.final_wellness_score,
+                "recommendation": self.admin_recommendation
+            }
+        }
+    
+class ChatMessage(db.Model):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"), index=True)
+    employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), index=True)
+    sender_role: Mapped[str] = mapped_column(String(20), nullable=False)  # "COMPANY" o "EMPLOYEE"
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean(), default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    company = relationship("Company", foreign_keys=[company_id])
+    employee = relationship("Employee", foreign_keys=[employee_id])
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "company_id": self.company_id,
+            "employee_id": self.employee_id,
+            "sender_role": self.sender_role,
+            "content": self.content,
+            "is_read": self.is_read,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")
         }
