@@ -15,6 +15,10 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from api.utils import analyze_emotions_with_gemini
 
+from api.socket import socketio
+
+
+
 api = Blueprint('api', __name__)
 CORS(api)
 
@@ -1085,10 +1089,6 @@ def send_chat_message():
 @api.route('/chat/unread-count', methods=['GET'])
 @role_required("COMPANY", "EMPLOYEE")
 def get_unread_count():
-    """
-    EMPLOYEE: cuántos mensajes sin leer de su empresa.
-    COMPANY: cuántos mensajes sin leer por empleado (devuelve lista con employee_id y count).
-    """
     from api.models import ChatMessage
     from sqlalchemy import func
     claims = get_jwt()
@@ -1114,10 +1114,28 @@ def get_unread_count():
             sender_role="EMPLOYEE",
             is_read=False
         ).group_by(ChatMessage.employee_id).all()
+        return jsonify([{"employee_id": r.employee_id, "unread": r.unread} for r in results]), 200
 
 
 @api.route('/hello')
 def hello():
     return jsonify({"message": "Hello from Flask!"}), 200
 
-    return jsonify([{"employee_id": r.employee_id, "unread": r.unread} for r in results]), 200
+
+# ==========================================
+# SOCKET.IO EVENTS
+# ==========================================
+from api.socket import socketio
+
+
+
+@socketio.on("join_chat")
+def handle_join(data):
+    room = f"chat_{data['company_id']}_{data['employee_id']}"
+    join_room(room)
+
+
+@socketio.on("send_message")
+def handle_send_message(data):
+    room = f"chat_{data['company_id']}_{data['employee_id']}"
+    emit("new_message", data, to=room)
