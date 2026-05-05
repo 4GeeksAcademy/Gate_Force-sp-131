@@ -1,199 +1,175 @@
 import React, { useEffect, useState } from "react";
-import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Link, useNavigate } from "react-router-dom";
-import LogoutButton from "../components/LogoutButton";
-import ImageUpload from "../components/ImageUpload";
+import useGlobalReducer from "../hooks/useGlobalReducer";
+
+const StatCard = ({ icon, iconBg, label, value, sub }) => (
+    <div className="col-6 col-xl-3">
+        <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body d-flex align-items-center gap-3 p-3">
+                <div
+                    className={`rounded-3 d-flex align-items-center justify-content-center flex-shrink-0 ${iconBg}`}
+                    style={{ width: 48, height: 48 }}
+                >
+                    <i className={`bi ${icon} fs-5 text-white`}></i>
+                </div>
+                <div>
+                    <div className="fw-bold fs-5 lh-1 mb-1">{value ?? "—"}</div>
+                    <div className="text-muted small">{label}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
 
 const CompanyDashboard = () => {
     const { store, actions } = useGlobalReducer();
-    const [stats, setStats] = useState({ employees: 0, pendingVacations: 0, activeClocks: 0 });
     const navigate = useNavigate();
 
-    const handleLogoUpload = async (url) => {
-        const { ok } = await actions.apiFetch("/company/profile", "PUT", { logo_url: url });
-        if (ok) actions.updateUser({ logo_url: url });
-    };
+    const [stats, setStats] = useState({
+        employees: 0,
+        pendingVacations: 0,
+        activeClocks: 0,
+        unreadMessages: 0,
+    });
 
     useEffect(() => {
         const loadStats = async () => {
-            // Hacemos una única petición al "radar"
-            const { ok, data } = await actions.apiFetch("/company/stats");
-
-            if (ok) {
-                setStats({
-                    employees: data.totalEmployees || 0,
-                    pendingVacations: data.totalPending || 0,
-                    activeClocks: data.activeClocks || 0 // ¡Aquí llega la magia!
-                });
+            const [statsRes, chatRes] = await Promise.all([
+                actions.apiFetch("/company/stats"),
+                actions.apiFetch("/chat/unread-count"),
+            ]);
+            if (statsRes.ok) {
+                setStats(prev => ({
+                    ...prev,
+                    employees:        statsRes.data.totalEmployees || 0,
+                    pendingVacations: statsRes.data.totalPending   || 0,
+                    activeClocks:     statsRes.data.activeClocks   || 0,
+                }));
+            }
+            if (chatRes.ok) {
+                const total = Array.isArray(chatRes.data)
+                    ? chatRes.data.reduce((sum, d) => sum + d.unread, 0)
+                    : 0;
+                setStats(prev => ({ ...prev, unreadMessages: total }));
             }
         };
 
-        // 1. Cargamos al entrar a la página
         loadStats();
-
-        // 2. MAGIA: Configuramos un intervalo para que recargue las estadísticas cada 60 segundos
-        const radarInterval = setInterval(() => {
-            loadStats();
-        }, 60000); // 60000 ms = 1 minuto
-
-        // Limpiamos el intervalo si el usuario sale del dashboard
-        return () => clearInterval(radarInterval);
+        const interval = setInterval(loadStats, 60000);
+        return () => clearInterval(interval);
     }, []);
 
-    return (
-        <div className="container py-4">
-            <LogoutButton />
+    const companyName = store.user?.nombre_empresa || "Company";
 
-            <header className="mb-5 d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <div className="d-flex align-items-center gap-3">
-                    <ImageUpload
-                        currentImage={store.user?.logo_url}
-                        onUpload={handleLogoUpload}
-                        size={72}
-                        label="Update company logo"
-                    />
-                    <div>
-                        <h1 className="h3 fw-bold mb-0">{store.user?.nombre_empresa || "Company Command Center"}</h1>
-                        <p className="text-muted mb-0 small">Manage your workforce and operational tasks.</p>
-                    </div>
+    return (
+        <>
+            <div className="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h5 className="fw-bold mb-0">Welcome, {companyName}! 👋</h5>
+                    <p className="text-muted small mb-0">Manage your workforce and operational tasks.</p>
                 </div>
-                <Link to="/create-employee" className="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">
+                <Link to="/create-employee" className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
                     <i className="bi bi-person-plus me-2"></i>Add Employee
                 </Link>
-            </header>
+            </div>
 
-            {/* SECCIÓN 1: ESTADÍSTICAS GLOBALES */}
-            <h5 className="fw-bold mb-3 text-secondary text-uppercase small">Overview</h5>
-            <div className="row g-4 mb-5">
-                <div className="col-md-6">
-                    <div className="card border-0 shadow-sm p-4 bg-primary text-white h-100 rounded-4">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 className="small fw-bold text-uppercase opacity-75 mb-1">Total Employees</h6>
-                                <h2 className="display-4 fw-bold mb-0">{stats.employees}</h2>
+            <div className="row g-3 mb-4">
+                <StatCard icon="bi-people-fill"            iconBg="bg-primary" label="Total Employees"   value={stats.employees} />
+                <StatCard icon="bi-stopwatch-fill"         iconBg="bg-success" label="Currently Working" value={stats.activeClocks} />
+                <StatCard icon="bi-hourglass-split"        iconBg="bg-warning" label="Pending Requests"  value={stats.pendingVacations} />
+                <StatCard icon="bi-chat-dots-fill"         iconBg="bg-info"    label="Unread Messages"   value={stats.unreadMessages} />
+            </div>
+
+            <div className="row g-4 mb-4">
+                <div className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm rounded-4 h-100 bg-dark text-white">
+                        <div className="card-body p-4 d-flex flex-column justify-content-between">
+                            <div className="d-flex justify-content-between align-items-start mb-4">
+                                <div>
+                                    <div className="small text-white-50 text-uppercase fw-bold mb-1">Total Employees</div>
+                                    <div className="display-5 fw-bold">{stats.employees}</div>
+                                </div>
+                                <div className="bg-white bg-opacity-10 rounded-circle p-3">
+                                    <i className="bi bi-people-fill fs-3"></i>
+                                </div>
                             </div>
-                            <div className="bg-white bg-opacity-25 rounded-circle p-3">
-                                <i className="bi bi-people-fill fs-1"></i>
-                            </div>
+                            <button onClick={() => navigate("/manage-employees")} className="btn btn-light fw-bold text-dark rounded-pill">
+                                Manage Staff <i className="bi bi-arrow-right-short fs-5"></i>
+                            </button>
                         </div>
-                        <button
-                            onClick={() => navigate("/manage-employees")}
-                            className="btn btn-light mt-4 fw-bold text-primary rounded-pill shadow-sm"
-                        >
-                            Manage Staff <i className="bi bi-arrow-right-short ms-1 fs-5"></i>
-                        </button>
                     </div>
                 </div>
 
-                <div className="col-md-6">
-                    <div className="card border-0 shadow-sm p-4 bg-dark text-white h-100 rounded-4">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 className="small fw-bold text-uppercase opacity-75 mb-1">Currently Working</h6>
-                                <h2 className="display-4 fw-bold mb-0">{stats.activeClocks}</h2>
+                <div className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm rounded-4 h-100 bg-primary text-white">
+                        <div className="card-body p-4 d-flex flex-column justify-content-between">
+                            <div className="d-flex justify-content-between align-items-start mb-4">
+                                <div>
+                                    <div className="small text-white-50 text-uppercase fw-bold mb-1">Currently Working</div>
+                                    <div className="display-5 fw-bold">{stats.activeClocks}</div>
+                                </div>
+                                <div className="bg-white bg-opacity-10 rounded-circle p-3">
+                                    <i className="bi bi-stopwatch fs-3"></i>
+                                </div>
                             </div>
-                            <div className="bg-white bg-opacity-25 rounded-circle p-3">
-                                <i className="bi bi-stopwatch fs-1 pulse"></i>
-                            </div>
+                            <button onClick={() => navigate("/work-logs")} className="btn btn-light fw-bold text-primary rounded-pill">
+                                View Live Logs <i className="bi bi-arrow-right-short fs-5"></i>
+                            </button>
                         </div>
-                        <button
-                            onClick={() => navigate("/work-logs")}
-                            className="btn btn-outline-light mt-4 fw-bold rounded-pill"
-                        >
-                            View Live Logs <i className="bi bi-arrow-right-short ms-1 fs-5"></i>
-                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* SECCIÓN 2: HERRAMIENTAS DE GESTIÓN (FORMAS UNIFICADAS) */}
-            <h5 className="fw-bold mb-3 text-secondary text-uppercase small">Management Tools</h5>
-            <div className="row g-4 mb-5">
-                {/* Aprobaciones */}
-                <div className="col-md-4">
-                    <Link to="/manage-approvals" className="text-decoration-none">
-                        <div className="card h-100 border-0 shadow-sm text-center rounded-4 card-hover-effect">
-                            <div className="card-body p-5 d-flex flex-column justify-content-center align-items-center">
-                                <div className="bg-primary-subtle text-primary rounded-circle p-3 mb-3">
-                                    <i className="bi bi-ui-checks fs-2"></i>
+            <h6 className="fw-bold mb-3 text-muted text-uppercase small">Management Tools</h6>
+            <div className="row g-3 mb-4">
+                {[
+                    { to: "/manage-approvals",    icon: "bi-ui-checks",      label: "Requests & Approvals", sub: "Review vacations and incidents",   color: "primary"  },
+                    { to: "/payroll-hub",         icon: "bi-cash-stack",     label: "Upload Payrolls",      sub: "Distribute monthly documents",     color: "success"  },
+                    { to: "/survey-builder",      icon: "bi-clipboard-data", label: "Climate Surveys",      sub: "Create and manage feedback",       color: "warning"  },
+                    { to: "/AIRecommendationsHub",icon: "bi-stars",          label: "AI Insights",          sub: "Personalized team recommendations",color: "info"     },
+                ].map(({ to, icon, label, sub, color }) => (
+                    <div key={to} className="col-6 col-lg-3">
+                        <Link to={to} className="text-decoration-none">
+                            <div className="card border-0 shadow-sm rounded-4 h-100 text-center p-4">
+                                <div className={`bg-${color} bg-opacity-10 text-${color} rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3`}
+                                    style={{ width: 52, height: 52 }}>
+                                    <i className={`bi ${icon} fs-4`}></i>
                                 </div>
-                                <h5 className="fw-bold text-dark mb-2">Requests & Approvals</h5>
-                                <p className="text-muted small mb-0">Review vacations and incidents</p>
+                                <div className="fw-bold small text-dark mb-1">{label}</div>
+                                <div className="text-muted" style={{ fontSize: "0.72rem" }}>{sub}</div>
                             </div>
-                        </div>
-                    </Link>
-                </div>
-
-                {/* Nóminas */}
-                <div className="col-md-4">
-                    <Link to="/payroll-hub" className="text-decoration-none">
-                        <div className="card h-100 border-0 shadow-sm text-center rounded-4 card-hover-effect">
-                            <div className="card-body p-5 d-flex flex-column justify-content-center align-items-center">
-                                <div className="bg-success-subtle text-success rounded-circle p-3 mb-3">
-                                    <i className="bi bi-cash-stack fs-2"></i>
-                                </div>
-                                <h5 className="fw-bold text-dark mb-2">Upload Payrolls</h5>
-                                <p className="text-muted small mb-0">Distribute monthly documents</p>
-                            </div>
-                        </div>
-                    </Link>
-                </div>
-
-                {/* Encuestas */}
-                <div className="col-md-4">
-                    <Link to="/survey-builder" className="text-decoration-none">
-                        <div className="card h-100 border-0 shadow-sm text-center rounded-4 card-hover-effect">
-                            <div className="card-body p-5 d-flex flex-column justify-content-center align-items-center">
-                                <div className="bg-warning-subtle text-warning rounded-circle p-3 mb-3">
-                                    <i className="bi bi-clipboard-data fs-2"></i>
-                                </div>
-                                <h5 className="fw-bold text-dark mb-2">Climate Surveys</h5>
-                                <p className="text-muted small mb-0">Create and manage feedback</p>
-                            </div>
-                        </div>
-                    </Link>
-                </div>
+                        </Link>
+                    </div>
+                ))}
             </div>
 
-            {/* SECCIÓN 3: PLANIFICACIÓN Y REGISTROS */}
-            <h5 className="fw-bold mb-3 text-secondary text-uppercase small">Planning & Logs</h5>
-            <div className="row g-4">
-                {/* Horarios */}
-                <div className="col-md-6">
-                    <Link to="/schedule-planner" className="text-decoration-none">
-                        <div className="card h-100 border-0 shadow-sm rounded-4 card-hover-effect">
-                            <div className="card-body p-4 d-flex align-items-center">
-                                <div className="bg-dark text-white rounded-circle p-3 me-4">
-                                    <i className="bi bi-calendar-week fs-3"></i>
+            <h6 className="fw-bold mb-3 text-muted text-uppercase small">Planning & Logs</h6>
+            <div className="row g-3">
+                {[
+                    { to: "/schedule-planner", icon: "bi-calendar-week", label: "Weekly Schedules", sub: "Plan and assign shifts to your team" },
+                    { to: "/work-logs",        icon: "bi-clock-history", label: "Work Records",     sub: "Full log of check-ins and check-outs" },
+                    { to: "/company-chat", icon: "bi-chat-dots",     label: "Chat",             sub: stats.unreadMessages > 0 ? `${stats.unreadMessages} unread message${stats.unreadMessages > 1 ? "s" : ""}` : "Chat with your employees" },
+                ].map(({ to, icon, label, sub }) => (
+                    <div key={to} className="col-12 col-md-4">
+                        <Link to={to} className="text-decoration-none">
+                            <div className="card border-0 shadow-sm rounded-4 h-100">
+                                <div className="card-body p-4 d-flex align-items-center gap-3">
+                                    <div className="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                        style={{ width: 46, height: 46 }}>
+                                        <i className={`bi ${icon} fs-5`}></i>
+                                    </div>
+                                    <div>
+                                        <div className="fw-bold small text-dark">{label}</div>
+                                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>{sub}</div>
+                                    </div>
+                                    <i className="bi bi-chevron-right ms-auto text-muted"></i>
                                 </div>
-                                <div>
-                                    <h5 className="fw-bold text-dark mb-1">Weekly Schedules</h5>
-                                    <p className="text-muted small mb-0">Plan and assign shifts to your team</p>
-                                </div>
-                                <i className="bi bi-chevron-right ms-auto text-muted fs-4"></i>
                             </div>
-                        </div>
-                    </Link>
-                </div>
-                <div className="col-md-6">
-                    <Link to="/AIRecommendationsHub" className="text-decoration-none">
-                        <div className="card h-100 border-0 shadow-sm rounded-4 card-hover-effect">
-                            <div className="card-body p-4 d-flex align-items-center">
-                                <div className="bg-dark text-white rounded-circle p-3 me-4">
-                                    <i className="bi bi-calendar-week fs-3"></i>
-                                </div>
-                                <div>
-                                    <h5 className="fw-bold text-dark mb-1">AI Recommendations</h5>
-                                    <p className="text-muted small mb-0">Get personalized insights for your team</p>
-                                </div>
-                                <i className="bi bi-chevron-right ms-auto text-muted fs-4"></i>
-                            </div>
-                        </div>
-                    </Link>
-                </div>
+                        </Link>
+                    </div>
+                ))}
             </div>
-
-        </div>
+        </>
     );
 };
 
