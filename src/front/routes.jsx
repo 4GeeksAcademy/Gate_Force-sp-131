@@ -5,6 +5,7 @@ import { Single } from "./pages/Single";
 import { Demo } from "./pages/Demo";
 import Login from "./pages/Login";
 import EmployeeLayout from "./pages/EmployeeLayout";
+import CompanyLayout from "./pages/CompanyLayout";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import CompanyDashboard from "./pages/CompanyDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -39,18 +40,12 @@ export const router = createBrowserRouter(
       {/*<Route path="/" element={<Home />} />*/}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<CompanySignup />} />
-      <Route path="/demo" element={<Demo />} />
+      <Route path="/demo"   element={<Demo />} />
       <Route path="/single/:theId" element={<Single />} />
       <Route path="/" element={<LandingPage />} />
 
-      {/* --- RUTAS DE EMPLEADO (con sidebar/header persistente) --- */}
-      <Route
-        element={
-          <PrivateRoute allowedRoles={["EMPLOYEE"]}>
-            <EmployeeLayout />
-          </PrivateRoute>
-        }
-      >
+      {/* --- RUTAS DE EMPLEADO --- */}
+      <Route element={<PrivateRoute allowedRoles={["EMPLOYEE"]}><EmployeeLayout /></PrivateRoute>}>
         <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
         <Route path="/my-work-records" element={<MyWorkRecords />} />
         <Route path="/my-payroll" element={<MyPayroll />} />
@@ -81,11 +76,8 @@ export const router = createBrowserRouter(
       <Route path="/AIRecommendationsHub" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><AIRecommendationsHub /></PrivateRoute>} />
       <Route path="/chat/:employeeId" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><Chat /></PrivateRoute>} />
 
-      {/* --- RUTAS PROTEGIDAS PARA ADMINISTRADORES --- */}
-      <Route
-        path="/admin-dashboard"
-        element={<PrivateRoute allowedRoles={["ADMIN"]}><AdminDashboard /></PrivateRoute>}
-      />
+      {/* --- RUTAS DE ADMINISTRADOR --- */}
+      <Route path="/admin-dashboard"  element={<PrivateRoute allowedRoles={["ADMIN"]}><AdminDashboard /></PrivateRoute>} />
       <Route path="/manage-companies" element={<PrivateRoute allowedRoles={["ADMIN"]}><CompanyManagement /></PrivateRoute>} />
       <Route path="/audit-logs" element={<PrivateRoute allowedRoles={["ADMIN"]}><AuditLog /></PrivateRoute>} />
 
