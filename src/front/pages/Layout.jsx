@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom/dist"
 import ScrollToTop from "../components/ScrollToTop"
-import { Navbar } from "../components/Navbar"
+import Navbar from "./LandingPage/Navbar";
 import { Footer } from "../components/Footer"
 
 const EMPLOYEE_PATHS = [
