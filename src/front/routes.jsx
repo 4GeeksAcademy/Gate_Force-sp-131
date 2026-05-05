@@ -29,17 +29,19 @@ import WorkRecordsLog from "./components/WorkRecordsLog";
 import EmployeeSurveys from "./components/EmployeeSurveys";
 import AIRecommendationsHub from "./components/AIRecommendationsHub.jsx";
 import Chat from "./pages/Chat";
+import LandingPage from "./pages/LandingPage/LandingPage.jsx";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>}>
 
       {/* --- RUTAS PÚBLICAS --- */}
-      <Route path="/" element={<Home />} />
+      {/*<Route path="/" element={<Home />} />*/}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<CompanySignup />} />
       <Route path="/demo" element={<Demo />} />
       <Route path="/single/:theId" element={<Single />} />
+      <Route path="/" element={<LandingPage />} />
 
       {/* --- RUTAS DE EMPLEADO (con sidebar/header persistente) --- */}
       <Route
@@ -50,34 +52,34 @@ export const router = createBrowserRouter(
         }
       >
         <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
-        <Route path="/my-work-records"    element={<MyWorkRecords />} />
-        <Route path="/my-payroll"         element={<MyPayroll />} />
-        <Route path="/my-schedules"       element={<MySchedules />} />
-        <Route path="/report-request"     element={<EmployeeRequestHub />} />
-        <Route path="/wellness-survey"    element={<WellnessSurvey />} />
-        <Route path="/survey"             element={<EmployeeSurveys />} />
-        <Route path="/chat"               element={<Chat />} />
+        <Route path="/my-work-records" element={<MyWorkRecords />} />
+        <Route path="/my-payroll" element={<MyPayroll />} />
+        <Route path="/my-schedules" element={<MySchedules />} />
+        <Route path="/report-request" element={<EmployeeRequestHub />} />
+        <Route path="/wellness-survey" element={<WellnessSurvey />} />
+        <Route path="/survey" element={<EmployeeSurveys />} />
+        <Route path="/chat" element={<Chat />} />
       </Route>
 
       {/* --- RUTAS PROTEGIDAS PARA EMPRESAS --- */}
       <Route path="/employee-details/:id" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><EmployeeDetails /></PrivateRoute>} />
-      <Route path="/edit-employee/:id"    element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><EditEmployee /></PrivateRoute>} />
+      <Route path="/edit-employee/:id" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><EditEmployee /></PrivateRoute>} />
       <Route
         path="/company-dashboard"
         element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><CompanyDashboard /></PrivateRoute>}
       />
-      <Route path="/manage-approvals"  element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><ApprovalCenter /></PrivateRoute>} />
-      <Route path="/survey-builder"    element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><SurveyBuilder /></PrivateRoute>} />
-      <Route path="/payroll-hub"       element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><PayrollHub /></PrivateRoute>} />
-      <Route path="/work-logs"         element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><WorkRecordsLog /></PrivateRoute>} />
-      <Route path="/create-employee"   element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><CreateEmployee /></PrivateRoute>} />
+      <Route path="/manage-approvals" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><ApprovalCenter /></PrivateRoute>} />
+      <Route path="/survey-builder" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><SurveyBuilder /></PrivateRoute>} />
+      <Route path="/payroll-hub" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><PayrollHub /></PrivateRoute>} />
+      <Route path="/work-logs" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><WorkRecordsLog /></PrivateRoute>} />
+      <Route path="/create-employee" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><CreateEmployee /></PrivateRoute>} />
       <Route
         path="/manage-employees"
         element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><ManageEmployees /></PrivateRoute>}
       />
-      <Route path="/schedule-planner"      element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><SchedulePlanner /></PrivateRoute>} />
-      <Route path="/AIRecommendationsHub"  element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><AIRecommendationsHub /></PrivateRoute>} />
-      <Route path="/chat/:employeeId"      element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><Chat /></PrivateRoute>} />
+      <Route path="/schedule-planner" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><SchedulePlanner /></PrivateRoute>} />
+      <Route path="/AIRecommendationsHub" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><AIRecommendationsHub /></PrivateRoute>} />
+      <Route path="/chat/:employeeId" element={<PrivateRoute allowedRoles={["COMPANY", "ADMIN"]}><Chat /></PrivateRoute>} />
 
       {/* --- RUTAS PROTEGIDAS PARA ADMINISTRADORES --- */}
       <Route
@@ -85,7 +87,7 @@ export const router = createBrowserRouter(
         element={<PrivateRoute allowedRoles={["ADMIN"]}><AdminDashboard /></PrivateRoute>}
       />
       <Route path="/manage-companies" element={<PrivateRoute allowedRoles={["ADMIN"]}><CompanyManagement /></PrivateRoute>} />
-      <Route path="/audit-logs"       element={<PrivateRoute allowedRoles={["ADMIN"]}><AuditLog /></PrivateRoute>} />
+      <Route path="/audit-logs" element={<PrivateRoute allowedRoles={["ADMIN"]}><AuditLog /></PrivateRoute>} />
 
     </Route>
   )
