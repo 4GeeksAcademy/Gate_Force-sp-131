@@ -14,7 +14,7 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from api.utils import analyze_emotions_with_gemini
-
+from sqlalchemy import cast, String
 from api.socket import socketio
 
 
@@ -446,6 +446,12 @@ def upload_payroll():
     db.session.commit()
     return jsonify(new_slip.serialize()), 201
 
+@api.route('/payroll/mine', methods=['GET'])
+@role_required("EMPLOYEE")
+def get_my_payrolls():
+    employee_id = int(get_jwt_identity())
+    payrolls = Nomina.query.filter_by(employee_id=employee_id).order_by(Nomina.id.desc()).all()
+    return jsonify([p.serialize() for p in payrolls]), 200
 
 @api.route('/employees/<int:employee_id>/schedules', methods=['POST'])
 @role_required("COMPANY", "ADMIN")
@@ -889,25 +895,22 @@ def submit_response(survey_id):
 @role_required("COMPANY", "ADMIN")
 def get_pending_approvals():
     try:
-        identity = get_jwt_identity()
+        identity = int(get_jwt_identity())
 
-        # 1. Vacaciones: Usamos ilike("pending") para que lea "PENDING", "pending" o "Pending". ¡A prueba de balas!
         vacations = Vacaciones.query.join(Employee).filter(
             Employee.company_id == identity,
-            Vacaciones.status.ilike("pending")
+            cast(Vacaciones.status, String) == "PENDING"
         ).all()
 
-        # 2. Incidencias: Misma protección
         incidents = Incident.query.join(Employee).filter(
             Employee.company_id == identity,
-            Incident.status.ilike("pending")
+            cast(Incident.status, String) == "PENDING"
         ).all()
 
         return jsonify({
             "vacations": [v.serialize() for v in vacations],
             "incidents": [i.serialize() for i in incidents]
         }), 200
-
     except Exception as e:
         print(f"Error obteniendo aprobaciones pendientes: {str(e)}")
         return jsonify({"msg": "Error interno del servidor"}), 500
@@ -1139,3 +1142,17 @@ def handle_join(data):
 def handle_send_message(data):
     room = f"chat_{data['company_id']}_{data['employee_id']}"
     emit("new_message", data, to=room)
+
+@api.route('/payroll/employee/<int:employee_id>', methods=['GET'])
+@role_required("COMPANY", "ADMIN")
+def get_employee_payrolls(employee_id):
+    payrolls = Nomina.query.filter_by(employee_id=employee_id).order_by(Nomina.id.desc()).all()
+    return jsonify([p.serialize() for p in payrolls]), 200
+
+@api.route('/payroll/<int:payroll_id>', methods=['DELETE'])
+@role_required("COMPANY", "ADMIN")
+def delete_payroll(payroll_id):
+    nomina = Nomina.query.get_or_404(payroll_id)
+    db.session.delete(nomina)
+    db.session.commit()
+    return jsonify({"msg": "Payroll deleted"}), 200

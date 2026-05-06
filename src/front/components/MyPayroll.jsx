@@ -8,7 +8,7 @@ const MyPayroll = () => {
 
     useEffect(() => {
         const loadPayrolls = async () => {
-            const { ok, data } = await actions.apiFetch("/payroll");
+            const { ok, data } = await actions.apiFetch("/payroll/mine");
             if (ok) setPayrolls(data);
             setLoading(false);
         };

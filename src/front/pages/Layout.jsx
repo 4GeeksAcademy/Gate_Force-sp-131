@@ -11,6 +11,7 @@ const EMPLOYEE_PATHS = [
     "/report-request",
     "/wellness-survey",
     "/survey",
+    "/chat",
 ];
 
 const COMPANY_PATHS = [
@@ -25,16 +26,14 @@ const COMPANY_PATHS = [
     "/create-employee",
     "/employee-details",
     "/edit-employee",
+    "/company-chat",
 ];
-
-const SHARED_PATHS = ["/chat"];
 
 export const Layout = () => {
     const { pathname } = useLocation();
     const hideChrome =
         EMPLOYEE_PATHS.some(p => pathname.startsWith(p)) ||
-        COMPANY_PATHS.some(p => pathname.startsWith(p))  ||
-        SHARED_PATHS.some(p => pathname.startsWith(p));
+        COMPANY_PATHS.some(p => pathname.startsWith(p));
 
     return (
         <ScrollToTop>

@@ -36,11 +36,13 @@ const PayrollHub = () => {
         fd.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
         try {
             const res = await fetch(
-                `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+                `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/raw/upload`,
                 { method: "POST", body: fd }
+                
             );
             const data = await res.json();
             if (data.secure_url) {
+                console.log("CLOUDINARY URL:", data.secure_url);
                 setFormData(prev => ({ ...prev, url: data.secure_url }));
             } else {
                 alert("Upload failed. Check Cloudinary settings.");
