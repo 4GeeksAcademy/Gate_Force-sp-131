@@ -54,17 +54,7 @@ const ImageUpload = ({ currentImage, onUpload, size = 100, label = "Change photo
                 >
                     <div className="spinner-border spinner-border-sm text-primary" style={{ width: 16, height: 16 }} />
                 </div>
-            ) : (
-                <button
-                    type="button"
-                    className="position-absolute bottom-0 end-0 btn btn-primary rounded-circle p-0 d-flex align-items-center justify-content-center shadow"
-                    style={{ width: 28, height: 28 }}
-                    onClick={() => inputRef.current?.click()}
-                    title={label}
-                >
-                    <i className="bi bi-camera-fill" style={{ fontSize: 12 }}></i>
-                </button>
-            )}
+            ) : null}
 
             <input
                 ref={inputRef}

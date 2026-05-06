@@ -12,20 +12,20 @@ const Chat = () => {
     const navigate = useNavigate();
     const { role, user } = store;
 
-    const [contacts, setContacts]         = useState([]);
+    const [contacts, setContacts] = useState([]);
     const [activeContact, setActiveContact] = useState(null);
-    const [messages, setMessages]         = useState([]);
-    const [newMessage, setNewMessage]     = useState("");
-    const [loading, setLoading]           = useState(false);
-    const [sending, setSending]           = useState(false);
-    const [countdown, setCountdown]       = useState(RECONNECT_EVERY);
-    const [connected, setConnected]       = useState(false);
-    const [unreadMap, setUnreadMap]       = useState({});
-    const [search, setSearch]             = useState("");
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [countdown, setCountdown] = useState(RECONNECT_EVERY);
+    const [connected, setConnected] = useState(false);
+    const [unreadMap, setUnreadMap] = useState({});
+    const [search, setSearch] = useState("");
 
     const bottomRef = useRef(null);
     const socketRef = useRef(null);
-    const countRef  = useRef(null);
+    const countRef = useRef(null);
 
     const scrollToBottom = () => bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
@@ -123,7 +123,13 @@ const Chat = () => {
         if (role === "COMPANY") {
             loadContacts();
         } else {
-            const companyContact = { id: user?.company_id, first_name: "Tu", last_name: "Empresa", profile_image: null };
+            const companyContact = {
+                id: user?.company_id,
+                first_name: user?.nombre_empresa || "Tu",
+                last_name: "Empresa",
+                profile_image: user?.logo_url || user?.company_logo || user?.company?.logo_url || user?.profile_image || null,
+                logo_url: user?.logo_url || user?.company_logo || user?.company?.logo_url || user?.profile_image || null,
+            };
             setContacts([companyContact]);
             selectContact(companyContact);
         }
@@ -137,7 +143,7 @@ const Chat = () => {
 
     const isOwn = (msg) =>
         (role === "EMPLOYEE" && msg.sender_role === "EMPLOYEE") ||
-        (role === "COMPANY"  && msg.sender_role === "COMPANY");
+        (role === "COMPANY" && msg.sender_role === "COMPANY");
 
     const groupedMessages = () => {
         const groups = [];
@@ -169,7 +175,7 @@ const Chat = () => {
     return (
         <div
             className="card border-0 shadow-sm rounded-4 overflow-hidden"
-            style={{ height: "calc(100vh - 140px)", display: "flex", flexDirection: "row" }}
+            style={{ height: "calc(100vh - 140px)", display: "flex", flexDirection: "row", margin: "0 50px" }}
         >
             <div className="border-end d-flex flex-column" style={{ width: 300, minWidth: 300, backgroundColor: "#fff" }}>
                 <div className="p-3 border-bottom">
@@ -189,10 +195,10 @@ const Chat = () => {
 
                 <div className="flex-grow-1 overflow-auto">
                     {filteredContacts.map(contact => {
-                        const name    = getContactName(contact);
+                        const name = getContactName(contact);
                         const initial = getInitial(contact);
-                        const unread  = unreadMap[contact.id] || 0;
-                        const active  = activeContact?.id === contact.id;
+                        const unread = unreadMap[contact.id] || 0;
+                        const active = activeContact?.id === contact.id;
 
                         return (
                             <div
@@ -204,8 +210,8 @@ const Chat = () => {
                                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = ""; }}
                             >
                                 <div className="position-relative flex-shrink-0">
-                                    {contact.profile_image
-                                        ? <img src={contact.profile_image} className="rounded-circle object-fit-cover" style={{ width: 46, height: 46 }} alt="" />
+                                    {(contact.profile_image || contact.logo_url || contact.company_logo)
+                                        ? <img src={contact.profile_image || contact.logo_url || contact.company_logo} className="rounded-circle object-fit-cover" style={{ width: 46, height: 46 }} alt="" />
                                         : (
                                             <div
                                                 className="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
@@ -252,8 +258,8 @@ const Chat = () => {
                         <div className="px-4 py-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-shrink-0">
                             <div className="d-flex align-items-center gap-3">
                                 <div className="position-relative">
-                                    {activeContact.profile_image
-                                        ? <img src={activeContact.profile_image} className="rounded-circle object-fit-cover" style={{ width: 42, height: 42 }} alt="" />
+                                    {(activeContact.profile_image || activeContact.logo_url || activeContact.company_logo)
+                                        ? <img src={activeContact.profile_image || activeContact.logo_url || activeContact.company_logo} className="rounded-circle object-fit-cover" style={{ width: 42, height: 42 }} alt="" />
                                         : (
                                             <div
                                                 className="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
@@ -350,7 +356,7 @@ const Chat = () => {
                                 style={{ fontSize: "0.9rem" }}
                             />
                             <button
-                                className="btn btn-primary rounded-4 px-4 d-flex align-items-center gap-2 flex-shrink-0"
+                                className="btn btn-warning rounded-4 px-4 d-flex align-items-center gap-2 flex-shrink-0"
                                 onClick={sendMessage}
                                 disabled={sending || !newMessage.trim()}
                                 style={{ backgroundColor: "#316AFF", borderColor: "#316AFF" }}

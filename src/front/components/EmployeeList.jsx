@@ -62,7 +62,7 @@ const PayrollModal = ({ employee, onClose, actions }) => {
                                                     href={p.url}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    className="btn btn-sm btn-outline-primary rounded-3"
+                                                    className="btn btn-sm btn-outline-warning rounded-3"
                                                 >
                                                     <i className="bi bi-download me-1"></i>Download
                                                 </a>
@@ -184,7 +184,7 @@ const EmployeeList = () => {
                                             {confirmingId === emp.id ? (
                                                 <>
                                                     <button
-                                                        className="btn btn-primary btn-sm"
+                                                        className="btn btn-warning btn-sm"
                                                         onClick={() => handleDeactivate(emp.id)}
                                                         title="Confirmar baja"
                                                     >
@@ -208,7 +208,7 @@ const EmployeeList = () => {
                                                         <i className="fa-solid fa-pen-to-square"></i>
                                                     </button>
                                                     <button
-                                                        className="btn btn-outline-primary btn-sm"
+                                                        className="btn btn-outline-warning btn-sm"
                                                         onClick={() => navigate(`/employee-details/${emp.id}`)}
                                                         title="Ver detalles"
                                                     >

@@ -35,7 +35,7 @@ const MyPayroll = () => {
                                     <tr key={p.id}>
                                         <td className="px-4 fw-medium">{p.month}</td>
                                         <td className="text-center">
-                                            <a href={p.url} target="_blank" rel="noreferrer" className="btn btn-sm btn-primary">
+                                            <a href={p.url} target="_blank" rel="noreferrer" className="btn btn-sm btn-warning">
                                                 <i className="bi bi-download me-2"></i>Download PDF
                                             </a>
                                         </td>

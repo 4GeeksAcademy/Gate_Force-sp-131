@@ -13,7 +13,7 @@ const ManageEmployees = () => {
                     <p className="text-muted">View, edit, and manage your company's workforce.</p>
                 </div>
                 <button
-                    className="btn btn-primary fw-bold"
+                    className="btn btn-warning fw-bold"
                     onClick={() => navigate("/create-employee")}
                 >
                     <i className="bi bi-person-plus me-2"></i>Add New Employee
