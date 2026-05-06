@@ -38,7 +38,7 @@ const PayrollHub = () => {
             const res = await fetch(
                 `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/raw/upload`,
                 { method: "POST", body: fd }
-                
+
             );
             const data = await res.json();
             if (data.secure_url) {
@@ -172,7 +172,7 @@ const PayrollHub = () => {
                         )}
                     </div>
 
-                    <button type="submit" disabled={loading || uploading} className="btn btn-primary w-100 fw-bold mt-3">
+                    <button type="submit" disabled={loading || uploading} className="btn btn-warning w-100 fw-bold mt-3">
                         {loading ? "Processing..." : "Assign Payroll"}
                     </button>
                 </form>

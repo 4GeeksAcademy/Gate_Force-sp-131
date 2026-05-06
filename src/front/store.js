@@ -15,45 +15,87 @@ const getState = ({ getStore, getActions, setStore }) => {
     actions: {
       // HELPER: Una sola función para manejar fetch con headers y auth
       apiFetch: async (endpoint, method = "GET", body = null) => {
-    const store = getStore();
-    const token = store.token || localStorage.getItem("token");
+        const store = getStore();
+        const token = store.token || localStorage.getItem("token");
 
-    const params = {
-        method,
-        headers: { "Content-Type": "application/json" },
-    };
+        const params = {
+          method,
+          headers: { "Content-Type": "application/json" },
+        };
 
-    if (token) {
-        params.headers["Authorization"] = `Bearer ${token}`;
-    }
+        if (token) {
+          params.headers["Authorization"] = `Bearer ${token}`;
+        }
 
-    if (body) params.body = JSON.stringify(body);
+        if (body) params.body = JSON.stringify(body);
 
-    try {
-        const resp = await fetch(`${baseUrl}/api${endpoint}`, params);
-        
-        // 1. Manejo del error 401 (Token expirado)
-        if (resp.status === 401) {
+        try {
+          const resp = await fetch(`${baseUrl}/api${endpoint}`, params);
+
+          // 1. Manejo del error 401 (Token expirado)
+          if (resp.status === 401) {
             console.error("Sesión expirada o token inválido");
             getActions().logout();
-            return { ok: false, data: { msg: "Session expired. Please login again." } };
-        }
+            return {
+              ok: false,
+              data: { msg: "Session expired. Please login again." },
+            };
+          }
 
-        // 2. Manejo del error 500 (Caída del servidor)
-        if (resp.status === 500) {
+          // 2. Manejo del error 500 (Caída del servidor)
+          if (resp.status === 500) {
             console.error("El backend ha reportado un Error 500.");
-            return { ok: false, data: { msg: "Error interno del servidor. Revisa la terminal de Flask." } };
+            return {
+              ok: false,
+              data: {
+                msg: "Error interno del servidor. Revisa la terminal de Flask.",
+              },
+            };
+          }
+
+          // 3. Procesamos la respuesta si es JSON; si no, devolvemos un error claro.
+          const contentType = resp.headers.get("Content-Type") || "";
+          const text = await resp.text();
+
+          if (!contentType.includes("application/json")) {
+            console.error("Respuesta no JSON del backend:", resp.status, text);
+            return {
+              ok: false,
+              data: {
+                msg: "Invalid response from backend: expected JSON.",
+                status: resp.status,
+                body: text,
+              },
+            };
+          }
+
+          let data;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (error) {
+            console.error("JSON inválido recibido del backend:", text);
+            return {
+              ok: false,
+              data: {
+                msg: "Invalid JSON response from backend.",
+                status: resp.status,
+                body: text,
+              },
+            };
+          }
+
+          return { ok: resp.ok, data };
+        } catch (error) {
+          console.error(
+            "Error en la petición (Posible error de red o JSON inválido):",
+            error,
+          );
+          return {
+            ok: false,
+            data: { msg: "Network error or invalid server response" },
+          };
         }
-
-        // 3. Procesamos la respuesta solo si sabemos que es segura
-        const data = await resp.json();
-        return { ok: resp.ok, data };
-
-    } catch (error) {
-        console.error("Error en la petición (Posible error de red o JSON inválido):", error);
-        return { ok: false, data: { msg: "Network error or invalid server response" } };
-    }
-},
+      },
 
       // AUTH: Login unificado para todos los roles
       login: async (email, password) => {

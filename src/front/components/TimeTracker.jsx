@@ -85,10 +85,10 @@ const TimeTracker = ({ getLocation = null }) => {
                             {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </div>
                     </div>
-                    <button 
+                    <button
                         onClick={handleClockAction}
                         disabled={loading}
-                        className={`btn btn-lg fw-bold px-4 rounded-pill shadow-sm ${isOnClock ? "btn-outline-danger" : "btn-primary"}`}
+                        className={`btn btn-lg fw-bold px-4 rounded-pill shadow-sm ${isOnClock ? "btn-outline-danger" : "btn-warning text-dark"}`}
                     >
                         <i className={`bi ${isOnClock ? "bi-stop-circle" : "bi-play-circle"} me-2`}></i>
                         {isOnClock ? "Fichar Salida" : "Fichar Entrada"}

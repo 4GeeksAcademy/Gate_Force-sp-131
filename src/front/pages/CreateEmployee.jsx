@@ -59,17 +59,17 @@ const CreateEmployee = () => {
                     <div className="row">
                         <div className="col-md-6 mb-3">
                             <label className="form-label small fw-bold">First Name</label>
-                            <input 
+                            <input
                                 type="text" className="form-control" placeholder="John"
-                                onChange={e => setFormData({...formData, first_name: e.target.value})}
+                                onChange={e => setFormData({ ...formData, first_name: e.target.value })}
                                 required
                             />
                         </div>
                         <div className="col-md-6 mb-3">
                             <label className="form-label small fw-bold">Last Name</label>
-                            <input 
+                            <input
                                 type="text" className="form-control" placeholder="Doe"
-                                onChange={e => setFormData({...formData, last_name: e.target.value})}
+                                onChange={e => setFormData({ ...formData, last_name: e.target.value })}
                                 required
                             />
                         </div>
@@ -77,9 +77,9 @@ const CreateEmployee = () => {
 
                     <div className="mb-3">
                         <label className="form-label small fw-bold">Email Address</label>
-                        <input 
+                        <input
                             type="email" className="form-control" placeholder="employee@company.com"
-                            onChange={e => setFormData({...formData, email: e.target.value})}
+                            onChange={e => setFormData({ ...formData, email: e.target.value })}
                             required
                         />
                     </div>
@@ -87,17 +87,17 @@ const CreateEmployee = () => {
                     <div className="row">
                         <div className="col-md-6 mb-3">
                             <label className="form-label small fw-bold">Temporary Password</label>
-                            <input 
+                            <input
                                 type="password" className="form-control" placeholder="••••••••"
-                                onChange={e => setFormData({...formData, password: e.target.value})}
+                                onChange={e => setFormData({ ...formData, password: e.target.value })}
                                 required
                             />
                         </div>
                         <div className="col-md-6 mb-3">
                             <label className="form-label small fw-bold">Role</label>
-                            <select 
+                            <select
                                 className="form-select"
-                                onChange={e => setFormData({...formData, role: e.target.value})}
+                                onChange={e => setFormData({ ...formData, role: e.target.value })}
                             >
                                 <option value="EMPLOYEE">Employee</option>
                                 <option value="MANAGER">Manager</option>
@@ -106,16 +106,16 @@ const CreateEmployee = () => {
                     </div>
 
                     <div className="d-flex gap-2 mt-4">
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             className="btn btn-light flex-grow-1"
                             onClick={() => navigate("/company-dashboard")}
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
-                            className="btn btn-primary flex-grow-1 fw-bold"
+                        <button
+                            type="submit"
+                            className="btn btn-warning flex-grow-1 fw-bold"
                             disabled={loading}
                         >
                             {loading ? "Creating..." : "Register Employee"}
