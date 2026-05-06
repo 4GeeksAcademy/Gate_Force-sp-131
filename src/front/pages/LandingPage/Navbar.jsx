@@ -1,56 +1,90 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+
+const NAV_ITEMS = [
+    { label: "Home", href: "#hero" },
+    { label: "About Us", href: "#about" },
+    { label: "Services", href: "#services" },
+    { label: "Our Team", href: "#team" },
+    { label: "FAQ", href: "#faq" },
+    { label: "Contact", href: "#contact" },
+];
+
+const ArrowIcon = () => (
+    <svg width="20" height="20" viewBox="6 6 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 6V7.5H15.4425L6 16.9425L7.0575 18L16.5 8.5575V18H18V6H6Z" fill="currentColor" />
+    </svg>
+);
 
 const Navbar = () => {
+    const [sticky, setSticky] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    useEffect(() => {
+        let ticking = false;
+        const onScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => {
+                setSticky(prev => {
+                    const next = window.scrollY > 80;
+                    return prev === next ? prev : next;
+                });
+                ticking = false;
+            });
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
     return (
-        // Barra fijada en la parte superior, transparente y con un z-index alto para estar sobre todo
-        <nav className="navbar navbar-expand-lg fixed-top bg-transparent pt-4" style={{ zIndex: 10 }}>
-            <div className="container">
+        <>
+            <div className={`header-twelve header--fourteen header--sticky ${sticky ? "sticky" : ""}`}>
+                <div className="header-wrapper-14">
+                    <div className="header-left">
+                        <Link to="/" className="logo-area">
 
-                {/* Logo de Gate Force */}
-                <Link className="navbar-brand fw-bold text-white" to="/">
-                    <span className="text-accent">GATE</span> FORCE
-                </Link>
+                            <span className="logo-text">Gate<span className="logo-accent">Force</span></span>
+                        </Link>
 
-                {/* Botón de menú tipo hamburguesa para pantallas móviles */}
-                <button className="navbar-toggler shadow-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span className="navbar-toggler-icon"></span>
-                </button>
+                        <nav className="nav-main mainmenu-nav d-none d-xl-block">
+                            <ul className="mainmenu">
+                                {NAV_ITEMS.map(item => (
+                                    <li key={item.href}>
+                                        <a className="nav-link" href={item.href}>{item.label}</a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </nav>
+                    </div>
 
-                {/* Enlaces de navegación centrales */}
-                <div className="collapse navbar-collapse" id="navbarNav">
-                    <ul className="navbar-nav mx-auto align-items-center">
-                        {/* 
-              Cada href apunta al ID de la sección correspondiente en la misma página.
-              Usamos fw-semibold para que la letra tenga un poco más de grosor.
-            */}
-                        <li className="nav-item">
-                            <a className="nav-link text-white px-3 fw-semibold" href="#about">About Us</a>
-                        </li>
-                        <li className="nav-item">
-                            <a className="nav-link text-white px-3 fw-semibold" href="#services">Services</a>
-                        </li>
-                        <li className="nav-item">
-                            <a className="nav-link text-white px-3 fw-semibold" href="#team">OurTeam</a>
-                        </li>
-                        <li className="nav-item">
-                            <a className="nav-link text-white px-3 fw-semibold" href="#faq">FAQ</a>
-                        </li>
-                        <li className="nav-item">
-                            <a className="nav-link text-white px-3 fw-semibold" href="#contact">Contact Us</a>
-                        </li>
-                    </ul>
-
-                    {/* Botón de acción a la derecha */}
-                    <div className="d-flex mt-3 mt-lg-0">
-                        <Link to="/login" className="btn btn-gf-primary rounded-1">
-                            Portal de Gestión <i className="bi bi-arrow-up-right ms-1"></i>
+                    <div className="header-right">
+                        <Link
+                            to="/login"
+                            className="rts-btn btn-primary-4 six radius-6 quote-btn d-none d-md-flex"
+                        >
+                            <span>Portal de Gestión</span>
+                            <ArrowIcon />
                         </Link>
                     </div>
                 </div>
-
             </div>
-        </nav>
+
+            <div className={`gf-mobile-menu ${mobileOpen ? "open" : ""}`}>
+                <ul>
+                    {NAV_ITEMS.map(item => (
+                        <li key={item.href}>
+                            <a href={item.href} onClick={() => setMobileOpen(false)}>{item.label}</a>
+                        </li>
+                    ))}
+                    <li>
+                        <Link to="/login" onClick={() => setMobileOpen(false)} className="mobile-cta">
+                            Portal de Gestión <ArrowIcon fill="#001D21" />
+                        </Link>
+                    </li>
+                </ul>
+            </div>
+        </>
     );
 };
 

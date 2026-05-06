@@ -1,109 +1,95 @@
-import React from 'react';
+import { memo } from "react";
+import { Link } from "react-router-dom";
+
+const ArrowIcon = () => (
+    <svg width="22" height="22" viewBox="6 6 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 6V7.5H15.4425L6 16.9425L7.0575 18L16.5 8.5575V18H18V6H6Z" fill="currentColor" />
+    </svg>
+);
+
+const RatingStars = () => (
+    <span className="rating-stars" aria-label="5 stars">
+        <i className="bi bi-star-fill" />
+        <i className="bi bi-star-fill" />
+        <i className="bi bi-star-fill" />
+        <i className="bi bi-star-fill" />
+        <i className="bi bi-star-fill" />
+    </span>
+);
 
 const AboutUs = () => {
-    // Arreglo de datos para la sección de contadores inferiores
-    const counters = [
-        { id: 1, number: "15", text: "Años de Experiencia" },
-        { id: 2, number: "236", text: "Proyectos Instalados" },
-        { id: 3, number: "33k", text: "Accesos Diarios" },
-        { id: 4, number: "16", text: "Certificaciones" }
-    ];
-
     return (
-        <section id="about" className="py-5" style={{ backgroundColor: 'var(--gf-bg-secondary)' }}>
-            <div className="container py-5">
+        <div id="about" className="rts-about-area about-14">
+            {/* Decorative world-map watermark */}
+            <div className="map" aria-hidden="true">
+                <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
+                            <circle cx="2" cy="2" r="1.2" fill="rgba(255,107,0,0.18)" />
+                        </pattern>
+                    </defs>
+                    <ellipse cx="400" cy="200" rx="380" ry="170" fill="url(#dots)" />
+                </svg>
+            </div>
 
-                {/* 1. TÍTULO CENTRADO */}
-                <div className="text-center mb-5">
-                    <span className="text-accent fw-bold text-uppercase tracking-wider">Sobre Nosotros</span>
-                    <h2 className="display-4 fw-bold mt-2 text-white">
-                        Tu Socio <span style={{ fontStyle: 'italic', color: 'var(--gf-accent)' }}>Confiable</span> en <br />
-                        Crecimiento y Seguridad
+            <div className="container">
+                <div className="section-title text-center">
+                    <span className="pre-title">About Us</span>
+                    <h2 className="title">
+                        Your Trusted Workforce<br />
+                        <span>Growth</span> Partner
                     </h2>
                 </div>
 
-                {/* 2. CONTENEDOR PRINCIPAL DEL VIDEO/IMAGEN */}
-                <div className="row justify-content-center mb-5">
-                    <div className="col-lg-10">
-                        <div className="position-relative">
+                <div className="row justify-content-center">
+                    <div className="col-xl-10">
+                        <div className="about-wrapper-area">
 
-                            {/* Imagen principal (Fondo del video) */}
-                            <img
-                                src="https://placehold.co/1200x600/1e293b/f8fafc?text=Video+Background"
-                                alt="Gate Force Video"
-                                className="img-fluid rounded w-100 shadow-lg"
-                                style={{ objectFit: 'cover', minHeight: '400px' }}
-                            />
-
-                            {/* Botón de Play (Centrado absoluto) */}
-                            <div className="position-absolute top-50 start-50 translate-middle" style={{ zIndex: 2 }}>
-                                <a href="#play" className="text-decoration-none">
-                                    <div className="video-play-btn">
-                                        <i className="bi bi-play-fill"></i>
-                                    </div>
+                            <div className="video-area">
+                                <img
+                                    src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1600&auto=format&fit=crop"
+                                    alt="GateForce team"
+                                    loading="lazy"
+                                />
+                                <a href="#about" className="icon" aria-label="Play intro video">
+                                    <svg width="22" height="26" viewBox="0 0 22 26" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                        <path d="M21 11.27a2 2 0 0 1 0 3.46L4 24.66A2 2 0 0 1 1 22.93V3.07A2 2 0 0 1 4 1.34l17 9.93Z" fill="#001D21" />
+                                    </svg>
                                 </a>
                             </div>
 
-                            {/* Tarjeta Flotante (Esquina inferior izquierda superpuesta) */}
-                            <div
-                                className="position-absolute floating-review-card shadow-lg"
-                                // Usamos bottom negativo y left para que sobresalga un poco de la imagen, tal como en tu referencia
-                                style={{ bottom: '-30px', left: '20px', maxWidth: '280px' }}
-                            >
-                                <div className="mb-2">
-                                    <i className="bi bi-star-fill"></i> Trustpilot
-                                </div>
-                                <div className="d-flex mb-1">
-                                    <i className="bi bi-star-fill text-dark"></i>
-                                    <i className="bi bi-star-fill text-dark"></i>
-                                    <i className="bi bi-star-fill text-dark"></i>
-                                    <i className="bi bi-star-fill text-dark"></i>
-                                    <i className="bi bi-star-fill text-dark"></i>
-                                </div>
-                                <p className="small mb-3">Basado en 167 reseñas</p>
-                                <h3 className="fw-bold mb-0">15+</h3>
-                                <p className="small mb-0">Años, Misión y Valores</p>
-                            </div>
-
-                        </div>
-
-                        {/* Texto descriptivo y botón (Debajo de la imagen, alineado a la derecha) */}
-                        <div className="row mt-5 pt-3">
-                            <div className="col-lg-5 offset-lg-7 d-flex flex-column align-items-start">
-                                <p className=" lead mb-4">
-                                    Somos un equipo de ingenieros y auditores apasionados por ayudar a las empresas a proteger su infraestructura operativa y desbloquear su máximo potencial.
-                                </p>
-                                <button className="btn btn-gf-primary">
-                                    Conoce Nuestra Historia <i className="bi bi-arrow-up-right ms-2"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                {/* 3. SECCIÓN DE CONTADORES INFERIORES */}
-                <div className="row justify-content-center mt-5">
-                    <div className="col-lg-10">
-                        <div className="row g-4">
-                            {counters.map((item) => (
-                                <div key={item.id} className="col-md-3 col-6">
-                                    {/* Panel de cristal para cada contador */}
-                                    <div className="glass-panel text-center p-4 h-100 d-flex flex-column justify-content-center">
-                                        <h2 className="counter-number fw-bold mb-1">
-                                            {item.number}<span className="text-accent">+</span>
-                                        </h2>
-                                        <span className="counter-text fw-bold">{item.text}</span>
+                            <div className="bottom-area">
+                                <div className="content">
+                                    <div className="review-count">
+                                        <div className="review">
+                                            <RatingStars />
+                                            <p className="desc">Based on 167 reviews</p>
+                                        </div>
+                                        <div className="counts">
+                                            <h2 className="title">
+                                                <span className="counter">15</span>+
+                                            </h2>
+                                            <p className="desc">Years of Excellence</p>
+                                        </div>
                                     </div>
+                                    <p className="desc">
+                                        We're a team of passionate engineers and HR specialists
+                                        helping companies unlock their workforce's full potential
+                                        through smart technology.
+                                    </p>
                                 </div>
-                            ))}
+                                <Link to="/signup" className="rts-btn btn-primary-7 radius-6">
+                                    Discover Our Story
+                                    <ArrowIcon />
+                                </Link>
+                            </div>
+
                         </div>
                     </div>
                 </div>
-
             </div>
-        </section>
+        </div>
     );
 };
 
-export default AboutUs;
+export default memo(AboutUs);

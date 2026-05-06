@@ -1,122 +1,105 @@
-import React from 'react';
+import { memo } from "react";
+import { Link } from "react-router-dom";
 
+const ArrowSmall = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 6V7.5H15.4425L6 16.9425L7.0575 18L16.5 8.5575V18H18V6H6Z" fill="currentColor" />
+    </svg>
+);
+
+const ArrowUpRight = () => (
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="28" cy="28" r="27" stroke="#ff6b00" strokeOpacity="0.4" />
+        <path d="M19 19V21.5H32.4425L19 34.9425L20.0575 36L33.5 22.5575V36H36V19H19Z" fill="#ff6b00" />
+    </svg>
+);
+
+const SERVICES = [
+    {
+        icon: "bi-clock-history",
+        title: "Time & Attendance",
+        desc: "Smart check-in with GPS, biometric validation and automated overtime tracking for on-site and remote teams.",
+        features: ["Geolocation check-in", "Automatic overtime reports"],
+    },
+    {
+        icon: "bi-file-earmark-pdf-fill",
+        title: "Payroll Distribution",
+        desc: "Centralized payroll hub. Upload, distribute and archive payslips securely with full audit trail per employee.",
+        features: ["Cloud document storage", "Per-employee secure access"],
+    },
+    {
+        icon: "bi-calendar3",
+        title: "Schedule Planning",
+        desc: "Build, assign and rotate work schedules visually. Detect conflicts and balance workload across your teams.",
+        features: ["Drag-and-drop planner", "Shift-conflict detection"],
+    },
+    {
+        icon: "bi-heart-pulse-fill",
+        title: "Wellness Surveys",
+        desc: "Pulse-check your workforce regularly. AI-powered analysis surfaces burnout risk and morale insights early.",
+        features: ["Anonymous responses", "Burnout-risk detection"],
+    },
+];
 
 const Services = () => {
-  // 1. Arreglo de servicios (Potenciado para Gate Force)
-  const serviceData = [
-    {
-      id: 1,
-      icon: "bi-people-fill",
-      title: "Gestión 360° del Empleado",
-      desc: "Centralización total del ciclo de vida del colaborador. Desde el onboarding hasta la gestión de beneficios y perfiles dinámicos.",
-      features: [
-        "Expedientes digitales seguros",
-        "Estructura organizacional fluida"
-      ]
-    },
-    {
-      id: 2,
-      icon: "bi-clock-history",
-      title: "Control de Acceso y Asistencia",
-      desc: "Sistema de fichaje inteligente con validación biométrica y geolocalización para equipos presenciales y remotos.",
-      features: [
-        "Reportes de puntualidad automáticos",
-        "Gestión de turnos y horas extra"
-      ]
-    },
-    {
-      id: 3,
-      icon: "bi-cpu-fill",
-      title: "IA de Reconocimiento Emocional",
-      desc: "Algoritmos avanzados que analizan el sentimiento y clima laboral para identificar inconformidad o riesgos de bajo rendimiento.",
-      features: [
-        "Detección temprana de burnout",
-        "Análisis de bienestar en tiempo real"
-      ]
-    },
-    {
-      id: 4,
-      icon: "bi-file-earmark-lock2",
-      title: "Bóveda de Documentación",
-      desc: "Gestión documental",
-      features: [
-        "Gestión de documentos",
-        "Acceso jerárquico por roles"
-      ]
-    }
-  ];
+    return (
+        <div className="rts-service-area-14 rts-section-gap">
+            <div className="bg-14">
+                <div className="container">
 
-  return (
-    <section id="services" className="py-5 gate-force-section">
-      <div className="container py-5">
+                    <div className="rts-section-title-area">
+                        <span className="pre-title">Services</span>
+                        <div className="content">
+                            <h2 className="title">
+                                Solutions <span>Tailored</span> for<br />
+                                Your Business
+                            </h2>
+                            <p className="desc">
+                                We offer a range of workforce management tools designed to
+                                solve real business challenges and unlock growth opportunities.
+                            </p>
+                        </div>
+                        <Link to="/signup" className="title-arrow" aria-label="View all services">
+                            <ArrowUpRight />
+                        </Link>
+                    </div>
 
-        {/* 2. ENCABEZADO */}
-        <div className="row align-items-center mb-5 pb-3">
+                    <div className="rts-service-wrapper">
+                        <div className="row gy-5 gy-xl-0">
+                            {SERVICES.map(({ icon, title, desc, features }) => (
+                                <div key={title} className="col-xl-3 col-lg-4 col-md-6">
+                                    <div className="single-item">
+                                        <div className="icon">
+                                            <i className={`bi ${icon}`} />
+                                        </div>
+                                        <div className="content">
+                                            <a href="#services">
+                                                <h4 className="title">{title}</h4>
+                                            </a>
+                                            <p className="desc">{desc}</p>
+                                            <ul className="service-list">
+                                                {features.map(f => (
+                                                    <li key={f}>
+                                                        <i className="bi bi-check2 check" />
+                                                        {f}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <Link to="/signup" className="service-btn">
+                                            <span className="link-text">Learn More</span>
+                                            <ArrowSmall />
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
-          {/* Distintivo izquierdo */}
-          <div className="col-lg-2 d-none d-lg-block">
-            <span className="gf-badge">
-              <span className="text-accent me-2">●</span> GATE FORCE
-            </span>
-          </div>
-
-          {/* Título y descripción central */}
-          <div className="col-lg-8 text-center">
-            <h2 className="display-5 fw-bold text-white mb-3">
-              Infraestructura <span className="text-accent highlight-text">Inexpugnable</span> <br />
-              para tu Tranquilidad
-            </h2>
-            <p className=" mx-auto description-text">
-              Desplegamos ecosistemas de seguridad física y electrónica. Soluciones modulares diseñadas con precisión técnica para erradicar vulnerabilidades en infraestructuras críticas.
-            </p>
-          </div>
-
-          {/* Flecha gigante decorativa a la derecha */}
-          <div className="col-lg-2 text-end d-none d-lg-block decorative-icon">
-            <i className="bi bi-shield-check text-accent"></i>
-          </div>
-
-        </div>
-
-        {/* 3. REJILLA DE TARJETAS DE SERVICIO */}
-        <div className="row g-4 justify-content-center">
-          {serviceData.map((service) => (
-            <div key={service.id} className="col-xl-3 col-lg-4 col-md-6">
-              <div className="service-card h-100 d-flex flex-column">
-
-                {/* Ícono de la tarjeta */}
-                <div className="icon-wrapper mb-4">
-                  <i className={`bi ${service.icon} text-accent`}></i>
                 </div>
-
-                {/* Título y Descripción */}
-                <h4 className="fw-bold text-white mb-3">{service.title}</h4>
-                <p className=" small mb-4 flex-grow-1">{service.desc}</p>
-
-                {/* Lista de características */}
-                <ul className="service-feature-list mb-4">
-                  {service.features.map((feature, index) => (
-                    <li key={index}>
-                      <i className="bi bi-check-circle-fill text-accent me-2"></i>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Botón inferior */}
-                <a href="#contacto" className="service-btn-outline mt-auto">
-                  <span>Implementar Solución</span>
-                  <i className="bi bi-arrow-right-short fs-4"></i>
-                </a>
-
-              </div>
             </div>
-          ))}
         </div>
-
-      </div>
-    </section>
-  );
+    );
 };
 
-export default Services;
+export default memo(Services);
