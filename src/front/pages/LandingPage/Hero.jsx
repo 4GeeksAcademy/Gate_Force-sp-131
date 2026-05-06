@@ -1,69 +1,133 @@
-import React from 'react';
+import { memo } from "react";
+import { Link } from "react-router-dom";
+
+const ArrowIcon = () => (
+    <svg width="22" height="22" viewBox="6 6 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 6V7.5H15.4425L6 16.9425L7.0575 18L16.5 8.5575V18H18V6H6Z" fill="currentColor" />
+    </svg>
+);
+
+const AvatarStack = () => (
+    <svg width="124" height="40" viewBox="0 0 124 40" xmlns="http://www.w3.org/2000/svg" aria-label="Trusted clients">
+        <defs>
+            <linearGradient id="av1" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#fb7185" />
+                <stop offset="100%" stopColor="#be123c" />
+            </linearGradient>
+            <linearGradient id="av2" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#60a5fa" />
+                <stop offset="100%" stopColor="#1e40af" />
+            </linearGradient>
+            <linearGradient id="av3" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#34d399" />
+                <stop offset="100%" stopColor="#047857" />
+            </linearGradient>
+            <linearGradient id="av4" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#fbbf24" />
+                <stop offset="100%" stopColor="#ea580c" />
+            </linearGradient>
+        </defs>
+        {[
+            { cx: 20, fill: "url(#av1)", letter: "J" },
+            { cx: 48, fill: "url(#av2)", letter: "M" },
+            { cx: 76, fill: "url(#av3)", letter: "L" },
+            { cx: 104, fill: "url(#av4)", letter: "K" },
+        ].map(({ cx, fill, letter }, i) => (
+            <g key={i}>
+                <circle cx={cx} cy="20" r="19" fill="#0f172a" />
+                <circle cx={cx} cy="20" r="17" fill={fill} />
+                <text
+                    x={cx}
+                    y="20"
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill="#ffffff"
+                    fontSize="14"
+                    fontWeight="700"
+                    fontFamily="Outfit, sans-serif"
+                >
+                    {letter}
+                </text>
+            </g>
+        ))}
+    </svg>
+);
+
+const StarsRow = () => (
+    <span className="stars" aria-label="4.5 out of 5 stars">
+        <i className="bi bi-star-fill" />
+        <i className="bi bi-star-fill" />
+        <i className="bi bi-star-fill" />
+        <i className="bi bi-star-fill" />
+        <i className="bi bi-star-half" />
+    </span>
+);
+
+const SpinningCircle = () => (
+    <a href="#about" className="circle-spin d-none d-md-flex" aria-label="Scroll to about">
+        <svg className="text-spin" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+                <path id="circlePath" d="M 80,80 m -60,0 a 60,60 0 1,1 120,0 a 60,60 0 1,1 -120,0" />
+            </defs>
+            <text fill="#fff" fontFamily="Outfit, sans-serif" fontSize="11" fontWeight="600" letterSpacing="3">
+                <textPath href="#circlePath" startOffset="0">
+                    SCROLL DOWN • DISCOVER MORE • SCROLL DOWN • DISCOVER MORE •
+                </textPath>
+            </text>
+        </svg>
+        <span className="circle-arrow" aria-hidden="true">
+            <i className="bi bi-arrow-down" />
+        </span>
+    </a>
+);
 
 const Hero = () => {
     return (
-        // min-vh-100 hace que ocupe todo el alto de la pantalla. flex-column nos ayuda a empujar el título abajo.
-        <section className="hero-fullscreen d-flex flex-column" style={{ minHeight: '100vh' }}>
+        <div id="hero" className="rts-banner-fourteen-area banner-bg-f14">
+            <div className="rts-banner-content-wrapper">
 
-            {/* Capa de color oscuro */}
-            <div className="hero-overlay"></div>
+                <SpinningCircle />
 
-            {/* Contenedor del contenido (Flexbox para distribuir el espacio) */}
-            <div className="container hero-content-wrapper d-flex flex-column flex-grow-1">
+                <div className="hero-fade-in">
 
-                {/* Espacio para empujar el contenido hacia el centro verticalmente */}
-                <div className="flex-grow-1 d-flex align-items-center mt-5 pt-5">
-                    <div className="row w-100">
-                        <div className="col-lg-5 col-md-8">
-
-                            {/* Sección de avatares y calificación (Trusted by...) */}
-                            <div className="d-flex align-items-center mb-4">
-                                <div className="d-flex me-3">
-                                    {/* Avatares falsos usando CSS circles */}
-                                    <div className="rounded-circle border border-2 border-dark" style={{ width: '35px', height: '35px', backgroundColor: '#94a3b8', zIndex: 3 }}></div>
-                                    <div className="rounded-circle border border-2 border-dark ms-n2" style={{ width: '35px', height: '35px', backgroundColor: '#cbd5e1', zIndex: 2, marginLeft: '-10px' }}></div>
-                                    <div className="rounded-circle border border-2 border-dark ms-n2" style={{ width: '35px', height: '35px', backgroundColor: '#e2e8f0', zIndex: 1, marginLeft: '-10px' }}></div>
-                                </div>
-                                <div>
-                                    <h6 className="text-white mb-1 small fw-bold">Confiado por más de 120 Empresas</h6>
-                                    <div className="text-warning small">
-                                        <i className="bi bi-star-fill"></i> <i className="bi bi-star-fill"></i> <i className="bi bi-star-fill"></i> <i className="bi bi-star-fill"></i> <i className="bi bi-star-half"></i>
-                                        <span className="text-white ms-2">4.5 (989)</span>
-                                    </div>
-                                </div>
+                    <div className="author-trust-review">
+                        <div className="author-area">
+                            <AvatarStack />
+                        </div>
+                        <div className="review-area">
+                            <span className="title">Trusted by 120+ Companies</span>
+                            <div className="star-ratting-area">
+                                <StarsRow />
+                                <span className="ratting">4.5 (989 reviews)</span>
                             </div>
+                        </div>
+                    </div>
 
-                            {/* Texto Descriptivo */}
-                            <p className="text-white mb-5" style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
-                                Desbloquea el máximo potencial de la seguridad de tu empresa con automatización de accesos adaptada a tus metas únicas. Construyamos una infraestructura más inteligente y fuerte—juntos.
-                            </p>
+                    <p className="desc">
+                        Unlock your workforce's full potential with smart management
+                        tools tailored to your company's unique goals. Let's build a
+                        smarter, stronger team — together.
+                    </p>
 
-                            {/* Botones de acción */}
-                            <div className="d-flex align-items-center flex-wrap gap-4">
-                                <button className="btn btn-gf-primary btn-lg rounded-1 fs-6">
-                                    Obtener Consultoría <i className="bi bi-arrow-up-right ms-1"></i>
-                                </button>
-                                <div className="d-flex align-items-center text-white">
-                                    <i className="bi bi-telephone text-accent fs-4 me-2"></i>
-                                    <a href="tel:+1554555471" className="text-white text-decoration-none fw-bold">(+34)60388712</a>
-                                </div>
-                            </div>
-
+                    <div className="bottom-area">
+                        <Link to="/login" className="rts-btn btn-primary-7 radius-6">
+                            Get Started
+                            <ArrowIcon />
+                        </Link>
+                        <div className="phone-area">
+                            <div className="icon"><i className="bi bi-telephone-fill" /></div>
+                            <a href="tel:+34603887120">(+34) 603 887 120</a>
                         </div>
                     </div>
                 </div>
 
-                {/* Texto Gigante en la parte inferior */}
-                <div className="pb-4">
-                    {/* display-1 es la clase más grande de texto en Bootstrap */}
-                    <h1 className="display-1 fw-bold text-white text-center mb-0" style={{ fontSize: 'clamp(3rem, 8vw, 8rem)' }}>
-                        Seguridad <span className="text-accent" style={{ fontStyle: 'italic' }}>Total</span> Comienza Aquí
-                    </h1>
-                </div>
+                <h1 className="banner-title hero-fade-in delay">
+                    Workforce <span>Growth</span><br />Starts Here
+                </h1>
 
             </div>
-        </section>
+        </div>
     );
 };
 
-export default Hero;
+export default memo(Hero);

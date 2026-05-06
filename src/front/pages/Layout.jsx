@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom/dist"
 import ScrollToTop from "../components/ScrollToTop"
 import Navbar from "./LandingPage/Navbar";
-import { Footer } from "../components/Footer"
+import Footer from "./LandingPage/Footer";
 
 const EMPLOYEE_PATHS = [
     "/employee-dashboard",
@@ -32,6 +32,8 @@ const COMPANY_PATHS = [
 export const Layout = () => {
     const { pathname } = useLocation();
     const hideChrome =
+        pathname === "/login" ||
+        pathname === "/signup" ||
         EMPLOYEE_PATHS.some(p => pathname.startsWith(p)) ||
         COMPANY_PATHS.some(p => pathname.startsWith(p));
 
