@@ -16,6 +16,7 @@ static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../
 
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = "super-secret-key-123"
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "gateforce-dev-secret-change-me")
 jwt = JWTManager(app)
 app.url_map.strict_slashes = False
 CORS(app, resources={r"/api/*": {"origins": "*"}})

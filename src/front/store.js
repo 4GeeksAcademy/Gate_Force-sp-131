@@ -1,8 +1,13 @@
+const safeParse = (raw) => {
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+};
+
 export const initialStore = () => {
   return {
     token: localStorage.getItem("token") || null,
     role: localStorage.getItem("role") || null, // ADMIN, COMPANY, EMPLOYEE
-    user: JSON.parse(localStorage.getItem("user")) || null,
+    user: safeParse(localStorage.getItem("user")),
   };
 };
 
@@ -13,7 +18,7 @@ const getState = ({ getStore, getActions, setStore }) => {
     store: initialStore(),
 
     actions: {
-      // HELPER: Una sola función para manejar fetch con headers y auth
+      // Todas las llamadas a la API pasan por aquí para no repetir el token y el manejo de errores en cada acción
       apiFetch: async (endpoint, method = "GET", body = null) => {
     const store = getStore();
     const token = store.token || localStorage.getItem("token");
@@ -32,20 +37,19 @@ const getState = ({ getStore, getActions, setStore }) => {
     try {
         const resp = await fetch(`${baseUrl}/api${endpoint}`, params);
         
-        // 1. Manejo del error 401 (Token expirado)
+        // Si el token expiró o no es válido, cerramos sesión para no dejar al usuario en un estado roto
         if (resp.status === 401) {
             console.error("Sesión expirada o token inválido");
             getActions().logout();
             return { ok: false, data: { msg: "Session expired. Please login again." } };
         }
 
-        // 2. Manejo del error 500 (Caída del servidor)
+        // El 500 lo cortamos antes de intentar parsear JSON porque Flask puede devolver HTML en este caso
         if (resp.status === 500) {
             console.error("El backend ha reportado un Error 500.");
             return { ok: false, data: { msg: "Error interno del servidor. Revisa la terminal de Flask." } };
         }
 
-        // 3. Procesamos la respuesta solo si sabemos que es segura
         const data = await resp.json();
         return { ok: resp.ok, data };
 
@@ -55,7 +59,7 @@ const getState = ({ getStore, getActions, setStore }) => {
     }
 },
 
-      // AUTH: Login unificado para todos los roles
+      // Login único para empresa, empleado y admin — el backend decide el rol y aquí lo guardamos en localStorage
       login: async (email, password) => {
         const actions = getActions();
         const { ok, data } = await actions.apiFetch("/login", "POST", {
