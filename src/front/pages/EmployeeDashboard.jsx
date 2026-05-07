@@ -56,12 +56,7 @@ const EmployeeDashboard = () => {
     }, []);
 
     return (
-        <>
-            <div className="mb-4">
-                <h5 className="fw-bold mb-0">Welcome back, {store.user?.first_name}! 👋</h5>
-                <p className="text-muted small mb-0">Here's what's happening with your account today.</p>
-            </div>
-
+        <div className="container py-4">
             <div className="row g-3 mb-4">
                 <StatCard icon="bi-clock-fill"              iconBg="bg-primary" label="Hours This Month"  value={stats.totalHours !== null ? `${stats.totalHours}h` : "—"} />
                 <StatCard icon="bi-umbrella-fill"           iconBg="bg-warning" label="Pending Vacations" value={stats.pendingVacations} />
@@ -193,7 +188,7 @@ const EmployeeDashboard = () => {
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 };
 

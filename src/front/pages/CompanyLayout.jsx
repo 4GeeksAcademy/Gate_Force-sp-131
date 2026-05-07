@@ -120,8 +120,8 @@ const CompanyLayout = () => {
             <div className="flex-grow-1" style={{ marginLeft: SIDEBAR_W }}>
 
                 <header
-                    className="text-white px-4 py-3 d-flex align-items-center justify-content-between sticky-top shadow-sm"
-                    style={{ zIndex: 1020, backgroundColor: BG }}
+                    className="text-white px-4 d-flex align-items-center justify-content-between sticky-top shadow-sm"
+                    style={{ zIndex: 1020, backgroundColor: BG, minHeight: 84, paddingTop: 17, paddingBottom: 17 }}
                 >
                     <div className="d-flex align-items-center gap-3">
                         <button
@@ -158,7 +158,7 @@ const CompanyLayout = () => {
                                     onClick={() => setDropdownOpen(false)}
                                 />
                                 <div
-                                    className="position-absolute end-0 mt-2 bg-white rounded-4 shadow-lg py-2"
+                                    className="position-absolute end-0 mt-2 bg-white rounded-4 shadow-lg py-2 text-dark"
                                     style={{ zIndex: 1060, minWidth: 220, top: "100%" }}
                                 >
                                     <div className="d-flex align-items-center gap-3 px-4 py-3 border-bottom">

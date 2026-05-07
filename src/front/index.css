@@ -8,7 +8,61 @@
   --gf-accent-glow: rgba(255, 107, 0, 0.4);
   --gf-text-main: #f8fafc;
   --gf-text-muted: #94a3b8;
+
+  /* GateForce corporate brand — overrides Bootstrap primary to orange */
+  --bs-primary: #ff6b00;
+  --bs-primary-rgb: 255, 107, 0;
+  --bs-link-color: #ff6b00;
+  --bs-link-color-rgb: 255, 107, 0;
+  --bs-link-hover-color: #ea580c;
+  --bs-link-hover-color-rgb: 234, 88, 12;
 }
+
+/* Bootstrap button overrides — orange primary with proper contrast */
+.btn-primary {
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: #ff6b00;
+  --bs-btn-border-color: #ff6b00;
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #ea580c;
+  --bs-btn-hover-border-color: #ea580c;
+  --bs-btn-focus-shadow-rgb: 255, 107, 0;
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: #d4500b;
+  --bs-btn-active-border-color: #d4500b;
+  --bs-btn-disabled-color: #ffffff;
+  --bs-btn-disabled-bg: #ff6b00;
+  --bs-btn-disabled-border-color: #ff6b00;
+}
+.btn-outline-primary {
+  --bs-btn-color: #ff6b00;
+  --bs-btn-border-color: #ff6b00;
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #ff6b00;
+  --bs-btn-hover-border-color: #ff6b00;
+  --bs-btn-focus-shadow-rgb: 255, 107, 0;
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: #ff6b00;
+  --bs-btn-active-border-color: #ff6b00;
+  --bs-btn-disabled-color: #ff6b00;
+  --bs-btn-disabled-border-color: #ff6b00;
+}
+
+/* Form focus orange ring */
+.form-control:focus,
+.form-select:focus {
+  border-color: #ff6b00;
+  box-shadow: 0 0 0 0.2rem rgba(255, 107, 0, 0.18);
+}
+.form-check-input:checked {
+  background-color: #ff6b00;
+  border-color: #ff6b00;
+}
+.form-check-input:focus {
+  border-color: #ff6b00;
+  box-shadow: 0 0 0 0.2rem rgba(255, 107, 0, 0.18);
+}
+
 
 body {
   background-color: #ffffff;
