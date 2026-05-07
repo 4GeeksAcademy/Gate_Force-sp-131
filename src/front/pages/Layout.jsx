@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom/dist"
+import { Outlet, useLocation } from "react-router-dom"
 import ScrollToTop from "../components/ScrollToTop"
 import LandingNavbar from "./LandingPage/Navbar";
 import Footer from "./LandingPage/Footer";

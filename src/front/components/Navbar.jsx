@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
@@ -21,6 +21,7 @@ export const Navbar = () => {
     const navigate = useNavigate();
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const today = useMemo(() => formatDateEs(new Date()), []);
 
     const { token, role, user } = store;
     const config = ROLE_CONFIG[role] || null;
@@ -74,7 +75,7 @@ export const Navbar = () => {
                 <div>
                     <h6 className="mb-0 fw-bold text-white">Dashboard</h6>
                     <small className="text-white-50 text-capitalize">
-                        {formatDateEs(new Date())}
+                        {today}
                     </small>
                 </div>
             </div>

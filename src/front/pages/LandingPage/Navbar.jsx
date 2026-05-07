@@ -79,7 +79,7 @@ const Navbar = () => {
                     ))}
                     <li>
                         <Link to="/login" onClick={() => setMobileOpen(false)} className="mobile-cta">
-                            Portal de Gestión <ArrowIcon fill="#001D21" />
+                            Portal de Gestión <ArrowIcon />
                         </Link>
                     </li>
                 </ul>

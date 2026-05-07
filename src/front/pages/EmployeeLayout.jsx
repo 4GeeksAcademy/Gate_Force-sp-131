@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import ImageUpload from "../components/ImageUpload";
@@ -39,9 +39,9 @@ const EmployeeLayout = () => {
         setDropdownOpen(false);
     };
 
-    const today = new Date().toLocaleDateString("es-ES", {
+    const today = useMemo(() => new Date().toLocaleDateString("es-ES", {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
-    });
+    }), []);
 
     const pageLabel = NAV_ITEMS.find(n => location.pathname === n.to)?.label ?? "Dashboard";
 
