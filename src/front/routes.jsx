@@ -39,7 +39,7 @@ export const router = createBrowserRouter(
       {/* --- RUTAS PÚBLICAS --- */}
       <Route path="/"            element={<LandingPage />} />
       <Route path="/login"       element={<Login />} />
-      <Route path="/signup"      element={<CompanySignup />} />
+      <Route path="/signup"      element={<PrivateRoute allowedRoles={["ADMIN"]}><CompanySignup /></PrivateRoute>} />
       <Route path="/demo"        element={<Demo />} />
       <Route path="/single/:theId" element={<Single />} />
 

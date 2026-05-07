@@ -34,6 +34,7 @@ const ADMIN_PATHS = [
     "/admin-dashboard",
     "/manage-companies",
     "/audit-logs",
+    "/signup",
 ];
 
 const isAdminPath = (pathname) =>
@@ -45,7 +46,7 @@ const isEmployeeOrCompanyPath = (pathname) =>
 
 export const Layout = () => {
     const { pathname } = useLocation();
-    const isAuthPage = pathname === "/login" || pathname === "/signup";
+    const isAuthPage = pathname === "/login";
     const isAdmin = isAdminPath(pathname);
     const hasOwnLayout = isEmployeeOrCompanyPath(pathname);
     const showLandingChrome = !isAuthPage && !isAdmin && !hasOwnLayout;
