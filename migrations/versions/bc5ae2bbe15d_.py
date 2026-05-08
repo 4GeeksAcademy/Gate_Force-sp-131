@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 9d407351a454
+Revision ID: bc5ae2bbe15d
 Revises: 
-Create Date: 2026-05-03 16:40:01.732317
+Create Date: 2026-05-08 16:00:51.381083
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9d407351a454'
+revision = 'bc5ae2bbe15d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -87,6 +87,22 @@ def upgrade():
     sa.ForeignKeyConstraint(['survey_id'], ['surveys.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('chat_messages',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('company_id', sa.Integer(), nullable=False),
+    sa.Column('employee_id', sa.Integer(), nullable=False),
+    sa.Column('sender_role', sa.String(length=20), nullable=False),
+    sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('is_read', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['employee_id'], ['employees.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('chat_messages', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_chat_messages_company_id'), ['company_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_chat_messages_employee_id'), ['employee_id'], unique=False)
+
     op.create_table('incidents',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('employee_id', sa.Integer(), nullable=False),
@@ -112,6 +128,21 @@ def upgrade():
     )
     with op.batch_alter_table('nominas', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_nominas_employee_id'), ['employee_id'], unique=False)
+
+    op.create_table('peer_chat_messages',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('sender_id', sa.Integer(), nullable=False),
+    sa.Column('receiver_id', sa.Integer(), nullable=False),
+    sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('is_read', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['receiver_id'], ['employees.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['sender_id'], ['employees.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('peer_chat_messages', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_peer_chat_messages_receiver_id'), ['receiver_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_peer_chat_messages_sender_id'), ['sender_id'], unique=False)
 
     op.create_table('schedules',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -219,6 +250,11 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_schedules_employee_id'))
 
     op.drop_table('schedules')
+    with op.batch_alter_table('peer_chat_messages', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_peer_chat_messages_sender_id'))
+        batch_op.drop_index(batch_op.f('ix_peer_chat_messages_receiver_id'))
+
+    op.drop_table('peer_chat_messages')
     with op.batch_alter_table('nominas', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_nominas_employee_id'))
 
@@ -227,6 +263,11 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_incidents_employee_id'))
 
     op.drop_table('incidents')
+    with op.batch_alter_table('chat_messages', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_chat_messages_employee_id'))
+        batch_op.drop_index(batch_op.f('ix_chat_messages_company_id'))
+
+    op.drop_table('chat_messages')
     op.drop_table('questions')
     with op.batch_alter_table('employees', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_employees_email'))

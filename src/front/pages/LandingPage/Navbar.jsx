@@ -63,7 +63,7 @@ const Navbar = () => {
                             to="/login"
                             className="rts-btn btn-primary-4 six radius-6 quote-btn d-none d-md-flex"
                         >
-                            <span>Portal de Gestión</span>
+                            <span>Log In</span>
                             <ArrowIcon />
                         </Link>
                     </div>
