@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import ImageUpload from "../components/ImageUpload";
@@ -39,9 +39,9 @@ const EmployeeLayout = () => {
         setDropdownOpen(false);
     };
 
-    const today = new Date().toLocaleDateString("es-ES", {
+    const today = useMemo(() => new Date().toLocaleDateString("es-ES", {
         weekday: "long", year: "numeric", month: "long", day: "numeric",
-    });
+    }), []);
 
     const pageLabel = NAV_ITEMS.find(n => location.pathname === n.to)?.label ?? "Dashboard";
 
@@ -119,8 +119,8 @@ const EmployeeLayout = () => {
             <div className="flex-grow-1" style={{ marginLeft: SIDEBAR_W }}>
 
                 <header
-                    className="text-dark px-4 py-3 d-flex align-items-center justify-content-between sticky-top shadow-sm"
-                    style={{ zIndex: 1020, backgroundColor: BG }}
+                    className="text-white px-4 d-flex align-items-center justify-content-between sticky-top shadow-sm"
+                    style={{ zIndex: 1020, backgroundColor: BG, minHeight: 84, paddingTop: 17, paddingBottom: 17 }}
                 >
                     <div className="d-flex align-items-center gap-3">
                         <button
@@ -157,7 +157,7 @@ const EmployeeLayout = () => {
                                     onClick={() => setDropdownOpen(false)}
                                 />
                                 <div
-                                    className="position-absolute end-0 mt-2 bg-white rounded-4 shadow-lg py-2"
+                                    className="position-absolute end-0 mt-2 bg-white rounded-4 shadow-lg py-2 text-dark"
                                     style={{ zIndex: 1060, minWidth: 220, top: "100%" }}
                                 >
                                     <div className="d-flex align-items-center gap-3 px-4 py-3 border-bottom">

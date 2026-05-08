@@ -14,15 +14,17 @@ const LocationCell = ({ location }) => {
     const lng = parts[1];
     const hasCoords = !isNaN(lat) && !isNaN(lng);
 
-    // Reverse geocode — reads/writes shared cache to avoid redundant API calls
+    // Convertimos coordenadas a dirección legible; la caché evita llamar a Google Maps por cada render de la tabla
     useEffect(() => {
         if (!hasCoords || !mapsLoaded) return;
 
         const cached = getCached(lat, lng);
         if (cached) { setAddress(cached); return; }
 
+        let cancelled = false;
         const geocoder = new window.google.maps.Geocoder();
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            if (cancelled) return;
             const resolved =
                 status === "OK" && results[0]
                     ? results[0].formatted_address
@@ -30,14 +32,16 @@ const LocationCell = ({ location }) => {
             setCached(lat, lng, resolved);
             setAddress(resolved);
         });
+
+        return () => { cancelled = true; };
     }, [hasCoords, mapsLoaded, location]);
 
-    // Init mini-map once on first show; reuse on subsequent toggles
+    // El mapa se crea solo la primera vez que se abre; en los siguientes toggles reutilizamos la instancia para no re-renderizar
     useEffect(() => {
         if (!showMap || !mapRef.current || !mapsLoaded || !hasCoords) return;
         if (mapInstanceRef.current) {
-            setTimeout(() => mapInstanceRef.current.invalidateSize?.(), 50);
-            return;
+            const t = setTimeout(() => mapInstanceRef.current?.invalidateSize?.(), 50);
+            return () => clearTimeout(t);
         }
         const pos = { lat, lng };
         const map = new window.google.maps.Map(mapRef.current, {
@@ -51,7 +55,7 @@ const LocationCell = ({ location }) => {
         new window.google.maps.Marker({
             position: pos,
             map,
-            title: address || "Ubicación de fichaje",
+            title: address || "Check-in location",
             animation: window.google.maps.Animation.DROP,
         });
         mapInstanceRef.current = map;
@@ -65,7 +69,7 @@ const LocationCell = ({ location }) => {
                 type="button"
                 className="btn btn-link p-0 text-start text-decoration-none small d-flex align-items-center gap-1"
                 onClick={() => setShowMap(v => !v)}
-                title={showMap ? "Ocultar mapa" : "Ver en mapa"}
+                title={showMap ? "Hide map" : "View on map"}
             >
                 <i className={`bi bi-geo-alt${showMap ? "-fill" : ""} text-primary`}></i>
                 <span className="text-dark">

@@ -83,7 +83,8 @@ class Company(db.Model):
     def serialize(self):
         return {
             "id": self.id, "nombre_empresa": self.nombre_empresa, "email": self.email,
-            "region": self.region, "logo_url": self.logo_url, "role": "company"
+            "region": self.region, "logo_url": self.logo_url, "role": "company",
+            "is_active": self.is_active,
         }
 
 
@@ -124,6 +125,8 @@ class Employee(db.Model):
         return {
             "id": self.id,
             "company_id": self.company_id,
+            "company_name": self.company.nombre_empresa if self.company else None,
+            "company_logo": self.company.logo_url if self.company else None,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "email": self.email,
@@ -461,4 +464,29 @@ class ChatMessage(db.Model):
             "content": self.content,
             "is_read": self.is_read,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+
+
+class PeerChatMessage(db.Model):
+    """Direct messages between two employees of the same company."""
+    __tablename__ = "peer_chat_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sender_id:   Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), index=True)
+    receiver_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="CASCADE"), index=True)
+    content:     Mapped[str] = mapped_column(Text, nullable=False)
+    is_read:     Mapped[bool] = mapped_column(Boolean(), default=False)
+    created_at:  Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    sender   = relationship("Employee", foreign_keys=[sender_id])
+    receiver = relationship("Employee", foreign_keys=[receiver_id])
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "sender_id": self.sender_id,
+            "receiver_id": self.receiver_id,
+            "content": self.content,
+            "is_read": self.is_read,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         }

@@ -60,12 +60,7 @@ const EmployeeDashboard = () => {
     }, []);
 
     return (
-        <>
-            <div className="mb-4">
-                <h5 className="fw-bold mb-0">Welcome back, {store.user?.first_name}! 👋</h5>
-                <p className="text-muted small mb-0">Here's what's happening with your account today.</p>
-            </div>
-
+        <div className="container py-4">
             <div className="row g-3 mb-4">
                 <StatCard icon="⏱️" iconBg="bg-orange-500" label="Hours This Month" value={stats.totalHours !== null ? `${stats.totalHours}h` : "—"} />
                 <StatCard icon="☀️" iconBg="bg-orange-500" label="Pending Vacations" value={stats.pendingVacations} />
@@ -113,7 +108,91 @@ const EmployeeDashboard = () => {
                     </div>
                 </div>
             </div>
-        </>
+
+            <div className="row g-4">
+                <div className="col-12 col-lg-4">
+                    <div className="card border-0 shadow-sm rounded-4 h-100">
+                        <div className="card-body p-4">
+                            <div className="d-flex align-items-center justify-content-between mb-3">
+                                <h6 className="fw-bold mb-0">My Schedule Today</h6>
+                                <Link to="/my-schedules" className="btn btn-sm btn-light rounded-3 small">View All</Link>
+                            </div>
+                            <div className="d-flex flex-column gap-3">
+                                {[
+                                    { label: "Check-in",    time: "09:00 AM", icon: "bi-box-arrow-in-right", color: "success" },
+                                    { label: "Lunch Break", time: "01:00 PM", icon: "bi-cup-hot",            color: "warning" },
+                                    { label: "Check-out",   time: "06:00 PM", icon: "bi-box-arrow-right",    color: "danger"  },
+                                ].map(({ label, time, icon, color }) => (
+                                    <div key={label} className="d-flex align-items-center gap-3">
+                                        <div
+                                            className={`rounded-3 d-flex align-items-center justify-content-center flex-shrink-0 bg-${color} bg-opacity-10`}
+                                            style={{ width: 38, height: 38 }}
+                                        >
+                                            <i className={`bi ${icon} text-${color}`}></i>
+                                        </div>
+                                        <div>
+                                            <div className="small fw-semibold">{label}</div>
+                                            <div className="text-muted" style={{ fontSize: "0.75rem" }}>{time}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="col-12 col-lg-4">
+                    <div className="card border-0 shadow-sm rounded-4 h-100">
+                        <div className="card-body p-4">
+                            <div className="d-flex align-items-center justify-content-between mb-3">
+                                <h6 className="fw-bold mb-0">My Requests</h6>
+                                <Link to="/report-request" className="btn btn-sm btn-light rounded-3 small">New</Link>
+                            </div>
+                            <div className="d-flex flex-column gap-2">
+                                {[
+                                    { label: "Vacation Request",  badge: "Pending",  color: "warning" },
+                                    { label: "Remote Work Day",   badge: "Approved", color: "success" },
+                                    { label: "Equipment Request", badge: "Rejected", color: "danger"  },
+                                ].map(({ label, badge, color }) => (
+                                    <div key={label} className="d-flex align-items-center justify-content-between py-2 border-bottom">
+                                        <span className="small">{label}</span>
+                                        <span className={`badge bg-${color} bg-opacity-10 text-${color} border border-${color}`} style={{ fontSize: "0.65rem" }}>
+                                            {badge}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="col-12 col-lg-4">
+                    <div className="card border-0 shadow-sm rounded-4 h-100">
+                        <div className="card-body p-4 d-flex flex-column">
+                            <div className="d-flex align-items-center justify-content-between mb-3">
+                                <h6 className="fw-bold mb-0">Messages</h6>
+                                <Link to="/chat" className="btn btn-sm btn-light rounded-3 small">Open Chat</Link>
+                            </div>
+                            <div className="flex-grow-1 d-flex flex-column align-items-center justify-content-center text-center py-3">
+                                <div
+                                    className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mb-3"
+                                    style={{ width: 56, height: 56 }}
+                                >
+                                    <i className="bi bi-chat-dots text-primary fs-4"></i>
+                                </div>
+                                <p className="small text-muted mb-3">Chat directly with your company.</p>
+                                <Link to="/chat" className="btn btn-primary btn-sm rounded-3 px-4">
+                                    {stats.unreadMessages > 0
+                                        ? `View ${stats.unreadMessages} new message${stats.unreadMessages > 1 ? "s" : ""}`
+                                        : "Open Chat"
+                                    }
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 

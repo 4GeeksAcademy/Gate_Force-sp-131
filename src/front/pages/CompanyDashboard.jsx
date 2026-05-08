@@ -66,13 +66,9 @@ const CompanyDashboard = () => {
     const companyName = store.user?.nombre_empresa || "Company";
 
     return (
-        <>
-            <div className="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div>
-                    <h5 className="fw-bold mb-0">Welcome, {companyName}! 👋</h5>
-                    <p className="text-muted small mb-0">Manage your workforce and operational tasks.</p>
-                </div>
-                <Link to="/create-employee" className="btn btn-warning rounded-pill px-4 fw-bold shadow-sm">
+        <div className="container py-4">
+            <div className="mb-4 d-flex justify-content-end">
+                <Link to="/create-employee" className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
                     <i className="bi bi-person-plus me-2"></i>Add Employee
                 </Link>
             </div>
@@ -173,7 +169,7 @@ const CompanyDashboard = () => {
                     </div>
                 ))}
             </div>
-        </>
+        </div>
     );
 };
 

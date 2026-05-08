@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
-// Module-level singletons so the script is injected only once
+// Variables fuera del hook para que el script de Google Maps se inyecte una sola vez,
+// aunque varios componentes usen el hook al mismo tiempo
 let _loaded = false;
 let _loading = false;
 const _listeners = new Set();
@@ -22,7 +23,8 @@ export const useGoogleMaps = () => {
             const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
             if (!key) {
                 console.warn("[useGoogleMaps] VITE_GOOGLE_MAPS_API_KEY is not set");
-                return;
+                _loading = false;
+                return () => _listeners.delete(notify);
             }
 
             const cb = "__gMapsReady__";
