@@ -4,30 +4,30 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import ImageUpload from "../components/ImageUpload";
 
 const NAV_ITEMS = [
-    { to: "/company-dashboard",   icon: "bi-speedometer2",      label: "Dashboard" },
-    { to: "/manage-employees",    icon: "bi-people",             label: "Employees" },
-    { to: "/manage-approvals",    icon: "bi-ui-checks",          label: "Approvals" },
-    { to: "/payroll-hub",         icon: "bi-cash-stack",         label: "Payrolls" },
-    { to: "/schedule-planner",    icon: "bi-calendar-week",      label: "Schedules" },
-    { to: "/work-logs",           icon: "bi-clock-history",      label: "Work Logs" },
-    { to: "/survey-builder",      icon: "bi-clipboard-data",     label: "Surveys" },
-    { to: "/AIRecommendationsHub",icon: "bi-stars",              label: "AI Insights" },
-    { to: "/company-chat",        icon: "bi-chat-dots",          label: "Chat" },
+    { to: "/company-dashboard", icon: "bi-speedometer2", label: "Dashboard" },
+    { to: "/manage-employees", icon: "bi-people", label: "Employees" },
+    { to: "/manage-approvals", icon: "bi-ui-checks", label: "Approvals" },
+    { to: "/payroll-hub", icon: "bi-cash-stack", label: "Payrolls" },
+    { to: "/schedule-planner", icon: "bi-calendar-week", label: "Schedules" },
+    { to: "/work-logs", icon: "bi-clock-history", label: "Work Logs" },
+    { to: "/survey-builder", icon: "bi-clipboard-data", label: "Surveys" },
+    { to: "/AIRecommendationsHub", icon: "bi-stars", label: "AI Insights" },
+    { to: "/company-chat", icon: "bi-chat-dots", label: "Chat" },
 ];
 
 const SIDEBAR_W = 240;
-const BG = "#1a1f2e";
+const BG = "#ffffff";
 
 const CompanyLayout = () => {
     const { store, actions } = useGlobalReducer();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [sidebarOpen, setSidebarOpen]   = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     const companyName = store.user?.nombre_empresa ?? "Company";
-    const logo        = store.user?.logo_url;
+    const logo = store.user?.logo_url;
 
     const handleLogoUpload = async (url) => {
         const { ok } = await actions.apiFetch("/company/profile", "PUT", { logo_url: url });
@@ -70,15 +70,15 @@ const CompanyLayout = () => {
             )}
 
             <aside
-                className={`flex-column text-white position-fixed top-0 start-0 h-100 ${sidebarOpen ? "d-flex" : "d-none d-lg-flex"}`}
+                className={`flex-column text-dark position-fixed top-0 start-0 h-100 ${sidebarOpen ? "d-flex" : "d-none d-lg-flex"}`}
                 style={{ width: SIDEBAR_W, zIndex: 1050, overflowY: "auto", backgroundColor: BG }}
             >
-                <div className="px-4 py-4 border-bottom border-secondary d-flex align-items-center gap-2">
+                <div className="px-4 py-4 border-bottom border-light d-flex align-items-center gap-2">
                     <i className="bi bi-shield-lock-fill text-primary fs-4"></i>
-                    <span className="fw-bold fs-5 text-white">GateForce</span>
+                    <span className="fw-bold fs-5 text-dark">GateForce</span>
                 </div>
 
-                <div className="px-3 py-4 border-bottom border-secondary d-flex align-items-center gap-3">
+                <div className="px-3 py-4 border-bottom border-light d-flex align-items-center gap-3">
                     <ImageUpload
                         currentImage={logo}
                         onUpload={handleLogoUpload}
@@ -86,8 +86,8 @@ const CompanyLayout = () => {
                         label=""
                     />
                     <div className="overflow-hidden">
-                        <div className="fw-semibold text-white text-truncate small">{companyName}</div>
-                        <span className="badge bg-primary bg-opacity-25 text-primary border border-primary" style={{ fontSize: "0.65rem" }}>
+                        <div className="fw-semibold text-dark text-truncate small">{companyName}</div>
+                        <span className="badge bg-warning bg-opacity-25 text-warning border border-warning" style={{ fontSize: "0.65rem" }}>
                             Company
                         </span>
                     </div>
@@ -101,11 +101,11 @@ const CompanyLayout = () => {
                                 <li key={to} className="nav-item">
                                     <Link
                                         to={to}
-                                        className={`nav-link rounded-3 px-3 py-2 d-flex align-items-center gap-2 ${active ? "bg-primary text-white" : "text-white-50"}`}
+                                        className={`nav-link rounded-3 px-3 py-2 d-flex align-items-center gap-2 ${active ? "bg-warning text-dark" : "text-muted"}`}
                                         style={{ transition: "background 0.15s" }}
                                         onClick={() => setSidebarOpen(false)}
-                                        onMouseEnter={e => { if (!active) e.currentTarget.classList.add("bg-white", "bg-opacity-10"); }}
-                                        onMouseLeave={e => { if (!active) e.currentTarget.classList.remove("bg-white", "bg-opacity-10"); }}
+                                        onMouseEnter={e => { if (!active) { e.currentTarget.classList.add("bg-light"); e.currentTarget.style.color = "#fd7e14"; } }}
+                                        onMouseLeave={e => { if (!active) { e.currentTarget.classList.remove("bg-light"); e.currentTarget.style.color = ""; } }}
                                     >
                                         <i className={`bi ${icon}`}></i>
                                         <span className="small">{label}</span>
@@ -125,21 +125,21 @@ const CompanyLayout = () => {
                 >
                     <div className="d-flex align-items-center gap-3">
                         <button
-                            className="btn btn-sm btn-outline-light d-lg-none rounded-3"
+                            className="btn btn-sm btn-outline-secondary d-lg-none rounded-3"
                             onClick={() => setSidebarOpen(true)}
                         >
                             <i className="bi bi-list fs-5"></i>
                         </button>
                         <div>
-                            <h6 className="mb-0 fw-bold text-white">{pageLabel}</h6>
-                            <small className="text-white-50 text-capitalize">{today}</small>
+                            <h6 className="mb-0 fw-bold text-dark">{pageLabel}</h6>
+                            <small className="text-muted text-capitalize">{today}</small>
                         </div>
                     </div>
 
                     <div className="position-relative">
                         <button
-                            className="btn d-flex align-items-center gap-2 text-white px-2 py-1 rounded-3"
-                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
+                            className="btn d-flex align-items-center gap-2 text-dark px-2 py-1 rounded-3"
+                            style={{ background: "rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.1)" }}
                             onClick={() => setDropdownOpen(o => !o)}
                         >
                             <LogoCircle size={32} />

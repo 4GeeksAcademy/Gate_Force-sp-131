@@ -63,7 +63,7 @@ const WellnessSurvey = () => {
     return (
         <div className="container py-5 max-w-md" style={{ maxWidth: "600px" }}>
             <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
-                <div className="bg-primary text-white text-center py-4">
+                <div className="bg-warning text-dark text-center py-4">
                     <h3 className="fw-bold mb-0"><i className="bi bi-heart-pulse me-2"></i>Radar de Bienestar</h3>
                     <p className="mb-0 small opacity-75">Tu bienestar es nuestra prioridad</p>
                 </div>
@@ -125,7 +125,7 @@ const WellnessSurvey = () => {
                                         <i className="bi bi-arrow-counterclockwise me-1"></i> Tomar de nuevo
                                     </button>
                                 ) : (
-                                    <button type="button" className="btn btn-primary rounded-pill px-4" onClick={capturePhoto}>
+                                    <button type="button" className="btn btn-warning rounded-pill px-4" onClick={capturePhoto}>
                                         <i className="bi bi-camera me-1"></i> Capturar Foto
                                     </button>
                                 )}

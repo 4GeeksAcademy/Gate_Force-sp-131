@@ -58,7 +58,7 @@ const LocationMap = ({ coords, detectionId, status, onRefresh }) => {
                     </h6>
                     <button
                         type="button"
-                        className="btn btn-sm btn-outline-primary rounded-pill px-3"
+                        className="btn btn-sm btn-outline-warning rounded-pill px-3"
                         onClick={onRefresh}
                         disabled={status === "loading"}
                     >

@@ -112,7 +112,7 @@ const EditEmployee = () => {
 
                                 <div className="d-flex justify-content-end gap-2 pt-3 border-top">
                                     <button type="button" className="btn btn-outline-secondary px-4 fw-bold" onClick={() => navigate(-1)}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary px-4 fw-bold shadow">Update Employee</button>
+                                    <button type="submit" className="btn btn-warning px-4 fw-bold shadow">Update Employee</button>
                                 </div>
                             </form>
                         </div>

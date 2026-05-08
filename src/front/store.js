@@ -20,19 +20,22 @@ const getState = ({ getStore, getActions, setStore }) => {
     actions: {
       // Todas las llamadas a la API pasan por aquí para no repetir el token y el manejo de errores en cada acción
       apiFetch: async (endpoint, method = "GET", body = null) => {
-    const store = getStore();
-    const token = store.token || localStorage.getItem("token");
+        const store = getStore();
+        const token = store.token || localStorage.getItem("token");
 
-    const params = {
-        method,
-        headers: { "Content-Type": "application/json" },
-    };
+        const params = {
+          method,
+          headers: { "Content-Type": "application/json" },
+        };
 
-    if (token) {
-        params.headers["Authorization"] = `Bearer ${token}`;
-    }
+        if (token) {
+          params.headers["Authorization"] = `Bearer ${token}`;
+        }
 
-    if (body) params.body = JSON.stringify(body);
+        if (body) params.body = JSON.stringify(body);
+
+        try {
+          const resp = await fetch(`${baseUrl}/api${endpoint}`, params);
 
     try {
         const resp = await fetch(`${baseUrl}/api${endpoint}`, params);
@@ -47,7 +50,55 @@ const getState = ({ getStore, getActions, setStore }) => {
         // El 500 lo cortamos antes de intentar parsear JSON porque Flask puede devolver HTML en este caso
         if (resp.status === 500) {
             console.error("El backend ha reportado un Error 500.");
-            return { ok: false, data: { msg: "Error interno del servidor. Revisa la terminal de Flask." } };
+            return {
+              ok: false,
+              data: {
+                msg: "Error interno del servidor. Revisa la terminal de Flask.",
+              },
+            };
+          }
+
+          // 3. Procesamos la respuesta si es JSON; si no, devolvemos un error claro.
+          const contentType = resp.headers.get("Content-Type") || "";
+          const text = await resp.text();
+
+          if (!contentType.includes("application/json")) {
+            console.error("Respuesta no JSON del backend:", resp.status, text);
+            return {
+              ok: false,
+              data: {
+                msg: "Invalid response from backend: expected JSON.",
+                status: resp.status,
+                body: text,
+              },
+            };
+          }
+
+          let data;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (error) {
+            console.error("JSON inválido recibido del backend:", text);
+            return {
+              ok: false,
+              data: {
+                msg: "Invalid JSON response from backend.",
+                status: resp.status,
+                body: text,
+              },
+            };
+          }
+
+          return { ok: resp.ok, data };
+        } catch (error) {
+          console.error(
+            "Error en la petición (Posible error de red o JSON inválido):",
+            error,
+          );
+          return {
+            ok: false,
+            data: { msg: "Network error or invalid server response" },
+          };
         }
 
         const data = await resp.json();

@@ -35,9 +35,9 @@ const SchedulePlanner = () => {
                                 <option key={emp.id} value={emp.id}>{emp.first_name}</option>
                             ))}
                         </select>
-                        
+
                         <label className="small fw-bold">Day</label>
-                        <select className="form-select mb-3" onChange={e => setSchedule({...schedule, day: e.target.value})}>
+                        <select className="form-select mb-3" onChange={e => setSchedule({ ...schedule, day: e.target.value })}>
                             {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(d => (
                                 <option key={d} value={d}>{d}</option>
                             ))}
@@ -46,14 +46,14 @@ const SchedulePlanner = () => {
                         <div className="row">
                             <div className="col-6">
                                 <label className="small fw-bold">Start</label>
-                                <input type="time" className="form-control" value={schedule.start} onChange={e => setSchedule({...schedule, start: e.target.value})} />
+                                <input type="time" className="form-control" value={schedule.start} onChange={e => setSchedule({ ...schedule, start: e.target.value })} />
                             </div>
                             <div className="col-6">
                                 <label className="small fw-bold">End</label>
-                                <input type="time" className="form-control" value={schedule.end} onChange={e => setSchedule({...schedule, end: e.target.value})} />
+                                <input type="time" className="form-control" value={schedule.end} onChange={e => setSchedule({ ...schedule, end: e.target.value })} />
                             </div>
                         </div>
-                        <button className="btn btn-dark w-100 mt-4 fw-bold" onClick={handleSave}>Assign Shift</button>
+                        <button className="btn btn-warning w-100 mt-4 fw-bold" onClick={handleSave}>Assign Shift</button>
                     </div>
                 </div>
 
