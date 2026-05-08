@@ -95,6 +95,9 @@ const AdminDashboard = () => {
                         <Link to="/audit-logs" className="btn btn-outline-danger px-4">
                             <i className="bi bi-shield-lock me-2"></i>Audit Log
                         </Link>
+                        <Link to="/signup" className="btn btn-outline-primary px-4">
+                            <i className="bi bi-shield-lock me-2"></i>Create Company
+                        </Link>
                     </div>
                 </div>
             </div>

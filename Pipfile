@@ -23,6 +23,7 @@ sqlalchemy = "*"
 google-generativeai = "*"
 google-genai = "*"
 flask-socketio = "*"
+eventlet = "*"
 
 [requires]
 python_version = "3.13"
