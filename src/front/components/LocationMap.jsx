@@ -32,13 +32,15 @@ const LocationMap = ({ coords, detectionId, status, onRefresh }) => {
                 title: "Tu ubicación",
                 animation: window.google.maps.Animation.DROP,
             });
-        } else {
-            mapInstanceRef.current.panTo(pos);
-            markerRef.current.setPosition(pos);
-            // Bounce to confirm the map refreshed, even if coords are identical
-            markerRef.current.setAnimation(window.google.maps.Animation.BOUNCE);
-            setTimeout(() => markerRef.current?.setAnimation(null), 1400);
+            return;
         }
+
+        mapInstanceRef.current.panTo(pos);
+        markerRef.current.setPosition(pos);
+        // Bounce to confirm the map refreshed, even if coords are identical
+        markerRef.current.setAnimation(window.google.maps.Animation.BOUNCE);
+        const bounceTimer = setTimeout(() => markerRef.current?.setAnimation(null), 1400);
+        return () => clearTimeout(bounceTimer);
     }, [mapsLoaded, coords, detectionId]); // detectionId ensures this fires on every refresh
 
     const apiKeyMissing = !import.meta.env.VITE_GOOGLE_MAPS_API_KEY;

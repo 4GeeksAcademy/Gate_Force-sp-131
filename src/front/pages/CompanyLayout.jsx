@@ -18,6 +18,18 @@ const NAV_ITEMS = [
 const SIDEBAR_W = 240;
 const BG = "#1a1f2e";
 
+const LogoCircle = ({ logo, size = 34 }) => (
+    <div
+        className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden bg-secondary"
+        style={{ width: size, height: size }}
+    >
+        {logo
+            ? <img src={logo} className="w-100 h-100 object-fit-cover" alt="" />
+            : <i className="bi bi-building text-white" style={{ fontSize: size * 0.45 }}></i>
+        }
+    </div>
+);
+
 const CompanyLayout = () => {
     const { store, actions } = useGlobalReducer();
     const navigate = useNavigate();
@@ -45,18 +57,6 @@ const CompanyLayout = () => {
     });
 
     const pageLabel = NAV_ITEMS.find(n => location.pathname === n.to)?.label ?? "Dashboard";
-
-    const LogoCircle = ({ size = 34 }) => (
-        <div
-            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden bg-secondary"
-            style={{ width: size, height: size }}
-        >
-            {logo
-                ? <img src={logo} className="w-100 h-100 object-fit-cover" alt="" />
-                : <i className="bi bi-building text-white" style={{ fontSize: size * 0.45 }}></i>
-            }
-        </div>
-    );
 
     return (
         <div className="d-flex" style={{ minHeight: "100vh", backgroundColor: "#f4f6fb" }}>
@@ -142,7 +142,7 @@ const CompanyLayout = () => {
                             style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
                             onClick={() => setDropdownOpen(o => !o)}
                         >
-                            <LogoCircle size={32} />
+                            <LogoCircle logo={logo} size={32} />
                             <div className="text-start d-none d-sm-block">
                                 <div className="small fw-semibold lh-1">{companyName}</div>
                                 <div style={{ fontSize: "0.68rem", opacity: 0.6 }}>Company</div>
@@ -162,7 +162,7 @@ const CompanyLayout = () => {
                                     style={{ zIndex: 1060, minWidth: 220, top: "100%" }}
                                 >
                                     <div className="d-flex align-items-center gap-3 px-4 py-3 border-bottom">
-                                        <LogoCircle size={42} />
+                                        <LogoCircle logo={logo} size={42} />
                                         <div>
                                             <div className="fw-semibold small">{companyName}</div>
                                             <div className="text-muted" style={{ fontSize: "0.72rem" }}>{store.user?.email ?? ""}</div>

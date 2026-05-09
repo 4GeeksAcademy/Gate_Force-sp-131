@@ -17,6 +17,18 @@ const NAV_ITEMS = [
 const SIDEBAR_W = 240;
 const BG = "#1a1f2e";
 
+const AvatarCircle = ({ avatar, size = 34 }) => (
+    <div
+        className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden bg-secondary"
+        style={{ width: size, height: size }}
+    >
+        {avatar
+            ? <img src={avatar} className="w-100 h-100 object-fit-cover" alt="" />
+            : <i className="bi bi-person-fill text-white" style={{ fontSize: size * 0.45 }}></i>
+        }
+    </div>
+);
+
 const EmployeeLayout = () => {
     const { store, actions } = useGlobalReducer();
     const navigate = useNavigate();
@@ -44,18 +56,6 @@ const EmployeeLayout = () => {
     });
 
     const pageLabel = NAV_ITEMS.find(n => location.pathname === n.to)?.label ?? "Dashboard";
-
-    const AvatarCircle = ({ size = 34 }) => (
-        <div
-            className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden bg-secondary"
-            style={{ width: size, height: size }}
-        >
-            {avatar
-                ? <img src={avatar} className="w-100 h-100 object-fit-cover" alt="" />
-                : <i className="bi bi-person-fill text-white" style={{ fontSize: size * 0.45 }}></i>
-            }
-        </div>
-    );
 
     return (
         <div className="d-flex" style={{ minHeight: "100vh", backgroundColor: "#f4f6fb" }}>
@@ -141,7 +141,7 @@ const EmployeeLayout = () => {
                             style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
                             onClick={() => setDropdownOpen(o => !o)}
                         >
-                            <AvatarCircle size={32} />
+                            <AvatarCircle avatar={avatar} size={32} />
                             <div className="text-start d-none d-sm-block">
                                 <div className="small fw-semibold lh-1">{displayName || "—"}</div>
                                 <div style={{ fontSize: "0.68rem", opacity: 0.6 }}>Employee</div>
@@ -161,7 +161,7 @@ const EmployeeLayout = () => {
                                     style={{ zIndex: 1060, minWidth: 220, top: "100%" }}
                                 >
                                     <div className="d-flex align-items-center gap-3 px-4 py-3 border-bottom">
-                                        <AvatarCircle size={42} />
+                                        <AvatarCircle avatar={avatar} size={42} />
                                         <div>
                                             <div className="fw-semibold small">{displayName || "—"}</div>
                                             <div className="text-muted" style={{ fontSize: "0.72rem" }}>{store.user?.email ?? ""}</div>

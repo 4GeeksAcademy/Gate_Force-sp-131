@@ -36,8 +36,8 @@ const LocationCell = ({ location }) => {
     useEffect(() => {
         if (!showMap || !mapRef.current || !mapsLoaded || !hasCoords) return;
         if (mapInstanceRef.current) {
-            setTimeout(() => mapInstanceRef.current.invalidateSize?.(), 50);
-            return;
+            const resizeTimer = setTimeout(() => mapInstanceRef.current.invalidateSize?.(), 50);
+            return () => clearTimeout(resizeTimer);
         }
         const pos = { lat, lng };
         const map = new window.google.maps.Map(mapRef.current, {
