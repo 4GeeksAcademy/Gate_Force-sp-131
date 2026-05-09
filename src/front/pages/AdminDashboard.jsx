@@ -26,15 +26,10 @@ const AdminDashboard = () => {
 
     return (
         <div className="container py-4">
-            <header className="mb-5">
-                <h1 className="display-5 fw-bold text-dark">System Administration</h1>
-                <p className="lead text-muted">Global oversight of the GateForce Platform.</p>
-            </header>
-
             {/* STATS */}
             <div className="row g-4 mb-5">
                 <div className="col-md-4">
-                    <div className="card border-0 shadow-sm p-4 h-100 bg-dark text-white">
+                    <div className="card border-0 shadow-sm p-4 h-100">
                         <h6 className="text-secondary text-uppercase small fw-bold">Active Companies</h6>
                         <h2 className="display-4 fw-bold">{stats.totalCompanies}</h2>
                         <Link to="/manage-companies" className="text-primary text-decoration-none small mt-3">View directory →</Link>
@@ -99,6 +94,9 @@ const AdminDashboard = () => {
                         </Link>
                         <Link to="/audit-logs" className="btn btn-outline-danger px-4">
                             <i className="bi bi-shield-lock me-2"></i>Audit Log
+                        </Link>
+                        <Link to="/signup" className="btn btn-outline-primary px-4">
+                            <i className="bi bi-shield-lock me-2"></i>Create Company
                         </Link>
                     </div>
                 </div>

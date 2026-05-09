@@ -136,7 +136,7 @@ const EmployeeSurveys = () => {
                                         </div>
                                         <p className="text-muted small mb-4">{survey.description || "Sin descripción adicional."}</p>
                                         <button
-                                            className="btn btn-outline-primary w-100 rounded-pill fw-bold"
+                                            className="btn btn-outline-warning w-100 rounded-pill fw-bold"
                                             onClick={() => setSelectedSurvey(survey)}
                                         >
                                             Comenzar Encuesta <i className="bi bi-arrow-right ms-1"></i>

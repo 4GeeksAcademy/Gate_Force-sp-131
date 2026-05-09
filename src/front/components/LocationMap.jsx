@@ -11,12 +11,13 @@ const LocationMap = ({ coords, detectionId, status, onRefresh }) => {
     const lng = coords ? Number(coords.split(",")[1]) : null;
     const hasCoords = lat !== null && !isNaN(lat);
 
-    // Runs on every detect() call thanks to detectionId in deps,
-    // even when coords string hasn't changed (same GPS fix after VPN toggle)
+    // detectionId fuerza que el efecto se dispare en cada llamada a detect(), aunque las coordenadas no cambien
+    // (ocurre cuando el GPS tiene el mismo fix pero el usuario pulsa "Update" tras cambiar la VPN)
     useEffect(() => {
         if (!mapsLoaded || !mapRef.current || !hasCoords) return;
 
         const pos = { lat, lng };
+        let bounceTimeout;
 
         if (!mapInstanceRef.current) {
             mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
@@ -29,19 +30,21 @@ const LocationMap = ({ coords, detectionId, status, onRefresh }) => {
             markerRef.current = new window.google.maps.Marker({
                 position: pos,
                 map: mapInstanceRef.current,
-                title: "Tu ubicación",
+                title: "Your location",
                 animation: window.google.maps.Animation.DROP,
             });
-            return;
+        } else {
+            mapInstanceRef.current.panTo(pos);
+            markerRef.current.setPosition(pos);
+            // Pequeño rebote para que el usuario vea que el mapa sí se actualizó, aunque la posición sea la misma
+            markerRef.current.setAnimation(window.google.maps.Animation.BOUNCE);
+            bounceTimeout = setTimeout(() => markerRef.current?.setAnimation(null), 1400);
         }
 
-        mapInstanceRef.current.panTo(pos);
-        markerRef.current.setPosition(pos);
-        // Bounce to confirm the map refreshed, even if coords are identical
-        markerRef.current.setAnimation(window.google.maps.Animation.BOUNCE);
-        const bounceTimer = setTimeout(() => markerRef.current?.setAnimation(null), 1400);
-        return () => clearTimeout(bounceTimer);
-    }, [mapsLoaded, coords, detectionId]); // detectionId ensures this fires on every refresh
+        return () => {
+            if (bounceTimeout) clearTimeout(bounceTimeout);
+        };
+    }, [mapsLoaded, coords, detectionId]);
 
     const apiKeyMissing = !import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -51,11 +54,11 @@ const LocationMap = ({ coords, detectionId, status, onRefresh }) => {
                 <div className="d-flex justify-content-between align-items-center mb-2">
                     <h6 className="fw-bold mb-0 d-flex align-items-center gap-2">
                         <i className="bi bi-geo-alt-fill text-primary"></i>
-                        Ubicación del fichaje
+                        Check-in Location
                     </h6>
                     <button
                         type="button"
-                        className="btn btn-sm btn-outline-primary rounded-pill px-3"
+                        className="btn btn-sm btn-outline-warning rounded-pill px-3"
                         onClick={onRefresh}
                         disabled={status === "loading"}
                     >
@@ -63,22 +66,21 @@ const LocationMap = ({ coords, detectionId, status, onRefresh }) => {
                             ? <span className="spinner-border spinner-border-sm me-1" />
                             : <i className="bi bi-crosshair me-1"></i>
                         }
-                        {hasCoords ? "Actualizar" : "Detectar"}
+                        {hasCoords ? "Update" : "Detect"}
                     </button>
                 </div>
 
                 {apiKeyMissing && (
                     <div className="alert alert-warning small py-2 mb-2">
                         <i className="bi bi-exclamation-triangle me-1"></i>
-                        Configura <code>VITE_GOOGLE_MAPS_API_KEY</code> en <code>.env</code>.
+                        Set <code>VITE_GOOGLE_MAPS_API_KEY</code> in <code>.env</code>.
                     </div>
                 )}
 
                 {status === "error" && (
                     <div className="alert alert-danger small py-2 mb-2">
                         <i className="bi bi-geo-alt me-1"></i>
-                        No se pudo obtener la ubicación. Revisa los permisos del navegador
-                        o si la VPN bloquea la geolocalización.
+                        Could not get location. Check browser permissions or whether a VPN is blocking geolocation.
                     </div>
                 )}
 
@@ -88,8 +90,8 @@ const LocationMap = ({ coords, detectionId, status, onRefresh }) => {
                         style={{ height: 180 }}
                     >
                         {status === "loading"
-                            ? <><div className="spinner-border text-primary mb-2" /><small>Obteniendo ubicación...</small></>
-                            : <><i className="bi bi-map fs-1 mb-2"></i><small>Esperando geolocalización</small></>
+                            ? <><div className="spinner-border text-primary mb-2" /><small>Getting location...</small></>
+                            : <><i className="bi bi-map fs-1 mb-2"></i><small>Waiting for geolocation</small></>
                         }
                     </div>
                 )}
@@ -111,7 +113,7 @@ const LocationMap = ({ coords, detectionId, status, onRefresh }) => {
                         {lat.toFixed(5)}, {lng.toFixed(5)}
                         {status === "success" && (
                             <span className="ms-2 text-success fw-semibold">
-                                <i className="bi bi-check-circle me-1"></i>Lista para el fichaje
+                                <i className="bi bi-check-circle me-1"></i>Ready to clock in
                             </span>
                         )}
                     </p>

@@ -147,7 +147,7 @@ const SurveyBuilder = () => {
                                                 <td className="text-end">
                                                     {/* CONECTAMOS EL BOTÓN AQUÍ */}
                                                     <button
-                                                        className="btn btn-sm btn-outline-primary rounded-pill"
+                                                        className="btn btn-sm btn-outline-warning rounded-pill"
                                                         onClick={() => handleViewResults(item.id)}
                                                     >
                                                         Ver Resultados <i className="bi bi-arrow-right ms-1"></i>
@@ -229,10 +229,10 @@ const SurveyBuilder = () => {
                         ))}
 
                         <div className="d-flex flex-column flex-md-row gap-3 mt-4">
-                            <button className="btn btn-outline-primary rounded-pill px-4 fw-bold shadow-sm" onClick={addQuestion}>
+                            <button className="btn btn-outline-warning rounded-pill px-4 fw-bold shadow-sm" onClick={addQuestion}>
                                 <i className="bi bi-plus-circle me-2"></i>Añadir Pregunta
                             </button>
-                            <button className="btn btn-dark ms-md-auto rounded-pill px-5 fw-bold shadow-sm" onClick={saveSurvey} disabled={isSubmitting}>
+                            <button className="btn btn-warning ms-md-auto rounded-pill px-5 fw-bold shadow-sm" onClick={saveSurvey} disabled={isSubmitting}>
                                 {isSubmitting ? <><span className="spinner-border spinner-border-sm me-2"></span> Lanzando...</> : <><i className="bi bi-rocket-takeoff me-2"></i> Lanzar Encuesta</>}
                             </button>
                         </div>

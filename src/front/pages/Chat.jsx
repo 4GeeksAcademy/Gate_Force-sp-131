@@ -12,20 +12,20 @@ const Chat = () => {
     const navigate = useNavigate();
     const { role, user } = store;
 
-    const [contacts, setContacts]         = useState([]);
+    const [contacts, setContacts] = useState([]);
     const [activeContact, setActiveContact] = useState(null);
-    const [messages, setMessages]         = useState([]);
-    const [newMessage, setNewMessage]     = useState("");
-    const [loading, setLoading]           = useState(false);
-    const [sending, setSending]           = useState(false);
-    const [countdown, setCountdown]       = useState(RECONNECT_EVERY);
-    const [connected, setConnected]       = useState(false);
-    const [unreadMap, setUnreadMap]       = useState({});
-    const [search, setSearch]             = useState("");
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [countdown, setCountdown] = useState(RECONNECT_EVERY);
+    const [connected, setConnected] = useState(false);
+    const [unreadMap, setUnreadMap] = useState({});
+    const [search, setSearch] = useState("");
 
     const bottomRef = useRef(null);
     const socketRef = useRef(null);
-    const countRef  = useRef(null);
+    const countRef = useRef(null);
 
     const scrollToBottom = () => bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
@@ -38,7 +38,9 @@ const Chat = () => {
 
     const connectSocket = (contact) => {
         if (socketRef.current) socketRef.current.disconnect();
-        const socket = io(BACKEND_URL, { transports: ["websocket"] });
+        // Sin forzar transports: Werkzeug no soporta el upgrade a WebSocket y lanza AssertionError,
+        // socket.io negocia polling automáticamente en dev sin que tengamos que hacer nada
+        const socket = io(BACKEND_URL);
         socketRef.current = socket;
         socket.on("connect", () => {
             setConnected(true);
@@ -61,19 +63,40 @@ const Chat = () => {
         }, 1000);
     };
 
+    const contactKey = (c) => c?.type === "peer" ? `peer-${c.id}` : (c?.type === "company" ? "company" : c?.id);
+
     const loadContacts = async () => {
         if (role === "COMPANY") {
             const { ok, data } = await actions.apiFetch("/employees");
-            if (ok) setContacts(data);
+            if (ok) setContacts(data.map(e => ({ ...e, type: "employee" })));
+            return;
         }
+        // El empleado siempre ve su empresa como primer contacto, luego sus compañeros
+        const companyContact = {
+            id: user?.company_id,
+            type: "company",
+            nombre_empresa: user?.company_name || "My Company",
+            profile_image: user?.company_logo || null,
+        };
+        const { ok, data } = await actions.apiFetch("/chat/colleagues");
+        const colleagues = ok ? data.map(e => ({ ...e, type: "peer" })) : [];
+        setContacts([companyContact, ...colleagues]);
+        return companyContact;
     };
 
     const loadUnreadCounts = async () => {
-        const { ok, data } = await actions.apiFetch("/chat/unread-count");
-        if (!ok) return;
         if (role === "EMPLOYEE") {
-            setUnreadMap({ company: data.unread || 0 });
+            const [companyRes, peerRes] = await Promise.all([
+                actions.apiFetch("/chat/unread-count"),
+                actions.apiFetch("/chat/peer-unread-count"),
+            ]);
+            const map = {};
+            if (companyRes.ok) map.company = companyRes.data.unread || 0;
+            if (peerRes.ok) peerRes.data.forEach(d => { map[`peer-${d.peer_id}`] = d.unread; });
+            setUnreadMap(map);
         } else {
+            const { ok, data } = await actions.apiFetch("/chat/unread-count");
+            if (!ok) return;
             const map = {};
             data.forEach(d => { map[d.employee_id] = d.unread; });
             setUnreadMap(map);
@@ -82,9 +105,14 @@ const Chat = () => {
 
     const loadMessages = async (contact) => {
         setLoading(true);
-        const endpoint = role === "EMPLOYEE"
-            ? "/chat/messages"
-            : `/chat/messages?employee_id=${contact.id}`;
+        let endpoint;
+        if (contact.type === "peer") {
+            endpoint = `/chat/peer-messages?peer_id=${contact.id}`;
+        } else if (role === "EMPLOYEE") {
+            endpoint = "/chat/messages";
+        } else {
+            endpoint = `/chat/messages?employee_id=${contact.id}`;
+        }
         const { ok, data } = await actions.apiFetch(endpoint);
         if (ok) setMessages(data);
         setLoading(false);
@@ -93,23 +121,42 @@ const Chat = () => {
     const selectContact = (contact) => {
         setActiveContact(contact);
         loadMessages(contact);
-        connectSocket(contact);
-        startCountdown(contact);
-        setUnreadMap(prev => ({ ...prev, [contact.id]: 0 }));
+        // El socket solo existe para el chat empresa-empleado; los mensajes entre compañeros van por HTTP
+        if (contact.type === "peer") {
+            socketRef.current?.disconnect();
+            clearInterval(countRef.current);
+            setConnected(false);
+        } else {
+            connectSocket(contact);
+            startCountdown(contact);
+        }
+        setUnreadMap(prev => ({ ...prev, [contactKey(contact)]: 0 }));
     };
 
     const sendMessage = async () => {
         const content = newMessage.trim();
         if (!content || !activeContact) return;
         setSending(true);
-        const body = role === "EMPLOYEE"
-            ? { content }
-            : { content, employee_id: activeContact.id };
-        const { ok, data } = await actions.apiFetch("/chat/messages", "POST", body);
+
+        let endpoint, body;
+        if (activeContact.type === "peer") {
+            endpoint = "/chat/peer-messages";
+            body = { content, peer_id: activeContact.id };
+        } else if (role === "EMPLOYEE") {
+            endpoint = "/chat/messages";
+            body = { content };
+        } else {
+            endpoint = "/chat/messages";
+            body = { content, employee_id: activeContact.id };
+        }
+
+        const { ok, data } = await actions.apiFetch(endpoint, "POST", body);
         if (ok) {
             setMessages(prev => [...prev, data]);
             setNewMessage("");
-            socketRef.current?.emit("send_message", { ...data, ...getRoomData(activeContact) });
+            if (activeContact.type !== "peer") {
+                socketRef.current?.emit("send_message", { ...data, ...getRoomData(activeContact) });
+            }
         }
         setSending(false);
     };
@@ -120,13 +167,10 @@ const Chat = () => {
 
     useEffect(() => {
         loadUnreadCounts();
-        if (role === "COMPANY") {
-            loadContacts();
-        } else {
-            const companyContact = { id: user?.company_id, first_name: "Tu", last_name: "Empresa", profile_image: null };
-            setContacts([companyContact]);
-            selectContact(companyContact);
-        }
+        (async () => {
+            const first = await loadContacts();
+            if (role === "EMPLOYEE" && first) selectContact(first);
+        })();
         return () => {
             socketRef.current?.disconnect();
             clearInterval(countRef.current);
@@ -135,9 +179,64 @@ const Chat = () => {
 
     useEffect(() => { scrollToBottom(); }, [messages]);
 
-    const isOwn = (msg) =>
-        (role === "EMPLOYEE" && msg.sender_role === "EMPLOYEE") ||
-        (role === "COMPANY"  && msg.sender_role === "COMPANY");
+    const isOwn = (msg) => {
+        // Los mensajes entre compañeros llevan sender_id; los de empresa-empleado usan sender_role
+        if (msg.sender_id !== undefined) return msg.sender_id === user?.id;
+        return (role === "EMPLOYEE" && msg.sender_role === "EMPLOYEE") ||
+               (role === "COMPANY"  && msg.sender_role === "COMPANY");
+    };
+
+    const ownAvatarSrc = role === "COMPANY" ? user?.logo_url : user?.profile_image;
+
+    const MANAGER_KEYWORDS = ["manager", "lead", "supervisor", "head", "jefe", "director", "boss"];
+
+    const getContactType = (c) => {
+        if (!c) return null;
+        if (c.type === "company") return "company";
+        const pos = (c.position || "").toLowerCase();
+        if (MANAGER_KEYWORDS.some(k => pos.includes(k))) return "manager";
+        return "employee";
+    };
+
+    const TYPE_BADGE = {
+        company:  { label: "Company",  bg: "rgba(255,107,0,0.12)",   color: "#ff6b00", border: "rgba(255,107,0,0.4)"  },
+        manager:  { label: "Manager",  bg: "rgba(99,102,241,0.12)",   color: "#4f46e5", border: "rgba(99,102,241,0.4)" },
+        employee: { label: "Employee", bg: "rgba(34,197,94,0.12)",    color: "#15803d", border: "rgba(34,197,94,0.4)"  },
+    };
+
+    const TypeBadge = ({ contact, size = "sm" }) => {
+        const t = getContactType(contact);
+        if (!t) return null;
+        const cfg = TYPE_BADGE[t];
+        return (
+            <span
+                className="badge border fw-semibold text-uppercase"
+                style={{
+                    background: cfg.bg,
+                    color: cfg.color,
+                    borderColor: cfg.border,
+                    fontSize: size === "sm" ? "0.6rem" : "0.7rem",
+                    letterSpacing: "0.5px",
+                    padding: size === "sm" ? "3px 7px" : "4px 9px",
+                }}
+            >
+                {cfg.label}
+            </span>
+        );
+    };
+
+    const Avatar = ({ src, fallback, size = 30, fontSize = 12, bg = "bg-primary" }) => (
+        src
+            ? <img src={src} className="rounded-circle object-fit-cover flex-shrink-0" style={{ width: size, height: size }} alt="" />
+            : (
+                <div
+                    className={`rounded-circle ${bg} d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0`}
+                    style={{ width: size, height: size, fontSize }}
+                >
+                    {fallback}
+                </div>
+            )
+    );
 
     const groupedMessages = () => {
         const groups = [];
@@ -169,7 +268,7 @@ const Chat = () => {
     return (
         <div
             className="card border-0 shadow-sm rounded-4 overflow-hidden"
-            style={{ height: "calc(100vh - 140px)", display: "flex", flexDirection: "row" }}
+            style={{ height: "calc(100vh - 140px)", display: "flex", flexDirection: "row", margin: "0 50px" }}
         >
             <div className="border-end d-flex flex-column" style={{ width: 300, minWidth: 300, backgroundColor: "#fff" }}>
                 <div className="p-3 border-bottom">
@@ -189,14 +288,14 @@ const Chat = () => {
 
                 <div className="flex-grow-1 overflow-auto">
                     {filteredContacts.map(contact => {
-                        const name    = getContactName(contact);
+                        const name = getContactName(contact);
                         const initial = getInitial(contact);
-                        const unread  = unreadMap[contact.id] || 0;
-                        const active  = activeContact?.id === contact.id;
+                        const unread  = unreadMap[contactKey(contact)] || 0;
+                        const active  = activeContact && contactKey(activeContact) === contactKey(contact);
 
                         return (
                             <div
-                                key={contact.id}
+                                key={contactKey(contact)}
                                 className={`d-flex align-items-center gap-3 px-3 py-3 cursor-pointer border-bottom ${active ? "bg-primary bg-opacity-10" : ""}`}
                                 style={{ cursor: "pointer", transition: "background 0.15s" }}
                                 onClick={() => selectContact(contact)}
@@ -204,8 +303,8 @@ const Chat = () => {
                                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = ""; }}
                             >
                                 <div className="position-relative flex-shrink-0">
-                                    {contact.profile_image
-                                        ? <img src={contact.profile_image} className="rounded-circle object-fit-cover" style={{ width: 46, height: 46 }} alt="" />
+                                    {(contact.profile_image || contact.logo_url || contact.company_logo)
+                                        ? <img src={contact.profile_image || contact.logo_url || contact.company_logo} className="rounded-circle object-fit-cover" style={{ width: 46, height: 46 }} alt="" />
                                         : (
                                             <div
                                                 className="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
@@ -222,11 +321,12 @@ const Chat = () => {
                                 </div>
 
                                 <div className="flex-grow-1 overflow-hidden">
-                                    <div className="d-flex justify-content-between align-items-center">
+                                    <div className="d-flex align-items-center gap-2">
                                         <span className="fw-semibold small text-truncate">{name}</span>
+                                        <TypeBadge contact={contact} />
                                     </div>
                                     <div className="text-muted text-truncate" style={{ fontSize: "0.75rem" }}>
-                                        Haz clic para abrir el chat
+                                        {contact.position || "Click to open chat"}
                                     </div>
                                 </div>
 
@@ -245,15 +345,15 @@ const Chat = () => {
                         <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mb-3" style={{ width: 72, height: 72 }}>
                             <i className="bi bi-chat-dots text-primary fs-2"></i>
                         </div>
-                        <p className="mb-0">Selecciona un contacto para chatear</p>
+                        <p className="mb-0">Select a contact to start chatting</p>
                     </div>
                 ) : (
                     <>
                         <div className="px-4 py-3 bg-white border-bottom d-flex align-items-center justify-content-between flex-shrink-0">
                             <div className="d-flex align-items-center gap-3">
                                 <div className="position-relative">
-                                    {activeContact.profile_image
-                                        ? <img src={activeContact.profile_image} className="rounded-circle object-fit-cover" style={{ width: 42, height: 42 }} alt="" />
+                                    {(activeContact.profile_image || activeContact.logo_url || activeContact.company_logo)
+                                        ? <img src={activeContact.profile_image || activeContact.logo_url || activeContact.company_logo} className="rounded-circle object-fit-cover" style={{ width: 42, height: 42 }} alt="" />
                                         : (
                                             <div
                                                 className="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
@@ -264,18 +364,28 @@ const Chat = () => {
                                         )
                                     }
                                     <span
-                                        className={`position-absolute bottom-0 end-0 rounded-circle border border-white ${connected ? "bg-success" : "bg-secondary"}`}
+                                        className={`position-absolute bottom-0 end-0 rounded-circle border border-white ${activeContact.type === "peer" || connected ? "bg-success" : "bg-secondary"}`}
                                         style={{ width: 11, height: 11 }}
                                     />
                                 </div>
                                 <div>
-                                    <div className="fw-semibold">{getContactName(activeContact)}</div>
-                                    <div className={connected ? "text-success" : "text-muted"} style={{ fontSize: "0.72rem" }}>
-                                        {connected ? "Conectado" : "Reconectando..."}
-                                        <span className="text-muted ms-2" style={{ fontSize: "0.68rem" }}>
-                                            · reconexión en {String(countdown).padStart(2, "0")}s
-                                        </span>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <span className="fw-semibold">{getContactName(activeContact)}</span>
+                                        <TypeBadge contact={activeContact} size="md" />
                                     </div>
+                                    {activeContact.type === "peer" ? (
+                                        <div className="text-success" style={{ fontSize: "0.72rem" }}>
+                                            <i className="bi bi-lightning-charge-fill me-1"></i>
+                                            Direct messaging
+                                        </div>
+                                    ) : (
+                                        <div className={connected ? "text-success" : "text-muted"} style={{ fontSize: "0.72rem" }}>
+                                            {connected ? "Connected" : "Reconnecting..."}
+                                            <span className="text-muted ms-2" style={{ fontSize: "0.68rem" }}>
+                                                · reconnecting in {String(countdown).padStart(2, "0")}s
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -288,7 +398,7 @@ const Chat = () => {
                             ) : messages.length === 0 ? (
                                 <div className="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
                                     <i className="bi bi-chat-square-text fs-1 mb-2 opacity-25"></i>
-                                    <small>No hay mensajes aún.</small>
+                                    <small>No messages yet.</small>
                                 </div>
                             ) : (
                                 groupedMessages().map((item, i) => {
@@ -306,12 +416,10 @@ const Chat = () => {
                                     return (
                                         <div key={msg.id} className={`d-flex mb-2 align-items-end gap-2 ${own ? "justify-content-end" : "justify-content-start"}`}>
                                             {!own && (
-                                                <div
-                                                    className="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                                                    style={{ width: 30, height: 30, fontSize: 12 }}
-                                                >
-                                                    {getInitial(activeContact)}
-                                                </div>
+                                                <Avatar
+                                                    src={activeContact.profile_image}
+                                                    fallback={getInitial(activeContact)}
+                                                />
                                             )}
                                             <div style={{ maxWidth: "65%" }}>
                                                 <div
@@ -325,12 +433,15 @@ const Chat = () => {
                                                 </div>
                                             </div>
                                             {own && (
-                                                <div
-                                                    className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white flex-shrink-0"
-                                                    style={{ width: 30, height: 30 }}
-                                                >
-                                                    <i className="bi bi-person-fill" style={{ fontSize: 12 }}></i>
-                                                </div>
+                                                <Avatar
+                                                    src={ownAvatarSrc}
+                                                    fallback={
+                                                        role === "COMPANY"
+                                                            ? (user?.nombre_empresa?.charAt(0)?.toUpperCase() || "C")
+                                                            : (user?.first_name?.charAt(0)?.toUpperCase() || "Y")
+                                                    }
+                                                    bg="bg-secondary"
+                                                />
                                             )}
                                         </div>
                                     );
@@ -350,7 +461,7 @@ const Chat = () => {
                                 style={{ fontSize: "0.9rem" }}
                             />
                             <button
-                                className="btn btn-primary rounded-4 px-4 d-flex align-items-center gap-2 flex-shrink-0"
+                                className="btn btn-warning rounded-4 px-4 d-flex align-items-center gap-2 flex-shrink-0"
                                 onClick={sendMessage}
                                 disabled={sending || !newMessage.trim()}
                                 style={{ backgroundColor: "#316AFF", borderColor: "#316AFF" }}

@@ -100,7 +100,7 @@ const EmployeeRequestHub = () => {
                                             required
                                         ></textarea>
                                     </div>
-                                    <button type="submit" disabled={loading} className="btn btn-primary w-100 fw-bold shadow-sm">
+                                    <button type="submit" disabled={loading} className="btn btn-warning text-dark w-100 fw-bold shadow-sm">
                                         {loading ? "Enviando..." : "Enviar Reporte"}
                                     </button>
                                 </form>

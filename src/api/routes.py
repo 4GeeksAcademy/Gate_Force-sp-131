@@ -6,7 +6,8 @@ from flask import request, jsonify, Blueprint
 from api.models import (
     db, Employee, UserAdmin, Company, WorkRecord, Nomina,
     Incident, Vacaciones, Schedule, Survey, Question,
-    SurveyResponse, SurveyAnswer, StatusEnum, IncidentTypeEnum, RoleEnum, AuditLog, WellnessCheck
+    SurveyResponse, SurveyAnswer, StatusEnum, IncidentTypeEnum, RoleEnum, AuditLog, WellnessCheck,
+    ChatMessage, PeerChatMessage
 )
 from flask_cors import CORS
 from datetime import datetime, timedelta
@@ -16,6 +17,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from api.utils import analyze_emotions_with_gemini
 from sqlalchemy import cast, String
 from api.socket import socketio
+from flask_socketio import emit, join_room, leave_room
 
 
 
@@ -149,18 +151,68 @@ def get_company_employees(company_id):
     return jsonify([e.serialize() for e in employees]), 200
 
 
+@api.route('/companies/<int:company_id>', methods=['PUT'])
+@role_required("ADMIN")
+def update_company(company_id):
+    identity = get_jwt_identity()
+    role = get_jwt().get("role")
+
+    company = Company.query.get(company_id)
+    if not company:
+        return jsonify({"msg": "Company not found"}), 404
+
+    data = request.get_json() or {}
+
+    try:
+        if "is_active" in data:
+            previous = company.is_active
+            company.is_active = bool(data["is_active"])
+            if previous != company.is_active:
+                action = "Activated" if company.is_active else "Deactivated"
+                log_action(identity, role,
+                           f"{action} company {company.nombre_empresa}", "companies")
+
+        if "nombre_empresa" in data:
+            company.nombre_empresa = data["nombre_empresa"]
+        if "region" in data:
+            company.region = data["region"]
+        if "logo_url" in data:
+            company.logo_url = data["logo_url"]
+
+        db.session.commit()
+        return jsonify(company.serialize()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Internal server error: {str(e)}"}), 500
+
+
 @api.route('/admin/audit-logs', methods=['GET'])
 @role_required("ADMIN")
 def get_audit_logs():
     logs = (
         AuditLog.query
-        .filter(AuditLog.user_role == "COMPANY", AuditLog.target_table == "employees")
+        .filter(
+            ((AuditLog.user_role == "COMPANY") & (AuditLog.target_table == "employees")) |
+            ((AuditLog.user_role == "ADMIN")   & (AuditLog.target_table == "companies"))
+        )
         .order_by(AuditLog.created_at.desc())
         .limit(300)
         .all()
     )
     result = []
     for log in logs:
+        if log.user_role == "ADMIN":
+            result.append({
+                "id": log.id,
+                "company_id": None,
+                "company_name": "Admin",
+                "company_logo": None,
+                "action": log.action,
+                "created_at": log.created_at.strftime("%Y-%m-%d %H:%M") if log.created_at else None,
+            })
+            continue
+
         try:
             company = Company.query.get(int(log.user_id))
         except Exception:
@@ -1059,34 +1111,47 @@ def send_chat_message():
     claims = get_jwt()
     role = claims.get("role")
     user_id = int(get_jwt_identity())
-    data = request.json
+    data = request.get_json(silent=True) or {}
 
-    content = data.get("content", "").strip()
+    content = (data.get("content") or "").strip()
     if not content:
         return jsonify({"msg": "Message content is required"}), 400
 
-    if role == "EMPLOYEE":
-        employee = Employee.query.get_or_404(user_id)
-        msg = ChatMessage(
-            company_id=employee.company_id,
-            employee_id=user_id,
-            sender_role="EMPLOYEE",
-            content=content
-        )
-    elif role == "COMPANY":
-        employee_id = data.get("employee_id")
-        if not employee_id:
-            return jsonify({"msg": "employee_id is required"}), 400
-        msg = ChatMessage(
-            company_id=user_id,
-            employee_id=employee_id,
-            sender_role="COMPANY",
-            content=content
-        )
+    try:
+        if role == "EMPLOYEE":
+            employee = Employee.query.get(user_id)
+            if not employee:
+                return jsonify({"msg": "Employee not found"}), 404
+            msg = ChatMessage(
+                company_id=employee.company_id,
+                employee_id=user_id,
+                sender_role="EMPLOYEE",
+                content=content,
+            )
+        elif role == "COMPANY":
+            employee_id = data.get("employee_id")
+            if not employee_id:
+                return jsonify({"msg": "employee_id is required"}), 400
+            target = Employee.query.get(int(employee_id))
+            if not target or target.company_id != user_id:
+                return jsonify({"msg": "Employee not found in your company"}), 404
+            msg = ChatMessage(
+                company_id=user_id,
+                employee_id=int(employee_id),
+                sender_role="COMPANY",
+                content=content,
+            )
+        else:
+            return jsonify({"msg": f"Unsupported role: {role}"}), 400
 
-    db.session.add(msg)
-    db.session.commit()
-    return jsonify(msg.serialize()), 201
+        db.session.add(msg)
+        db.session.commit()
+        return jsonify(msg.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"[chat send error] {type(e).__name__}: {e}", flush=True)
+        return jsonify({"msg": f"Internal error: {str(e)}"}), 500
 
 
 @api.route('/chat/unread-count', methods=['GET'])
@@ -1118,6 +1183,112 @@ def get_unread_count():
             is_read=False
         ).group_by(ChatMessage.employee_id).all()
         return jsonify([{"employee_id": r.employee_id, "unread": r.unread} for r in results]), 200
+
+
+@api.route('/chat/colleagues', methods=['GET'])
+@role_required("EMPLOYEE")
+def get_colleagues():
+    """List of other active employees in the same company."""
+    user_id = int(get_jwt_identity())
+    me = Employee.query.get(user_id)
+    if not me:
+        return jsonify({"msg": "Employee not found"}), 404
+    colleagues = (
+        Employee.query
+        .filter(Employee.company_id == me.company_id)
+        .filter(Employee.id != user_id)
+        .filter(Employee.is_active.is_(True))
+        .order_by(Employee.first_name.asc())
+        .all()
+    )
+    return jsonify([e.serialize() for e in colleagues]), 200
+
+
+@api.route('/chat/peer-messages', methods=['GET'])
+@role_required("EMPLOYEE")
+def get_peer_messages():
+    """Conversation between the logged-in employee and another employee in the same company."""
+    user_id = int(get_jwt_identity())
+    peer_id = request.args.get("peer_id", type=int)
+    if not peer_id:
+        return jsonify({"msg": "peer_id is required"}), 400
+
+    me = Employee.query.get(user_id)
+    peer = Employee.query.get(peer_id)
+    if not me or not peer or me.company_id != peer.company_id:
+        return jsonify({"msg": "Peer not found in your company"}), 404
+
+    msgs = (
+        PeerChatMessage.query
+        .filter(
+            ((PeerChatMessage.sender_id == user_id) & (PeerChatMessage.receiver_id == peer_id)) |
+            ((PeerChatMessage.sender_id == peer_id) & (PeerChatMessage.receiver_id == user_id))
+        )
+        .order_by(PeerChatMessage.created_at.asc())
+        .all()
+    )
+
+    PeerChatMessage.query.filter_by(
+        sender_id=peer_id, receiver_id=user_id, is_read=False
+    ).update({"is_read": True})
+    db.session.commit()
+
+    return jsonify([m.serialize() for m in msgs]), 200
+
+
+@api.route('/chat/peer-messages', methods=['POST'])
+@role_required("EMPLOYEE")
+def send_peer_message():
+    """Send a direct message to another employee in the same company."""
+    user_id = int(get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    content = (data.get("content") or "").strip()
+    peer_id = data.get("peer_id")
+
+    if not content:
+        return jsonify({"msg": "Message content is required"}), 400
+    if not peer_id:
+        return jsonify({"msg": "peer_id is required"}), 400
+
+    try:
+        me = Employee.query.get(user_id)
+        peer = Employee.query.get(int(peer_id))
+        if not me or not peer or me.company_id != peer.company_id:
+            return jsonify({"msg": "Peer not found in your company"}), 404
+        if peer.id == me.id:
+            return jsonify({"msg": "Cannot message yourself"}), 400
+
+        msg = PeerChatMessage(
+            sender_id=user_id,
+            receiver_id=int(peer_id),
+            content=content,
+        )
+        db.session.add(msg)
+        db.session.commit()
+        return jsonify(msg.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"[peer chat send error] {type(e).__name__}: {e}", flush=True)
+        return jsonify({"msg": f"Internal error: {str(e)}"}), 500
+
+
+@api.route('/chat/peer-unread-count', methods=['GET'])
+@role_required("EMPLOYEE")
+def peer_unread_count():
+    """Map of peer_id -> unread count for the logged-in employee."""
+    from sqlalchemy import func
+    user_id = int(get_jwt_identity())
+    rows = (
+        db.session.query(
+            PeerChatMessage.sender_id,
+            func.count(PeerChatMessage.id).label("unread"),
+        )
+        .filter(PeerChatMessage.receiver_id == user_id, PeerChatMessage.is_read.is_(False))
+        .group_by(PeerChatMessage.sender_id)
+        .all()
+    )
+    return jsonify([{"peer_id": r.sender_id, "unread": r.unread} for r in rows]), 200
 
 
 @api.route('/hello')

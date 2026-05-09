@@ -191,10 +191,10 @@ const Login = () => {
                                     </form>
 
                                     <p className="text-center text-muted mb-0">
-                                        Don't have an account?{" "}
-                                        <Link to="/signup"
+                                        Are you interested?{" "}
+                                        <Link to="/#contact"
                                             style={{ color: "#ff6b00", fontWeight: 600, textDecoration: "none" }}>
-                                            Sign Up
+                                            Contact us!
                                         </Link>
                                     </p>
 
